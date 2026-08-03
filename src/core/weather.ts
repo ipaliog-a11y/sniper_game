@@ -1,6 +1,6 @@
 import { type Atmosphere, densityAltitude, standardPressureAt } from './atmosphere';
 import type { Wind } from './ballistics';
-import { type Rng, gaussian, makeRng, range } from './rng';
+import { gaussian, makeRng, range } from './rng';
 import { clamp, degToRad, mphToMs, msToMph, radToDeg, wrapAngle } from './units';
 
 /**

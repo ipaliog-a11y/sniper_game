@@ -3,7 +3,6 @@ import type { Optic } from '../core/catalog/attachments';
 import {
   type Target,
   STAND_HEIGHT_M,
-  targetCentreHeight,
   targetInclination,
   targetOffsetAt,
 } from '../core/range';
@@ -76,54 +75,88 @@ function hash(x: number, y: number, seed: number): number {
 
 // --- sky and light ------------------------------------------------------
 
+type Rgb = [number, number, number];
+
 interface Light {
   skyTop: string;
   skyBottom: string;
-  ground: string;
-  groundFar: string;
-  haze: string;
+  /** Ground colour close in and far out, as raw channels so bands can blend. */
+  groundNear: Rgb;
+  groundFar: Rgb;
+  haze: Rgb;
   /** 0..1 overall brightness, folded into contrast on the targets. */
   level: number;
 }
 
+const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [
+  a[0] + (b[0] - a[0]) * t,
+  a[1] + (b[1] - a[1]) * t,
+  a[2] + (b[2] - a[2]) * t,
+];
+
+const css = (c: Rgb, alpha = 1) =>
+  `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${alpha})`;
+
 export function lightFor(conditions: Conditions): Light {
   const h = conditions.hour;
+  // Full daylight between about seven and five, falling off either side.
   const dusk = clamp(Math.min(h - 4.5, 20 - h) / 2.5, 0, 1);
-  const level = clamp(dusk * (conditions.sky === 'overcast' ? 0.7 : conditions.sky === 'rain' ? 0.55 : conditions.sky === 'fog' ? 0.6 : 1), 0.12, 1);
-
+  const overcast =
+    conditions.sky === 'overcast' ? 0.7 : conditions.sky === 'rain' ? 0.55 : conditions.sky === 'fog' ? 0.6 : 1;
+  const level = clamp(dusk * overcast, 0.12, 1);
   const warm = 1 - dusk;
-  const mix = (a: number[], b: number[], t: number) =>
-    `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(
-      a[2] + (b[2] - a[2]) * t,
-    )})`;
 
-  const dayTop = conditions.sky === 'clear' ? [86, 132, 168] : conditions.sky === 'high-cloud' ? [110, 138, 158] : [104, 110, 112];
-  const dayBottom = conditions.sky === 'clear' ? [168, 196, 208] : [158, 164, 166];
-  const nightTop = [24, 30, 42];
-  const nightBottom = [72, 66, 62];
+  const dayTop: Rgb =
+    conditions.sky === 'clear' ? [74, 124, 166] : conditions.sky === 'high-cloud' ? [104, 134, 158] : [102, 108, 110];
+  const dayBottom: Rgb = conditions.sky === 'clear' ? [176, 202, 212] : [162, 166, 168];
+  const nightTop: Rgb = [22, 28, 40];
+  const nightBottom: Rgb = [78, 68, 60];
+
+  // Dry ranges are straw, wet ones are green, and everything greys out at dusk.
+  const dry = clamp(1 - conditions.atmosphere.humidity, 0, 1);
+  const grass: Rgb = mixRgb([78, 96, 58], [138, 128, 82], dry);
 
   return {
-    skyTop: mix(nightTop, dayTop, dusk),
-    skyBottom: mix(nightBottom, dayBottom, dusk),
-    ground: mix([28, 30, 26], conditions.sky === 'fog' ? [104, 108, 100] : [96, 100, 68], level),
-    groundFar: mix([32, 36, 34], [126, 130, 116], level),
-    haze: `rgba(${Math.round(150 + 40 * warm)},${Math.round(158 + 20 * warm)},${Math.round(
-      150 + 10 * warm,
-    )},1)`,
+    skyTop: css(mixRgb(nightTop, dayTop, dusk)),
+    skyBottom: css(mixRgb(nightBottom, dayBottom, dusk)),
+    groundNear: mixRgb([20, 24, 20], grass, level),
+    groundFar: mixRgb([26, 32, 32], mixRgb(grass, [148, 152, 138], 0.45), level),
+    haze: [150 + 40 * warm, 158 + 20 * warm, 152 + 10 * warm],
     level,
   };
 }
 
 // --- the world ----------------------------------------------------------
 
-const GROUND_BANDS = 46;
-const MAX_DRAW_RANGE = 4200;
+const GROUND_BANDS = 54;
+const MAX_DRAW_RANGE = 6000;
 
 /**
- * The ground, drawn as a stack of distance bands. Because the shooter sits well
- * above the range floor, near ground fills the bottom of the picture and far
- * ground crowds into a thin strip below the horizon — which is exactly why
- * judging distance by eye past 600 m does not work.
+ * How far away the ground under a given screen elevation is. The shooter sits
+ * `firingHeightM` above a flat floor, so this is just similar triangles — and
+ * it is the reason the whole range past 600 m is crammed into the last few
+ * pixels below the horizon.
+ */
+const groundDistanceAt = (el: number, firingHeightM: number) =>
+  el >= -1e-5 ? Infinity : -firingHeightM / Math.tan(el);
+
+/** The slice of ground the current view can actually see, in metres. */
+function visibleGroundRange(view: View, firingHeightM: number): { near: number; far: number } {
+  // Generous margin so a canted view still has ground in the corners.
+  const half = view.fov * 0.95;
+  const near = groundDistanceAt(view.aimEl - half, firingHeightM);
+  const far = groundDistanceAt(view.aimEl + half, firingHeightM);
+  return {
+    near: clamp(Number.isFinite(near) ? near : MAX_DRAW_RANGE, 8, MAX_DRAW_RANGE),
+    far: clamp(Number.isFinite(far) ? far : MAX_DRAW_RANGE, 20, MAX_DRAW_RANGE),
+  };
+}
+
+/**
+ * The ground, drawn as a stack of distance bands blended from near colour to
+ * far colour and then into the haze. Every band is a real distance, so the
+ * compression of the picture toward the horizon is the true perspective rather
+ * than a painted backdrop.
  */
 function drawGround(
   ctx: CanvasRenderingContext2D,
@@ -132,42 +165,50 @@ function drawGround(
   firingHeightM: number,
   light: Light,
 ): void {
-  const halfSpan = view.fov * 1.4 + 0.25;
-  const bands: Array<{ d: number; el: number }> = [];
+  const halfSpan = view.fov * 1.5 + 0.3;
+  const hazeAmount = 1.05 - conditions.visibility * 0.72;
+
+  const elAt = (d: number) => Math.atan2(-firingHeightM, d);
+  const bands: number[] = [];
   for (let i = 0; i <= GROUND_BANDS; i++) {
-    const t = i / GROUND_BANDS;
-    // Distances spaced geometrically so the near ground gets the detail.
-    const d = 18 * Math.pow(MAX_DRAW_RANGE / 18, t);
-    bands.push({ d, el: Math.atan2(-firingHeightM, d) });
+    bands.push(8 * Math.pow(MAX_DRAW_RANGE / 8, i / GROUND_BANDS));
   }
 
   for (let i = 0; i < GROUND_BANDS; i++) {
-    const near = bands[i];
-    const far = bands[i + 1];
-    const fade = clamp(Math.log(far.d / 18) / Math.log(MAX_DRAW_RANGE / 18), 0, 1);
-    const a = view.project(view.aimAz - halfSpan, near.el);
-    const b = view.project(view.aimAz + halfSpan, near.el);
-    const c = view.project(view.aimAz + halfSpan, far.el);
-    const d = view.project(view.aimAz - halfSpan, far.el);
+    const dNear = bands[i];
+    const dFar = bands[i + 1];
+    // Last band runs all the way to the horizon so there is never a seam.
+    const elNear = elAt(dNear);
+    const elFar = i === GROUND_BANDS - 1 ? 0 : elAt(dFar);
+    const t = i / (GROUND_BANDS - 1);
+
+    const a = view.project(view.aimAz - halfSpan, elNear);
+    const b = view.project(view.aimAz + halfSpan, elNear);
+    const c = view.project(view.aimAz + halfSpan, elFar);
+    const d = view.project(view.aimAz - halfSpan, elFar);
+
+    const base = mixRgb(light.groundNear, light.groundFar, Math.pow(t, 0.7));
+    const hazed = mixRgb(base, light.haze, clamp(Math.pow(t, 1.4) * hazeAmount, 0, 0.9));
+
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
     ctx.lineTo(c.x, c.y);
     ctx.lineTo(d.x, d.y);
     ctx.closePath();
-    ctx.fillStyle = i % 2 === 0 ? light.ground : light.groundFar;
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = css(hazed);
     ctx.fill();
-    // Haze thickens with distance and with anything wet in the air.
-    const hazeStrength = clamp(fade * (1.15 - conditions.visibility * 0.75), 0, 0.92);
-    ctx.globalAlpha = hazeStrength;
-    ctx.fillStyle = light.haze;
-    ctx.fill();
-    ctx.globalAlpha = 1;
   }
 }
 
-/** Scrub, rocks and grass tufts. Purely so the eye has a scale to work with. */
+/**
+ * Ground texture. Two passes: broad patches of lighter and darker going, then a
+ * fine speckle of grass and stones with the occasional bush.
+ *
+ * Everything is placed at a real distance and sized in real metres, so it
+ * foreshortens honestly — which matters, because the texture is the only thing
+ * giving the eye a sense of how far away the dirt is.
+ */
 function drawScatter(
   ctx: CanvasRenderingContext2D,
   view: View,
@@ -175,30 +216,154 @@ function drawScatter(
   firingHeightM: number,
   light: Light,
 ): void {
+  const { near, far } = visibleGroundRange(view, firingHeightM);
+  if (far <= near) return;
   const seed = conditions.seed;
-  const halfSpan = view.fov * 0.85 + 0.06;
-  ctx.globalAlpha = 0.55 * light.level + 0.15;
-  for (let ring = 0; ring < 22; ring++) {
-    const d = 45 * Math.pow(2600 / 45, ring / 21);
-    const perRing = 26;
-    const el = Math.atan2(-firingHeightM + 0.35, d);
-    for (let i = 0; i < perRing; i++) {
-      const r1 = hash(ring, i, seed);
-      const r2 = hash(i, ring, seed ^ 0x51);
-      const az = view.aimAz + (r1 - 0.5) * halfSpan * 2.4 + (r2 - 0.5) * 0.02;
-      if (Math.abs(az - view.aimAz) > halfSpan) continue;
-      const p = view.project(az, el + (r2 - 0.5) * 0.0008);
-      if (Math.hypot(p.x - view.cx, p.y - view.cy) > view.radius) continue;
-      const size = clamp((0.9 * view.pxPerRad) / d, 0.6, 14);
-      const fade = clamp(1 - Math.log(d / 45) / Math.log(2600 / 45), 0.12, 1);
-      ctx.fillStyle = r1 > 0.72 ? 'rgba(60,58,44,1)' : 'rgba(74,80,52,1)';
-      ctx.globalAlpha = fade * (0.45 * light.level + 0.1);
+  const halfSpan = view.fov * 0.85 + 0.04;
+  const dry = clamp(1 - conditions.atmosphere.humidity, 0, 1);
+  const lightMix = 0.35 + 0.65 * light.level;
+
+  const dark = mixRgb([38, 46, 30], [92, 84, 54], dry);
+  const pale = mixRgb([104, 118, 74], [168, 156, 108], dry);
+  const scrub = mixRgb([44, 58, 34], [78, 70, 44], dry);
+
+  const place = (d: number, azOffset: number): { x: number; y: number } =>
+    view.project(view.aimAz + azOffset, Math.atan2(-firingHeightM, d));
+
+  // Broad patches: very low alpha, several metres across, purely to break up a
+  // flat wash of colour.
+  const patchRings = 16;
+  for (let ring = 0; ring < patchRings; ring++) {
+    const d = near * Math.pow(far / near, ring / (patchRings - 1));
+    const scale = view.pxPerRad / d;
+    for (let i = 0; i < 10; i++) {
+      const r1 = hash(ring * 977, i, seed ^ 0x2f);
+      const r2 = hash(i * 613, ring, seed ^ 0xb7);
+      const p = place(d * (1 + (r2 - 0.5) * 0.18), (r1 - 0.5) * halfSpan * 2.1);
+      if (Math.hypot(p.x - view.cx, p.y - view.cy) > view.radius * 1.1) continue;
+      const sizeM = 3 + r1 * 9;
+      ctx.globalAlpha = 0.06 * lightMix;
+      ctx.fillStyle = css(r2 > 0.5 ? pale : dark);
       ctx.beginPath();
-      ctx.ellipse(p.x, p.y, size * 1.6, size, 0, 0, Math.PI * 2);
+      ctx.ellipse(p.x, p.y, sizeM * scale, sizeM * scale * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Fine speckle. Small enough that at any usable magnification it reads as
+  // texture rather than as things.
+  const rings = 40;
+  for (let ring = 0; ring < rings; ring++) {
+    const d = near * Math.pow(far / near, ring / (rings - 1));
+    if (d > MAX_DRAW_RANGE) break;
+    const scale = view.pxPerRad / d;
+    const t = clamp(Math.log(d / 8) / Math.log(MAX_DRAW_RANGE / 8), 0, 1);
+    const fade = clamp((1 - t) * 0.7 + 0.05, 0.05, 0.55) * lightMix;
+    const ringKey = (ring * 2654435761) >>> 0;
+
+    for (let i = 0; i < 70; i++) {
+      const r1 = hash(ringKey, i, seed);
+      const r2 = hash(i, ringKey, seed ^ 0x51);
+      const r3 = hash(i * 31, ring * 17, seed ^ 0x9e);
+      const p = place(d * (1 + (r2 - 0.5) * 0.06), (r1 - 0.5) * halfSpan * 2.1);
+      if (Math.hypot(p.x - view.cx, p.y - view.cy) > view.radius) continue;
+
+      const bush = r3 > 0.965;
+      const sizeM = bush ? 0.16 + r1 * 0.22 : 0.02 + r2 * 0.05;
+      const w = Math.max(0.45, sizeM * scale);
+      if (w > view.radius * 0.35) continue;
+      ctx.globalAlpha = fade * (bush ? 0.75 : 0.5);
+      ctx.fillStyle = css(bush ? scrub : r3 > 0.6 ? pale : dark);
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, w * (bush ? 1 : 1.6), w * (bush ? 0.85 : 0.55), 0, 0, Math.PI * 2);
       ctx.fill();
     }
   }
   ctx.globalAlpha = 1;
+}
+
+/**
+ * The backstop. Every range has one, and it is the best depth cue in the
+ * picture — a wall of earth at a known distance that everything else can be
+ * judged against.
+ */
+function drawBerm(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  session: Session,
+  firingHeightM: number,
+  light: Light,
+): void {
+  const furthest = session.stage.targets.reduce((m, t) => Math.max(m, t.rangeM), 0);
+  const d = furthest * 1.12 + 40;
+  const height = clamp(furthest * 0.012, 3, 14);
+  const halfSpan = view.fov * 1.5 + 0.3;
+  const t = clamp(Math.log(d / 8) / Math.log(MAX_DRAW_RANGE / 8), 0, 1);
+  const face = mixRgb(mixRgb(light.groundNear, light.groundFar, 0.5), light.haze, t * 0.55);
+
+  ctx.beginPath();
+  let started = false;
+  const step = halfSpan / 40;
+  for (let az = view.aimAz - halfSpan; az <= view.aimAz + halfSpan; az += step) {
+    // A rolling crest rather than a straight parapet.
+    const crest =
+      height * (0.78 + 0.22 * Math.sin(az * 46 + session.conditions.seed) + 0.1 * Math.sin(az * 131));
+    const p = view.project(az, Math.atan2(crest - firingHeightM, d));
+    if (!started) {
+      ctx.moveTo(p.x, p.y);
+      started = true;
+    } else {
+      ctx.lineTo(p.x, p.y);
+    }
+  }
+  const footRight = view.project(view.aimAz + halfSpan, Math.atan2(-firingHeightM, d * 0.82));
+  const footLeft = view.project(view.aimAz - halfSpan, Math.atan2(-firingHeightM, d * 0.82));
+  ctx.lineTo(footRight.x, footRight.y);
+  ctx.lineTo(footLeft.x, footLeft.y);
+  ctx.closePath();
+  ctx.fillStyle = css(mixRgb(face, [0, 0, 0], 0.12));
+  ctx.fill();
+}
+
+/**
+ * A treeline out past the backstop, sitting on the ground plane a long way off.
+ * It gives the horizon somewhere to be when the shooter looks up.
+ */
+function drawTreeline(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  conditions: Conditions,
+  firingHeightM: number,
+  light: Light,
+): void {
+  const d = 3400;
+  const halfSpan = view.fov * 1.5 + 0.3;
+  const base = Math.atan2(-firingHeightM, d);
+  const colour = mixRgb(mixRgb([34, 44, 34], [66, 78, 58], light.level), light.haze, 0.62);
+  ctx.beginPath();
+  let started = false;
+  const step = halfSpan / 60;
+  for (let az = view.aimAz - halfSpan; az <= view.aimAz + halfSpan; az += step) {
+    const n =
+      Math.sin(az * 210 + conditions.seed * 0.01) * 0.4 +
+      Math.sin(az * 613) * 0.35 +
+      Math.sin(az * 97 + 1.7) * 0.25;
+    const treeM = 12 + n * 7;
+    const p = view.project(az, Math.atan2(treeM - firingHeightM, d));
+    if (!started) {
+      ctx.moveTo(p.x, p.y);
+      started = true;
+    } else {
+      ctx.lineTo(p.x, p.y);
+    }
+  }
+  const right = view.project(view.aimAz + halfSpan, base);
+  const left = view.project(view.aimAz - halfSpan, base);
+  ctx.lineTo(right.x, right.y);
+  ctx.lineTo(left.x, left.y);
+  ctx.closePath();
+  ctx.fillStyle = css(colour);
+  ctx.fill();
 }
 
 /** Ridge lines at effectively infinite distance, so they only move with azimuth. */
@@ -209,8 +374,8 @@ function drawRidges(
   light: Light,
 ): void {
   for (let layer = 0; layer < 3; layer++) {
-    const base = -0.004 - layer * 0.0015;
-    const amp = 0.035 - layer * 0.009;
+    const base = -0.0015 - layer * 0.0008;
+    const amp = 0.03 - layer * 0.008;
     const step = 0.02;
     ctx.beginPath();
     let started = false;
@@ -415,51 +580,50 @@ function drawTarget(
     return null;
   }
 
-  const fade = clamp(
-    1 - (Math.log(t.rangeM / 100) / Math.log(4000 / 100)) * (1.2 - conditions.visibility),
-    0.25,
-    1,
-  );
-  const face = runtime.hit ? '#d8d2c2' : light.level > 0.5 ? '#2f3330' : '#232624';
-  const edge = runtime.hit ? '#f2ecd8' : '#4a504b';
+  // Haze washes distant plates out the same way it washes out the ground, so
+  // a target at 1200 m is genuinely harder to see than one at 300 m.
+  const dt = clamp(Math.log(Math.max(1, t.rangeM) / 100) / Math.log(4000 / 100), 0, 1);
+  const wash = clamp(dt * (1.05 - conditions.visibility * 0.72), 0, 0.72);
+
+  const steel: Rgb = runtime.hit ? [214, 208, 190] : [46, 50, 46];
+  const body = mixRgb(steel, light.haze, wash);
+  const rim = mixRgb(runtime.hit ? [244, 238, 218] : [104, 112, 104], light.haze, wash);
 
   ctx.save();
   ctx.translate(centre.x, centre.y);
   ctx.rotate(-view.cant);
-  ctx.globalAlpha = fade;
 
   // The frame it stands on.
   const standPx = STAND_HEIGHT_M * scale;
-  if (standPx > 1.5) {
-    ctx.strokeStyle = 'rgba(40,42,38,0.85)';
-    ctx.lineWidth = Math.max(0.7, halfW * 0.14);
+  if (standPx > 1.2) {
+    ctx.strokeStyle = css(mixRgb([34, 36, 32], light.haze, wash), 0.9);
+    ctx.lineWidth = Math.max(0.6, halfW * 0.12);
     ctx.beginPath();
-    ctx.moveTo(-halfW * 0.35, halfH);
-    ctx.lineTo(-halfW * 0.35, halfH + standPx);
-    ctx.moveTo(halfW * 0.35, halfH);
-    ctx.lineTo(halfW * 0.35, halfH + standPx);
+    ctx.moveTo(-halfW * 0.4, halfH * 0.8);
+    ctx.lineTo(-halfW * 0.4, halfH + standPx);
+    ctx.moveTo(halfW * 0.4, halfH * 0.8);
+    ctx.lineTo(halfW * 0.4, halfH + standPx);
     ctx.stroke();
   }
 
-  ctx.fillStyle = face;
-  ctx.strokeStyle = edge;
-  ctx.lineWidth = Math.max(0.6, halfW * 0.08);
+  ctx.fillStyle = css(body);
+  ctx.strokeStyle = css(rim);
+  ctx.lineWidth = Math.max(0.7, halfW * 0.07);
 
   switch (t.shape) {
     case 'gong':
     case 'head': {
       ctx.beginPath();
-      ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, Math.max(0.7, halfW), Math.max(0.7, halfH), 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.stroke();
-      if (halfW > 7) {
-        ctx.globalAlpha = fade * 0.5;
+      if (halfW > 2) ctx.stroke();
+      // A painted centre ring, once the plate is big enough to make one out.
+      if (halfW > 9) {
         ctx.beginPath();
-        ctx.ellipse(0, 0, halfW * 0.35, halfH * 0.35, 0, 0, Math.PI * 2);
-        ctx.strokeStyle = runtime.hit ? '#b9b09a' : '#5c635e';
+        ctx.ellipse(0, 0, halfW * 0.36, halfH * 0.36, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = css(mixRgb(runtime.hit ? [150, 140, 118] : [122, 130, 120], light.haze, wash), 0.8);
         ctx.lineWidth = Math.max(0.5, halfW * 0.05);
         ctx.stroke();
-        ctx.globalAlpha = fade;
       }
       break;
     }
@@ -471,7 +635,7 @@ function drawTarget(
       ctx.lineTo(-halfW, 0);
       ctx.closePath();
       ctx.fill();
-      ctx.stroke();
+      if (halfW > 2) ctx.stroke();
       break;
     }
     case 'silhouette': {
@@ -487,20 +651,19 @@ function drawTarget(
       ctx.lineTo(halfW, halfH);
       ctx.closePath();
       ctx.fill();
-      ctx.stroke();
+      if (halfW > 2) ctx.stroke();
       break;
     }
   }
 
-  if (t.label && halfW > 9) {
-    ctx.fillStyle = runtime.hit ? '#6b6553' : '#7c847d';
-    ctx.font = `${Math.max(7, halfH * 0.5)}px ui-monospace, monospace`;
+  if (t.label && halfW > 10) {
+    ctx.fillStyle = css(mixRgb(runtime.hit ? [104, 98, 82] : [130, 138, 130], light.haze, wash));
+    ctx.font = `${Math.max(7, halfH * 0.45)}px ui-monospace, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(t.label, 0, halfH * 0.55);
+    ctx.fillText(t.label, 0, halfH * 0.58);
   }
   ctx.restore();
-  ctx.globalAlpha = 1;
 
   return { runtime, screen: centre, sizePx: Math.max(halfW, halfH) };
 }
@@ -659,6 +822,8 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
 
   drawRidges(ctx, view, conditions, light);
   drawGround(ctx, view, conditions, firingHeightM, light);
+  drawTreeline(ctx, view, conditions, firingHeightM, light);
+  drawBerm(ctx, view, session, firingHeightM, light);
   drawScatter(ctx, view, conditions, firingHeightM, light);
   drawFlags(ctx, view, conditions, firingHeightM, time, light);
 
@@ -708,10 +873,18 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
       ctx.arc(p.x, p.y, Math.max(3, scale * 0.7 * grow), 0, Math.PI * 2);
       ctx.stroke();
     } else {
-      ctx.fillStyle = 'rgba(160,148,118,0.75)';
-      const radius = Math.max(2.5, scale * 1.6 * grow);
+      // Dust. A rifle bullet into dry ground throws maybe half a metre of it,
+      // and it hangs for a second or two, which is all the time you get to
+      // read a correction off it.
+      const radius = Math.max(1.5, scale * 0.45 * grow);
+      ctx.globalAlpha = fade * 0.55;
+      ctx.fillStyle = 'rgb(178,166,136)';
       ctx.beginPath();
-      ctx.ellipse(p.x, p.y + radius * 0.4, radius, radius * 0.75, 0, 0, Math.PI * 2);
+      ctx.ellipse(p.x, p.y + radius * 0.5, radius * 1.15, radius * 0.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = fade * 0.25;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y + radius * 0.2, radius * 2.1, radius * 1.4, 0, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;

@@ -40,8 +40,8 @@ export function fillPanel(
   ctx: CanvasRenderingContext2D,
   r: Rect,
   radius: number,
-  fill = C.panel,
-  stroke = C.edge,
+  fill: string = C.panel,
+  stroke: string = C.edge,
 ): void {
   roundRect(ctx, r, radius);
   ctx.fillStyle = fill;
@@ -118,7 +118,7 @@ export function rule(
   x: number,
   y: number,
   w: number,
-  colour = C.edgeSoft,
+  colour: string = C.edgeSoft,
 ): void {
   ctx.strokeStyle = colour;
   ctx.lineWidth = 1;
@@ -134,7 +134,7 @@ export function bar(
   r: Rect,
   fraction: number,
   colour: string,
-  track = C.edgeSoft,
+  track: string = C.edgeSoft,
 ): void {
   roundRect(ctx, r, r.h / 2);
   ctx.fillStyle = track;

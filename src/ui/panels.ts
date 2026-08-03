@@ -57,6 +57,11 @@ const temp = (c: number, imperial: boolean) =>
 
 // --- weather ------------------------------------------------------------
 
+/**
+ * The weather station. Two columns wherever there is room, because a shooter
+ * wants the air on one side and the wind on the other, and because a single
+ * stack of this much data runs off the bottom of a laptop screen.
+ */
 export function weatherPanel(
   ctx: CanvasRenderingContext2D,
   r: Rect,
@@ -68,97 +73,158 @@ export function weatherPanel(
   const precise = session.loadout.hasGear('kestrel');
   const est = estimateConditions(conditions, precise);
 
-  let y = r.y + 14 * g;
-  const col = r.w / 2 - 10 * g;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(r.x, r.y, r.w, r.h);
+  ctx.clip();
 
-  text(ctx, precise ? 'WEATHER METER' : 'FIELD ESTIMATE', r.x, y, T.small * g, precise ? C.amber : C.textFaint);
+  const twoUp = r.w > 520 * g;
+  const colW = twoUp ? r.w / 2 - 14 * g : r.w;
+  const rightX = twoUp ? r.x + r.w / 2 + 14 * g : r.x;
+
+  // --- the air ---
+  let y = r.y + 14 * g;
+  text(
+    ctx,
+    precise ? 'WEATHER METER' : 'FIELD ESTIMATE',
+    r.x,
+    y,
+    T.small * g,
+    precise ? C.amber : C.textFaint,
+  );
   if (!precise) {
-    text(ctx, 'no meter fitted', r.x + r.w, y, T.micro * g, C.textFaint, 'right');
+    text(ctx, 'no meter fitted', r.x + colW, y, T.micro * g, C.textFaint, 'right');
   }
-  y += 16 * g;
-  rule(ctx, r.x, y, r.w);
+  y += 14 * g;
+  rule(ctx, r.x, y, colW);
   y += 16 * g;
 
   const rows: Array<[string, string]> = [
     ['TEMPERATURE', temp(est.tempC, settings.imperial)],
-    ['STATION PRESS', settings.imperial ? `${paToInHg(est.pressurePa).toFixed(2)} inHg` : `${(est.pressurePa / 100).toFixed(0)} hPa`],
+    [
+      'STATION PRESSURE',
+      settings.imperial
+        ? `${paToInHg(est.pressurePa).toFixed(2)} inHg`
+        : `${(est.pressurePa / 100).toFixed(0)} hPa`,
+    ],
     ['HUMIDITY', `${(est.humidity * 100).toFixed(0)} %`],
-    ['ELEVATION', settings.imperial ? `${Math.round(mToFt(est.altitudeM))} ft` : `${Math.round(est.altitudeM)} m`],
-    ['DENSITY ALT', settings.imperial ? `${Math.round(mToFt(est.densityAltitudeM))} ft` : `${Math.round(est.densityAltitudeM)} m`],
+    [
+      'ELEVATION',
+      settings.imperial ? `${Math.round(mToFt(est.altitudeM))} ft` : `${Math.round(est.altitudeM)} m`,
+    ],
+    [
+      'DENSITY ALTITUDE',
+      settings.imperial
+        ? `${Math.round(mToFt(est.densityAltitudeM))} ft`
+        : `${Math.round(est.densityAltitudeM)} m`,
+    ],
   ];
-  for (let i = 0; i < rows.length; i++) {
-    const x = i < 3 ? r.x : r.x + col + 20 * g;
-    const ry = i < 3 ? y + i * 22 * g : y + (i - 3) * 22 * g;
-    ui.field(x, ry, col, rows[i][0], rows[i][1]);
+  for (const [label, value] of rows) {
+    ui.field(r.x, y, colW, label, value);
+    y += 20 * g;
   }
-  y += 3 * 22 * g + 8 * g;
+  y += 6 * g;
 
-  // How far today's air is from the day the card was written.
+  // How far today's air is from the day the card was written. This is the whole
+  // reason a weather meter is worth carrying.
   const cardDa = densityAltitude(session.dope.atmosphere);
   const delta = est.densityAltitudeM - cardDa;
-  const daNote =
-    Math.abs(delta) < 150
-      ? 'Air is close to what the card assumes.'
-      : `Air is ${Math.abs(Math.round(delta))} m of density altitude ${
-          delta > 0 ? 'thinner' : 'thicker'
-        } than the card. Expect to ${delta > 0 ? 'dial less' : 'dial more'}.`;
-  paragraph(ctx, daNote, r.x, y, r.w, T.small * g, delta > 150 || delta < -150 ? C.amber : C.textDim);
-  y += 26 * g;
-
-  rule(ctx, r.x, y, r.w);
-  y += 16 * g;
-  text(ctx, 'WIND', r.x, y, T.small * g, C.textFaint);
-  y += 18 * g;
-
-  for (const zone of conditions.zones) {
-    const w = zoneWindAt(zone, p.time);
-    const label = `${dist(zone.distanceM, settings.imperial).padEnd(8)} ${zone.indicator}`;
-    text(ctx, label, r.x, y, T.small * g, C.textDim);
-    const call = precise && zone.distanceM < 60
-      ? `${speed(w.speed, settings.imperial)} @ ${clockFace(w.fromAngle)} o'clock`
-      : `${clockFace(w.fromAngle)} o'clock, ${windValue(w.fromAngle)}`;
-    text(ctx, call, r.x + r.w, y, T.small * g, C.text, 'right');
-    y += 18 * g;
-  }
-
-  y += 8 * g;
-  // A strip chart of the crosswind over the last half minute. The wind is
-  // deterministic, so this is a genuine record rather than a decoration — and
-  // the lulls in it are where the shots go.
-  const chart: Rect = { x: r.x, y, w: r.w, h: 54 * g };
-  fillPanel(ctx, chart, 4, 'rgba(8,11,10,0.6)', C.edgeSoft);
-  const maxRange = session.stage.targets.reduce((m, t) => Math.max(m, t.rangeM), 600);
-  let peak = 0.5;
-  const samples: number[] = [];
-  for (let i = 0; i <= 90; i++) {
-    const t = p.time - 30 + (i / 90) * 30;
-    const w = effectiveWind(conditions, maxRange, Math.max(0, t));
-    const cross = Math.sin(w.fromAngle) * w.speed;
-    samples.push(cross);
-    peak = Math.max(peak, Math.abs(cross));
-  }
-  ctx.strokeStyle = C.edgeSoft;
-  ctx.beginPath();
-  ctx.moveTo(chart.x, chart.y + chart.h / 2);
-  ctx.lineTo(chart.x + chart.w, chart.y + chart.h / 2);
-  ctx.stroke();
-  ctx.beginPath();
-  samples.forEach((v, i) => {
-    const x = chart.x + (i / (samples.length - 1)) * chart.w;
-    const cy = chart.y + chart.h / 2 - (v / peak) * (chart.h / 2 - 4 * g);
-    if (i === 0) ctx.moveTo(x, cy);
-    else ctx.lineTo(x, cy);
-  });
-  ctx.strokeStyle = C.blue;
-  ctx.lineWidth = 1.4;
-  ctx.stroke();
-  text(ctx, `crosswind, last 30 s   peak ${speed(peak, settings.imperial)}`, chart.x + 6 * g, chart.y + 9 * g, T.micro * g, C.textFaint);
-  text(ctx, 'now', chart.x + chart.w - 6 * g, chart.y + chart.h - 9 * g, T.micro * g, C.textFaint, 'right');
-  y += chart.h + 14 * g;
+  const off = Math.abs(delta) >= 150;
+  const daNote = off
+    ? `Air is ${Math.abs(Math.round(delta))} m of density altitude ${
+        delta > 0 ? 'thinner' : 'thicker'
+      } than the card assumes. Expect to dial ${delta > 0 ? 'less' : 'more'}.`
+    : 'Air is close to what the data card assumes.';
+  y += paragraph(ctx, daNote, r.x, y, colW, T.small * g, off ? C.amber : C.textDim);
+  y += 10 * g;
 
   const lat = (conditions.latitude * 180) / Math.PI;
   const az = (conditions.azimuth * 180) / Math.PI;
-  ui.field(r.x, y, r.w, 'LATITUDE / FACING', `${lat.toFixed(0)}°  ${az.toFixed(0)}° true`);
+  ui.field(r.x, y, colW, 'LATITUDE / FACING', `${lat.toFixed(0)}°  ${az.toFixed(0)}° true`);
+
+  // --- the wind ---
+  let w = twoUp ? r.y + 14 * g : y + 30 * g;
+  text(ctx, 'WIND', rightX, w, T.small * g, C.amber);
+  text(
+    ctx,
+    precise ? 'metered at the firing point' : 'read the flags',
+    rightX + colW,
+    w,
+    T.micro * g,
+    C.textFaint,
+    'right',
+  );
+  w += 14 * g;
+  rule(ctx, rightX, w, colW);
+  w += 16 * g;
+
+  for (const zone of conditions.zones) {
+    const wind = zoneWindAt(zone, p.time);
+    text(ctx, dist(zone.distanceM, settings.imperial), rightX, w, T.small * g, C.textDim);
+    text(ctx, zone.indicator, rightX + 62 * g, w, T.micro * g, C.textFaint);
+    // Only the meter in your hand gives you a number, and only where you are.
+    const call =
+      precise && zone.distanceM < 60
+        ? `${speed(wind.speed, settings.imperial)} @ ${clockFace(wind.fromAngle)} o'clock`
+        : `${clockFace(wind.fromAngle)} o'clock, ${windValue(wind.fromAngle)}`;
+    ui.fitText(call, rightX + colW, w, colW - 100 * g, T.small * g, C.text, 'right');
+    w += 19 * g;
+  }
+  w += 10 * g;
+
+  // A strip chart of the crosswind over the last half minute. The wind is
+  // deterministic, so this is a genuine record rather than a decoration — and
+  // the lulls in it are where the shots go.
+  const chartH = Math.min(64 * g, Math.max(40 * g, r.y + r.h - w - 8 * g));
+  const chart: Rect = { x: rightX, y: w, w: colW, h: chartH };
+  if (chart.h > 30 * g) {
+    fillPanel(ctx, chart, 4, 'rgba(8,11,10,0.6)', C.edgeSoft);
+    const maxRange = session.stage.targets.reduce((m, t) => Math.max(m, t.rangeM), 600);
+    let peak = 0.5;
+    const samples: number[] = [];
+    for (let i = 0; i <= 90; i++) {
+      const t = p.time - 30 + (i / 90) * 30;
+      const wind = effectiveWind(conditions, maxRange, Math.max(0, t));
+      const cross = Math.sin(wind.fromAngle) * wind.speed;
+      samples.push(cross);
+      peak = Math.max(peak, Math.abs(cross));
+    }
+    ctx.strokeStyle = C.edgeSoft;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(chart.x, chart.y + chart.h / 2);
+    ctx.lineTo(chart.x + chart.w, chart.y + chart.h / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    samples.forEach((v, i) => {
+      const x = chart.x + (i / (samples.length - 1)) * chart.w;
+      const cy = chart.y + chart.h / 2 - (v / peak) * (chart.h / 2 - 9 * g);
+      if (i === 0) ctx.moveTo(x, cy);
+      else ctx.lineTo(x, cy);
+    });
+    ctx.strokeStyle = C.blue;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    text(
+      ctx,
+      `crosswind, last 30 s   peak ${speed(peak, settings.imperial)}`,
+      chart.x + 6 * g,
+      chart.y + 9 * g,
+      T.micro * g,
+      C.textFaint,
+    );
+    text(
+      ctx,
+      'now',
+      chart.x + chart.w - 6 * g,
+      chart.y + chart.h - 9 * g,
+      T.micro * g,
+      C.textFaint,
+      'right',
+    );
+  }
+
+  ctx.restore();
 }
 
 // --- data card ----------------------------------------------------------
@@ -277,6 +343,11 @@ export function turretPanel(
   const step = clickValue(optic);
   let changed = false;
 
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(r.x, r.y - 4 * g, r.w, r.h + 8 * g);
+  ctx.clip();
+
   let y = r.y + 12 * g;
   text(ctx, 'TURRETS', r.x, y, T.small * g, C.amber);
   text(ctx, `${optic.name} · ${step}${unit}/click`, r.x + r.w, y, T.micro * g, C.textFaint, 'right');
@@ -284,8 +355,8 @@ export function turretPanel(
   rule(ctx, r.x, y, r.w);
   y += 12 * g;
 
-  const rowH = 44 * g;
-  const btn = 40 * g;
+  const rowH = 36 * g;
+  const btn = 34 * g;
 
   const dialRow = (
     id: string,
@@ -295,10 +366,10 @@ export function turretPanel(
     minClicks: number,
     apply: (v: number) => void,
   ): void => {
-    text(ctx, label, r.x, y + 8 * g, T.micro * g, C.textFaint);
+    text(ctx, label, r.x, y + 6 * g, T.micro * g, C.textFaint);
     const readout = formatDial(optic, clicks);
-    text(ctx, readout, r.x, y + 26 * g, T.head * g, C.text, 'left', 'bold');
-    text(ctx, `${clicks > 0 ? '+' : ''}${clicks} clicks`, r.x + 110 * g, y + 26 * g, T.small * g, C.textFaint);
+    text(ctx, readout, r.x, y + 24 * g, T.head * g, C.text, 'left', 'bold');
+    text(ctx, `${clicks > 0 ? '+' : ''}${clicks} clicks`, r.x + 104 * g, y + 24 * g, T.small * g, C.textFaint);
 
     const bx = r.x + r.w - btn * 4 - 18 * g;
     const buttons: Array<[string, number]> = [
@@ -308,7 +379,7 @@ export function turretPanel(
       ['++', 10],
     ];
     buttons.forEach(([glyph, delta], i) => {
-      const rect: Rect = { x: bx + i * (btn + 6 * g), y: y + 6 * g, w: btn, h: btn };
+      const rect: Rect = { x: bx + i * (btn + 6 * g), y: y + 4 * g, w: btn, h: btn };
       const next = clamp(clicks + delta, minClicks, maxClicks);
       const disabled = next === clicks;
       if (ui.stepper(`${id}${i}`, rect, glyph, disabled)) {
@@ -317,7 +388,7 @@ export function turretPanel(
         onClick();
       }
     });
-    y += rowH + 12 * g;
+    y += rowH + 8 * g;
   };
 
   const maxE = maxElevationClicks(optic);
@@ -350,10 +421,10 @@ export function turretPanel(
       C.textDim,
     );
   }
-  y += 20 * g;
+  y += 18 * g;
 
   rule(ctx, r.x, y, r.w);
-  y += 18 * g;
+  y += 16 * g;
 
   text(ctx, 'MAGNIFICATION', r.x, y, T.micro * g, C.textFaint);
   text(ctx, `${session.scope.magnification.toFixed(1)}x`, r.x + r.w, y, T.body * g, C.text, 'right');
@@ -364,7 +435,7 @@ export function turretPanel(
     session.scope.magnification = nextMag;
     changed = true;
   }
-  y += 30 * g;
+  y += 26 * g;
 
   if (!optic.ffp) {
     text(
@@ -375,7 +446,7 @@ export function turretPanel(
       T.micro * g,
       session.scope.magnification < optic.trueAtMag - 0.05 ? C.red : C.textFaint,
     );
-    y += 18 * g;
+    y += 16 * g;
   }
 
   text(ctx, 'PARALLAX', r.x, y, T.micro * g, C.textFaint);
@@ -389,6 +460,7 @@ export function turretPanel(
   }
 
   session.scope = clampScope(optic, session.scope);
+  ctx.restore();
   return { changed };
 }
 

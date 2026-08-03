@@ -41,7 +41,9 @@ export class StageSelectScene implements Scene {
     rule(ctx, safe.x, safe.y + 34 * g, safe.w);
 
     const view: Rect = { x: safe.x, y: safe.y + 44 * g, w: safe.w, h: safe.h - 44 * g };
-    const cardH = 104 * g;
+    // Briefs wrap to two lines on a wide screen and three on a phone, so the
+    // card is sized for whichever it is rather than padded for the worst case.
+    const cardH = (view.w > 560 * g ? 92 : 116) * g;
     const gap = 10 * g;
     this.scroll.update(ui.input, view, STAGES.length * (cardH + gap) + 8 * g, 1 / 60);
     const blocked = this.scroll.isDragging(ui.input);

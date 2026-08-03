@@ -194,7 +194,7 @@ export const STAGES: Stage[] = [
     brief:
       'Five plates at known distances inside 400 m, no wind to speak of. Confirm the rifle shoots where the card says it does.',
     presetId: 'calm',
-    firingHeightM: 22,
+    firingHeightM: 10,
     seed: 1041,
     rounds: 7,
     timeLimitS: 180,
@@ -216,7 +216,7 @@ export const STAGES: Stage[] = [
     brief:
       'Unmarked distances out to 650 m. Nobody is going to tell you how far anything is. Mil the plates and do the arithmetic.',
     presetId: 'fair',
-    firingHeightM: 18,
+    firingHeightM: 14,
     seed: 20773,
     rounds: 8,
     timeLimitS: 210,
@@ -238,7 +238,7 @@ export const STAGES: Stage[] = [
     brief:
       'Every flag on this range is telling you something different and none of them agree for long. Time your shots, or hold for the worst of it.',
     presetId: 'switch',
-    firingHeightM: 26,
+    firingHeightM: 15,
     seed: 55501,
     rounds: 10,
     timeLimitS: 240,
@@ -260,7 +260,7 @@ export const STAGES: Stage[] = [
     brief:
       'Plates appear and go away again. Speed is the score here. Dial once for the middle distance and hold the rest.',
     presetId: 'fair',
-    firingHeightM: 16,
+    firingHeightM: 14,
     seed: 90210,
     rounds: 12,
     timeLimitS: 150,
@@ -283,7 +283,7 @@ export const STAGES: Stage[] = [
     brief:
       'Two thousand metres above the sea, forty degrees on the deck, and a mirage running hard. Your data card is a work of fiction up here.',
     presetId: 'desert',
-    firingHeightM: 30,
+    firingHeightM: 26,
     seed: 31337,
     rounds: 10,
     timeLimitS: 260,
@@ -326,7 +326,7 @@ export const STAGES: Stage[] = [
     brief:
       'Freezing rain, twenty mile an hour gusts and about forty minutes of usable light. Everything about this is unfair and that is the point.',
     presetId: 'storm',
-    firingHeightM: 28,
+    firingHeightM: 24,
     seed: 60613,
     rounds: 12,
     timeLimitS: 300,
@@ -348,7 +348,7 @@ export const STAGES: Stage[] = [
     brief:
       'One thousand six hundred and nine metres. Bring something that is still supersonic when it arrives, because nothing else is going to be predictable.',
     presetId: 'calm',
-    firingHeightM: 34,
+    firingHeightM: 32,
     seed: 16093,
     rounds: 10,
     timeLimitS: 420,

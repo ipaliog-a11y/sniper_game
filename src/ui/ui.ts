@@ -180,7 +180,7 @@ export class Ui {
   }
 
   /** A label/value pair on one line, the way a data card reads. */
-  field(x: number, y: number, w: number, label: string, value: string, colour = C.text): void {
+  field(x: number, y: number, w: number, label: string, value: string, colour: string = C.text): void {
     text(this.ctx, label, x, y, T.small, C.textFaint, 'left');
     text(this.ctx, value, x + w, y, T.body, colour, 'right');
   }
