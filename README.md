@@ -48,15 +48,23 @@ The hold wanders on its own — breathing, pulse, and whatever your support is n
 doing for you. Hold **HOLD** to stop breathing, which quiets it for about eight
 seconds and then makes it considerably worse. **FIRE** breaks the shot.
 
-Five tools sit along the bottom while you shoot:
+Six tools sit along the bottom while you shoot:
 
 | Tool | What it does |
 | --- | --- |
+| **FIND** | Swings the rifle onto the next plate that is up. Press again to step along the line. |
 | **WIND** | The weather station, live. The wind is still moving while you read it. |
 | **CARD** | Your data card. |
 | **DIAL** | The turrets, without leaving the rifle. |
 | **SOLVE** | A firing solution for whatever is under the reticle — if you are carrying the kit to produce one. |
 | **MIL** | Drag across a target to measure it in mils and turn that into a range. |
+
+**FIND** exists because hunting for a 40 cm gong at 25x through a one-degree
+field of view is not the skill this is trying to teach. The clock keeps running
+while the rifle swings, so it is convenience rather than a free pass.
+
+**EXIT**, top left, walks off the stage and back to the menu. It asks twice,
+because leaving mid-string throws the run away.
 
 Watch the trace. A bullet at 1100 m takes nearly two seconds to get there, and
 the sound of it hitting steel takes another three to come home.

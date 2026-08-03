@@ -18,6 +18,7 @@ import { type Rect, bar, fillPanel, paragraph, rule, text } from '../ui/gfx';
 import { dopePanel, solutionPanel, turretPanel, weatherPanel } from '../ui/panels';
 import { type Splash, type Tracer, makeView, renderScope, targetAim } from '../ui/scopeView';
 import { C, Scroll, T } from '../ui/ui';
+import { MenuScene } from './MenuScene';
 import { ResultScene } from './ResultScene';
 
 /**
@@ -71,6 +72,15 @@ export class ShootScene implements Scene {
   private milFrom: { x: number; y: number } | null = null;
   private milTo: { x: number; y: number } | null = null;
   private milTargetIndex = 0;
+
+  /** Swinging the rifle onto a plate: where it is going, and how far along. */
+  private pan: { fromAz: number; fromEl: number; toAz: number; toEl: number; t: number } | null =
+    null;
+  /** Which exposed plate FIND last put you on, so repeat presses step along. */
+  private lastFound: string | null = null;
+  /** Leaving mid-stage throws the run away, so it asks once. */
+  private confirmExit = false;
+  private confirmExitUntil = 0;
 
   constructor(session: Session) {
     this.session = session;
@@ -144,6 +154,8 @@ export class ShootScene implements Scene {
 
     if (session.phase === 'live') tick(session, dt);
     this.updateHold(dt, app);
+    this.updatePan(dt);
+    if (this.confirmExit && this.time > this.confirmExitUntil) this.confirmExit = false;
 
     for (const tracer of this.tracers) tracer.age += dt;
     this.tracers = this.tracers.filter((t) => t.age < t.tof + 3);
@@ -198,6 +210,8 @@ export class ShootScene implements Scene {
         if (p.startY < glass.y || p.startY > glass.y + glass.h) continue;
         p.claim = 'aim';
       }
+      // Taking hold of the rifle cancels any swing still in progress.
+      this.pan = null;
       // Dragging moves the point of aim, so the picture slides the other way.
       // The gearing is per-radian, which means a higher magnification is
       // automatically finer — exactly as it is on a real rifle.
@@ -268,6 +282,57 @@ export class ShootScene implements Scene {
     }
   }
 
+  // --- finding the plate ------------------------------------------------
+
+  /**
+   * Swing onto the next plate that is up. Hunting for a 40 cm gong at 25x
+   * through a one-degree field of view is not the skill this is trying to
+   * teach, so the rifle will find it for you — but the clock keeps running and
+   * the swing itself takes a moment, the same as it would behind a real rifle.
+   */
+  private recenter(app: App): void {
+    const session = this.session;
+    const up = exposedTargets(session);
+    if (up.length === 0) {
+      app.toast('Nothing up right now', 'bad');
+      return;
+    }
+
+    // Left to right, so repeated presses walk the line the way you would.
+    const ordered = [...up].sort((a, b) => a.target.azimuth - b.target.azimuth);
+    const at = ordered.findIndex((t) => t.target.id === this.lastFound);
+    // Prefer an un-hit plate; if they are all down, just step to the next one.
+    let next = ordered[(at + 1) % ordered.length];
+    for (let i = 1; i <= ordered.length; i++) {
+      const candidate = ordered[(at + i) % ordered.length];
+      if (!candidate.hit) {
+        next = candidate;
+        break;
+      }
+    }
+
+    const aim = targetAim(next.target, session.stage.firingHeightM, session.clockS);
+    this.pan = {
+      fromAz: this.aimAz,
+      fromEl: this.aimEl,
+      toAz: aim.az,
+      toEl: aim.el,
+      t: 0,
+    };
+    this.lastFound = next.target.id;
+  }
+
+  /** Ease the swing. Cancelled the instant the shooter takes over by dragging. */
+  private updatePan(dt: number): void {
+    if (!this.pan) return;
+    const pan = this.pan;
+    pan.t = clamp(pan.t + dt / 0.32, 0, 1);
+    const e = pan.t < 0.5 ? 2 * pan.t * pan.t : 1 - Math.pow(-2 * pan.t + 2, 2) / 2;
+    this.aimAz = pan.fromAz + (pan.toAz - pan.fromAz) * e;
+    this.aimEl = pan.fromEl + (pan.toEl - pan.fromEl) * e;
+    if (pan.t >= 1) this.pan = null;
+  }
+
   // --- ranging ---------------------------------------------------------
 
   private handleMilTool(app: App, glass: Rect): void {
@@ -317,7 +382,7 @@ export class ShootScene implements Scene {
     const session = this.session;
     const settings = app.profile.settings;
 
-    const barH = 54 * g;
+    const barH = (app.width < 560 * g ? 104 : 54) * g;
     const glass: Rect = { x: 0, y: 0, w: app.width, h: app.height - barH };
 
     if (this.overlay === 'none') this.handleAim(app, glass);
@@ -385,28 +450,54 @@ export class ShootScene implements Scene {
       text(ctx, value, x, y + 14 * g, T.body * g, colour, 'left', 'bold');
     };
 
-    stat(left, glass.y + 22 * g, 'ELEV', `${dial >= 0 ? '' : ''}${dial.toFixed(1)} MIL`, C.amber);
+    // Leaving is in the corner and asks twice, because walking off a stage
+    // throws the run away and nobody should do it with a stray thumb.
+    const exitBtn: Rect = {
+      x: left,
+      y: glass.y + pad,
+      w: this.confirmExit ? 128 * g : 62 * g,
+      h: 26 * g,
+    };
+    if (
+      app.ui.button(exitBtn, this.confirmExit ? 'ABANDON RUN?' : 'EXIT', {
+        size: T.micro * g,
+        accent: this.confirmExit,
+        danger: this.confirmExit,
+      })
+    ) {
+      audio.tap();
+      if (this.confirmExit) {
+        audio.stopWind();
+        app.set(new MenuScene());
+        return;
+      }
+      this.confirmExit = true;
+      this.confirmExitUntil = this.time + 3.5;
+    }
+
+    const statTop = glass.y + 52 * g;
+    stat(left, statTop, 'ELEV', `${dial.toFixed(1)} MIL`, C.amber);
     stat(
       left,
-      glass.y + 58 * g,
+      statTop + 36 * g,
       'WIND',
       `${Math.abs(windDial).toFixed(1)} ${windDial >= 0 ? 'R' : 'L'}`,
       C.amber,
     );
-    stat(left, glass.y + 94 * g, 'MAG', `${session.scope.magnification.toFixed(1)}x`);
+    stat(left, statTop + 72 * g, 'MAG', `${session.scope.magnification.toFixed(1)}x`);
 
     const right = Math.min(app.width - pad - 76 * g, cx + radius + 12 * g);
-    stat(right, glass.y + 22 * g, 'ROUNDS', `${session.roundsLeft}`, session.roundsLeft <= 2 ? C.red : C.text);
+    stat(right, statTop, 'ROUNDS', `${session.roundsLeft}`, session.roundsLeft <= 2 ? C.red : C.text);
     const remaining = Math.max(0, session.stage.timeLimitS - session.clockS);
     stat(
       right,
-      glass.y + 58 * g,
+      statTop + 36 * g,
       'CLOCK',
       `${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, '0')}`,
       remaining < 20 ? C.red : C.text,
     );
     const down = session.targets.filter((t) => t.hit).length;
-    stat(right, glass.y + 94 * g, 'PLATES', `${down}/${session.targets.length}`);
+    stat(right, statTop + 72 * g, 'PLATES', `${down}/${session.targets.length}`);
 
     // Breath meter under the tube: the one thing the shooter has to watch.
     const meterW = Math.min(radius * 1.1, 220 * g);
@@ -447,13 +538,30 @@ export class ShootScene implements Scene {
       );
     }
 
-    // The spotter's call.
+    // The spotter's call, in the band between the two columns of readouts. On a
+    // screen too narrow for that band it drops below them instead of sitting on
+    // top of the elevation you are about to check.
     if (this.call && this.time < this.callUntil) {
-      const w = Math.min(glass.w - 40 * g, 340 * g);
-      const box: Rect = { x: cx - w / 2, y: glass.y + 12 * g, w, h: 30 * g };
+      const band = glass.w - 2 * (left + 80 * g);
+      const roomy = band > 150 * g;
+      const w = roomy ? Math.min(band, 340 * g) : Math.min(glass.w - 24 * g, 340 * g);
+      const box: Rect = {
+        x: cx - w / 2,
+        y: roomy ? glass.y + pad : statTop + 96 * g,
+        w,
+        h: 30 * g,
+      };
       const hit = this.call.toLowerCase().includes('hit') || this.call.includes('Centre');
       fillPanel(ctx, box, 6, 'rgba(8,11,10,0.85)', hit ? C.green : C.edge);
-      text(ctx, this.call, cx, box.y + box.h / 2, T.small * g, hit ? C.green : C.text, 'center');
+      app.ui.fitText(
+        this.call,
+        cx,
+        box.y + box.h / 2,
+        box.w - 16 * g,
+        T.small * g,
+        hit ? C.green : C.text,
+        'center',
+      );
     }
 
     // What is under the reticle right now, and how far away it is.
@@ -550,6 +658,11 @@ export class ShootScene implements Scene {
     }
   }
 
+  /**
+   * The controls. Six tools, the breath hold and the trigger. On a wide screen
+   * they fit one row; on a phone the tools take a row of their own so nothing
+   * shrinks to a size you cannot hit with a thumb.
+   */
   private drawToolbar(ctx: CanvasRenderingContext2D, app: App, r: Rect): void {
     const { ui } = app;
     const g = app.gauge;
@@ -560,29 +673,42 @@ export class ShootScene implements Scene {
     rule(ctx, r.x, r.y, r.w, C.edge);
 
     const pad = 8 * g;
-    const triggerW = Math.min(120 * g, r.w * 0.26);
-    const breathW = Math.min(96 * g, r.w * 0.2);
-    const toolsW = r.w - triggerW - breathW - pad * 4;
+    const twoRow = r.w < 560 * g;
+    const rowH = twoRow ? (r.h - pad * 3) / 2 : r.h - pad * 2;
 
-    const tools: Array<[string, Overlay]> = [
+    const tools: Array<[string, Overlay | 'find']> = [
+      ['FIND', 'find'],
       ['WIND', 'wind'],
       ['CARD', 'dope'],
       ['DIAL', 'turrets'],
       ['SOLVE', 'solution'],
       ['MIL', 'mil'],
     ];
-    const toolW = toolsW / tools.length - 4 * g;
-    tools.forEach(([label, overlay], i) => {
+
+    // Tools get the whole first row when stacked, or the space the trigger and
+    // the breath hold leave over when they share one.
+    const triggerW = twoRow ? (r.w - pad * 3) * 0.62 : Math.min(120 * g, r.w * 0.24);
+    const breathW = twoRow ? (r.w - pad * 3) * 0.38 : Math.min(96 * g, r.w * 0.18);
+    const toolsW = twoRow ? r.w - pad * 2 : r.w - triggerW - breathW - pad * 4;
+    const toolGap = 4 * g;
+    const toolW = (toolsW - toolGap * (tools.length - 1)) / tools.length;
+
+    tools.forEach(([label, target], i) => {
       const b: Rect = {
-        x: r.x + pad + i * (toolW + 4 * g),
+        x: r.x + pad + i * (toolW + toolGap),
         y: r.y + pad,
         w: toolW,
-        h: r.h - pad * 2,
+        h: rowH,
       };
-      const on = this.overlay === overlay;
+      const on = target !== 'find' && this.overlay === target;
       if (ui.button(b, label, { size: T.small * g, accent: on })) {
         audio.tap();
-        this.overlay = on ? 'none' : overlay;
+        if (target === 'find') {
+          this.recenter(app);
+          this.overlay = 'none';
+          return;
+        }
+        this.overlay = on ? 'none' : target;
         if (this.overlay === 'mil') {
           this.milFrom = null;
           this.milTo = null;
@@ -590,11 +716,12 @@ export class ShootScene implements Scene {
       }
     });
 
+    const controlY = twoRow ? r.y + pad * 2 + rowH : r.y + pad;
     const breath: Rect = {
-      x: r.x + r.w - triggerW - breathW - pad * 2,
-      y: r.y + pad,
+      x: twoRow ? r.x + pad : r.x + r.w - triggerW - breathW - pad * 2,
+      y: controlY,
       w: breathW,
-      h: r.h - pad * 2,
+      h: rowH,
     };
     const holdingNow = app.input.isHeldIn(breath.x, breath.y, breath.w, breath.h);
     this.holding = holdingNow && this.holdTime < HOLD_LIMIT + 4;
@@ -616,14 +743,21 @@ export class ShootScene implements Scene {
       'bold',
     );
 
-    const trigger: Rect = { x: r.x + r.w - triggerW - pad, y: r.y + pad, w: triggerW, h: r.h - pad * 2 };
+    const trigger: Rect = {
+      x: twoRow ? r.x + pad * 2 + breathW : r.x + r.w - triggerW - pad,
+      y: controlY,
+      w: triggerW,
+      h: rowH,
+    };
     const ready = this.cycle <= 0 && session.roundsLeft > 0 && session.phase === 'live';
-    if (ui.button(trigger, ready ? 'FIRE' : this.cycle > 0 ? '· · ·' : 'EMPTY', {
-      accent: ready,
-      danger: !ready,
-      disabled: !ready,
-      size: T.head * g,
-    })) {
+    if (
+      ui.button(trigger, ready ? 'FIRE' : this.cycle > 0 ? '· · ·' : 'EMPTY', {
+        accent: ready,
+        danger: !ready,
+        disabled: !ready,
+        size: T.head * g,
+      })
+    ) {
       this.shoot(app);
     }
   }
