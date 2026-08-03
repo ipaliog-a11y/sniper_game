@@ -13,7 +13,9 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": []
+    // Only Vite's own ambient types, for import.meta.env. Nothing else from
+    // node_modules gets to add globals behind our back.
+    "types": ["vite/client"]
   },
   "include": ["src"]
 }

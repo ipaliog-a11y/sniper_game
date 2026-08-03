@@ -20,3 +20,18 @@ window.addEventListener('pointerdown', unlock);
 app.set(new MenuScene());
 app.start();
 boot?.remove();
+
+/**
+ * Register the service worker, which is what makes the game installable from
+ * Chrome on Android and playable with no signal once it is. Only in a real
+ * build — the dev server has no worker to serve.
+ */
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Resolved against the page so the same build works at a domain root or
+    // under a project path.
+    void navigator.serviceWorker.register(new URL('sw.js', window.location.href), {
+      scope: './',
+    });
+  });
+}

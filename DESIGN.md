@@ -197,6 +197,18 @@ that admits its limits:
 - **Mirage-induced apparent target displacement.** The mirage is drawn and reads
   as a wind gauge, but it does not move where the target appears to be.
 
+## Shipping it
+
+`vite.config.ts` carries a small plugin that writes the service worker at build
+time with the hashed asset filenames baked into it, and a cache name derived
+from that list — so a new deploy evicts the old one instead of serving it
+forever. Navigations go to the network first and fall back to the cached shell;
+everything else is content-hashed and comes from the cache.
+
+Hand-rolling that rather than pulling in Workbox keeps the project at three dev
+dependencies and no runtime ones, which is the same reason the audio is
+synthesised and there are no image assets outside the app icons.
+
 ## Layout
 
 ```

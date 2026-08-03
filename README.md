@@ -94,6 +94,32 @@ sent at it connected, and how quickly. First round hit percentage gets the
 biggest number on the score card on purpose: it is the only statistic on there
 that would matter anywhere outside a range.
 
+## Installing it on a phone
+
+The build is a progressive web app, so Chrome on Android will install it to the
+home screen and run it fullscreen with no browser chrome. It works with no
+signal once installed — everything is cached, and there is nothing to talk to a
+server about anyway.
+
+It needs to be served over HTTPS from a real origin, which the included GitHub
+Actions workflow does for free:
+
+1. In the repository, go to **Settings → Pages** and set **Source** to
+   **GitHub Actions**.
+2. Merge this branch to `main`, or run **Actions → Deploy to GitHub Pages →
+   Run workflow** and pick the branch.
+3. Open the published URL — `https://<owner>.github.io/sniper_game/` — in
+   Chrome on Android.
+4. Menu (⋮) → **Add to Home screen** / **Install app**. Chrome usually offers
+   it on its own after a few seconds.
+
+On iOS the same page installs from Safari via **Share → Add to Home Screen**,
+though iOS gives it a bit less than Android does.
+
+Any static host works — Netlify, Cloudflare Pages, an S3 bucket. The build uses
+relative paths, so it runs at a domain root or under a project path without
+being reconfigured.
+
 ## Tests
 
 ```bash
