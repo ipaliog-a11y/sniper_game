@@ -28,7 +28,7 @@ export const en: Dict = {
   'settings.sound': 'SOUND',
   'settings.practice': 'PRACTICE MODE',
   'settings.practice_note':
-    'shows ranges and the true firing solution regardless of kit; scores still count',
+    'full solutions, no stage time limit, and speed does not cost points — scores and credits still count',
   'settings.aim_sens': 'AIM SENSITIVITY',
   'settings.aim_note':
     'Aiming is geared per radian, so higher magnification is automatically finer. This only changes the overall gearing.',
@@ -170,6 +170,7 @@ export const en: Dict = {
   'shoot.mag': 'MAG',
   'shoot.rounds': 'ROUNDS',
   'shoot.clock': 'CLOCK',
+  'shoot.clock_practice': '∞',
   'shoot.plates': 'PLATES',
   'shoot.breathe': 'BREATHE',
   'shoot.holding': 'HOLDING {s}s',

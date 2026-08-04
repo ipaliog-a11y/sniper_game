@@ -75,7 +75,11 @@ export function gradeFor(fraction: number): Grade {
 export const maxPointsForTarget = (target: Target) =>
   target.value * (HIT_BASE + HIT_CENTRE_BONUS) + FIRST_ROUND_BONUS + SPEED_BONUS;
 
-/** Points a single engaged target is worth given how well and how fast it went. */
+/**
+ * Points a single engaged target is worth given how well and how fast it went.
+ * When `timeless` is true (practice mode), the full speed bonus is always paid —
+ * taking your time no longer costs points or credits.
+ */
 export function scoreTarget(
   target: Target,
   hit: boolean,
@@ -84,6 +88,7 @@ export function scoreTarget(
   timeToHitS: number,
   parS: number,
   rounds: number,
+  timeless = false,
 ): TargetScore {
   const maxPoints = maxPointsForTarget(target);
   if (!hit) {
@@ -100,8 +105,10 @@ export function scoreTarget(
   }
   const accuracy = target.value * (HIT_BASE + HIT_CENTRE_BONUS * clamp(quality, 0, 1));
   // Speed marks decay to nothing at twice par, so dawdling costs but never
-  // turns a hit into a zero.
-  const speed = SPEED_BONUS * clamp(1 - (timeToHitS - parS * 0.4) / (parS * 1.6), 0, 1);
+  // turns a hit into a zero. Practice mode skips the decay entirely.
+  const speed = timeless
+    ? SPEED_BONUS
+    : SPEED_BONUS * clamp(1 - (timeToHitS - parS * 0.4) / (parS * 1.6), 0, 1);
   const first = firstRound ? FIRST_ROUND_BONUS : 0;
   return {
     targetId: target.id,

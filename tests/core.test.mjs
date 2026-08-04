@@ -342,12 +342,14 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   const slow = scoreTarget(target, true, 1, true, 60, 20, 1);
   const scrappy = scoreTarget(target, true, 0.1, false, 18, 20, 4);
   const missed = scoreTarget(target, false, 0, false, 0, 20, 3);
+  const practiceSlow = scoreTarget(target, true, 1, true, 60, 20, 1, true);
 
   check('a fast centred first round is worth the most', perfect.points > slow.points);
   check('a slow one still scores', slow.points > 0);
   check('a scrappy hit scores less than a clean one', scrappy.points < perfect.points);
   check('a miss is worth nothing', missed.points === 0);
   check('nothing can beat the maximum', perfect.points <= perfect.maxPoints);
+  check('practice mode pays full speed even when slow', practiceSlow.points === perfect.points);
 
   check('grades run in order', gradeFor(0.99) === 'Distinguished' && gradeFor(0.01) === 'Unqualified');
   check('a clean sweep of the middle grades', gradeFor(0.6) === 'Marksman');

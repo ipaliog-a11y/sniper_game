@@ -48,9 +48,19 @@ export interface Session {
   shots: Array<{ shot: ShotResult; atS: number; targetId: string | null }>;
   /** Ranges the player has confirmed, by target id. Ranging is a skill here. */
   known: Record<string, number>;
+  /**
+   * Practice mode: full solutions, no stage time limit, and speed does not
+   * cost points. Snapshotted at session start so flipping settings mid-stage
+   * does not rewrite the run.
+   */
+  practice: boolean;
 }
 
-export function createSession(stage: Stage, selection: LoadoutSelection): Session {
+export function createSession(
+  stage: Stage,
+  selection: LoadoutSelection,
+  practice = false,
+): Session {
   const conditions = generateConditions(
     presetById(stage.presetId),
     stage.seed,
@@ -98,6 +108,7 @@ export function createSession(stage: Stage, selection: LoadoutSelection): Sessio
     })),
     shots: [],
     known: {},
+    practice,
   };
 }
 
@@ -210,7 +221,9 @@ export function tick(session: Session, dt: number): void {
     shotsFired: session.barrel.shotsFired,
     heat: clamp(session.barrel.heat - dt * 0.035, 0, 1),
   };
-  if (session.clockS >= session.stage.timeLimitS) {
+  // Practice mode is timeless: the clock still runs for wind and movers, but
+  // it never ends the stage.
+  if (!session.practice && session.clockS >= session.stage.timeLimitS) {
     session.phase = 'complete';
   }
 }
@@ -225,6 +238,7 @@ export function finishSession(session: Session): StageScore {
       Math.max(0, runtime.hitAtS - runtime.availableAtS),
       session.stage.parPerTargetS,
       runtime.roundsSent,
+      session.practice,
     ),
   );
   const radials = session.shots

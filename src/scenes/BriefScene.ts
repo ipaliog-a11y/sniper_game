@@ -38,7 +38,7 @@ export class BriefScene implements Scene {
   }
 
   enter(app: App): void {
-    this.session = createSession(this.stage, app.profile.loadout);
+    this.session = createSession(this.stage, app.profile.loadout, app.profile.settings.assist);
     audio.unlock();
   }
 

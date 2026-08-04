@@ -572,14 +572,18 @@ export class ShootScene implements Scene {
       `${session.roundsLeft}`,
       session.roundsLeft <= 2 ? C.red : C.text,
     );
-    const remaining = Math.max(0, session.stage.timeLimitS - session.clockS);
-    stat(
-      right,
-      statTop + 36 * g,
-      t('shoot.clock'),
-      `${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, '0')}`,
-      remaining < 20 ? C.red : C.text,
-    );
+    if (session.practice) {
+      stat(right, statTop + 36 * g, t('shoot.clock'), t('shoot.clock_practice'), C.amber);
+    } else {
+      const remaining = Math.max(0, session.stage.timeLimitS - session.clockS);
+      stat(
+        right,
+        statTop + 36 * g,
+        t('shoot.clock'),
+        `${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, '0')}`,
+        remaining < 20 ? C.red : C.text,
+      );
+    }
     const down = session.targets.filter((tgt) => tgt.hit).length;
     stat(right, statTop + 72 * g, t('shoot.plates'), `${down}/${session.targets.length}`);
 
