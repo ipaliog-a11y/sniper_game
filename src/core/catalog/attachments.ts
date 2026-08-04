@@ -76,7 +76,8 @@ export type GearId =
   | 'solver'
   | 'level'
   | 'spotter'
-  | 'chrono';
+  | 'chrono'
+  | 'traj';
 
 export interface Gear extends AttachmentBase {
   slot: 'gear';
@@ -342,6 +343,16 @@ export const GEAR: Gear[] = [
     massKg: 0.22,
     cost: 1400,
     blurb: 'Tells you what the barrel is really doing today, instead of what the box claimed.',
+  },
+  {
+    id: 'gear-traj',
+    name: 'Trajectory Plotter',
+    slot: 'gear',
+    gear: 'traj',
+    massKg: 0.18,
+    cost: 2200,
+    blurb:
+      'Side-view path of the round just fired. Tap the curve for range, height and speed at that point.',
   },
 ];
 

@@ -1,4 +1,5 @@
 import { densityAltitude } from '../core/atmosphere';
+import type { TrajectoryPoint } from '../core/ballistics';
 import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { type Rect, fillPanel, inset, measure, paragraph, rule, text } from './gfx';
@@ -7,7 +8,7 @@ import {
   dialMils,
   trueSolution,
 } from '../core/session';
-import { type Target, targetInclination } from '../core/range';
+import { type Target, targetCentreHeight, targetInclination } from '../core/range';
 import {
   clampScope,
   clickValue,
@@ -18,11 +19,13 @@ import {
   maxWindageClicks,
   radToClicks,
 } from '../core/scope';
+import type { ShotResult } from '../core/shot';
 import {
   MIL,
   cToF,
   clamp,
   mToYard,
+  msToFps,
   msToMph,
   mToFt,
   paToInHg,
@@ -682,6 +685,401 @@ export function solutionPanel(
   if (overTravel) {
     y += 50 * g;
     paragraph(ctx, t('panel.out_of_travel'), r.x, y, r.w, T.small * g, C.red);
+  }
+}
+
+// --- trajectory plotter (gear) ------------------------------------------
+
+/** Sample on the path the shooter has selected by tapping / scrubbing the chart. */
+export interface TrajProbe {
+  index: number;
+  rangeM: number;
+  heightM: number;
+  speed: number;
+  mach: number;
+  t: number;
+}
+
+export interface TrajPanelState {
+  /** Index into session.shots. */
+  shotIndex: number;
+  probe: TrajProbe | null;
+}
+
+/** Horizontal range and height of a path sample relative to the muzzle. */
+function pathSample(p: TrajectoryPoint, origin: TrajectoryPoint): { rangeM: number; heightM: number } {
+  const dx = p.pos.x - origin.pos.x;
+  const dy = p.pos.y - origin.pos.y;
+  const dz = p.pos.z - origin.pos.z;
+  return {
+    rangeM: Math.hypot(dx, dz),
+    heightM: dy,
+  };
+}
+
+function nearestPathIndex(path: TrajectoryPoint[], rangeM: number): number {
+  if (path.length === 0) return 0;
+  const origin = path[0];
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < path.length; i++) {
+    const s = pathSample(path[i], origin);
+    const d = Math.abs(s.rangeM - rangeM);
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+function makeProbe(path: TrajectoryPoint[], index: number): TrajProbe {
+  const origin = path[0];
+  const p = path[clamp(index, 0, path.length - 1)];
+  const s = pathSample(p, origin);
+  return {
+    index,
+    rangeM: s.rangeM,
+    heightM: s.heightM,
+    speed: p.speed,
+    mach: p.mach,
+    t: p.t,
+  };
+}
+
+/**
+ * Side-view of the last (or selected) round: rifle → path → impact, plates
+ * marked downrange. Tap or drag the curve for range, height and speed at that
+ * point. Only meaningful with the trajectory plotter gear fitted.
+ */
+export function trajectoryPanel(
+  ctx: CanvasRenderingContext2D,
+  r: Rect,
+  p: PanelContext,
+  state: TrajPanelState,
+  onState: (next: TrajPanelState) => void,
+): void {
+  const { session, ui, settings } = p;
+  const g = p.gauge;
+  const imperial = settings.imperial;
+  const shots = session.shots;
+
+  let y = r.y + 10 * g;
+  text(ctx, t('panel.traj_title'), r.x, y, T.small * g, C.amber);
+  y += 14 * g;
+
+  if (!session.loadout.hasGear('traj')) {
+    paragraph(ctx, t('panel.traj_no_gear'), r.x, y, r.w, T.small * g);
+    return;
+  }
+  if (shots.length === 0) {
+    paragraph(ctx, t('panel.traj_no_shot'), r.x, y, r.w, T.small * g);
+    return;
+  }
+
+  const shotIndex = clamp(state.shotIndex, 0, shots.length - 1);
+  const entry = shots[shotIndex];
+  const shot: ShotResult = entry.shot;
+  const path = shot.path;
+  if (path.length < 2) {
+    paragraph(ctx, t('panel.traj_no_path'), r.x, y, r.w, T.small * g);
+    return;
+  }
+
+  // Shot picker when more than one round is on the string.
+  if (shots.length > 1) {
+    const btnW = 36 * g;
+    const prev: Rect = { x: r.x, y: y - 4 * g, w: btnW, h: 22 * g };
+    const next: Rect = { x: r.x + r.w - btnW, y: y - 4 * g, w: btnW, h: 22 * g };
+    if (ui.button(prev, '‹', { size: T.body * g, disabled: shotIndex <= 0 })) {
+      onState({ shotIndex: shotIndex - 1, probe: null });
+      return;
+    }
+    if (ui.button(next, '›', { size: T.body * g, disabled: shotIndex >= shots.length - 1 })) {
+      onState({ shotIndex: shotIndex + 1, probe: null });
+      return;
+    }
+    text(
+      ctx,
+      t('panel.traj_shot_n', { n: shotIndex + 1, total: shots.length }),
+      r.x + r.w / 2,
+      y + 6 * g,
+      T.micro * g,
+      C.textDim,
+      'center',
+    );
+    y += 22 * g;
+  }
+
+  const origin = path[0];
+  const samples = path.map((pt) => pathSample(pt, origin));
+  const maxRange = Math.max(
+    samples[samples.length - 1].rangeM,
+    ...session.stage.targets.map((tg) => tg.rangeM),
+    50,
+  );
+  let minH = 0;
+  let maxH = 0.5;
+  for (const s of samples) {
+    minH = Math.min(minH, s.heightM);
+    maxH = Math.max(maxH, s.heightM);
+  }
+  // Include plate centres so markers sit inside the plot.
+  for (const tg of session.stage.targets) {
+    const h = targetCentreHeight(tg) - session.stage.firingHeightM;
+    minH = Math.min(minH, h - tg.tallM / 2);
+    maxH = Math.max(maxH, h + tg.tallM / 2);
+  }
+  const hPad = Math.max(0.4, (maxH - minH) * 0.12);
+  minH -= hPad;
+  maxH += hPad;
+
+  // Nearest plate to impact (or the one engaged).
+  const impactRange = samples[samples.length - 1].rangeM;
+  let nearest: Target | null = null;
+  let nearestDist = Infinity;
+  if (entry.targetId) {
+    nearest = session.stage.targets.find((tg) => tg.id === entry.targetId) ?? null;
+  }
+  if (!nearest) {
+    for (const tg of session.stage.targets) {
+      const d = Math.abs(tg.rangeM - impactRange);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearest = tg;
+      }
+    }
+  }
+
+  const chart: Rect = {
+    x: r.x,
+    y: y + 4 * g,
+    w: r.w,
+    h: Math.min(r.h * 0.48, 200 * g),
+  };
+  fillPanel(ctx, chart, 6, C.bgDeep, C.edgeSoft);
+
+  const padL = 8 * g;
+  const padR = 8 * g;
+  const padT = 10 * g;
+  const padB = 18 * g;
+  const plotW = chart.w - padL - padR;
+  const plotH = chart.h - padT - padB;
+
+  const toX = (rangeM: number) => chart.x + padL + (rangeM / maxRange) * plotW;
+  const toY = (heightM: number) =>
+    chart.y + padT + plotH - ((heightM - minH) / Math.max(1e-6, maxH - minH)) * plotH;
+
+  // Ground reference at optic height 0 (horizontal line).
+  const y0 = toY(0);
+  ctx.strokeStyle = C.edgeSoft;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(chart.x + padL, y0);
+  ctx.lineTo(chart.x + chart.w - padR, y0);
+  ctx.stroke();
+
+  // Range ticks.
+  const tickStep =
+    maxRange > 1500 ? 500 : maxRange > 800 ? 200 : maxRange > 400 ? 100 : maxRange > 150 ? 50 : 25;
+  ctx.fillStyle = C.textFaint;
+  for (let d = 0; d <= maxRange + 0.1; d += tickStep) {
+    const x = toX(d);
+    ctx.beginPath();
+    ctx.moveTo(x, chart.y + padT);
+    ctx.lineTo(x, chart.y + chart.h - padB + 3 * g);
+    ctx.strokeStyle = 'rgba(43,58,51,0.55)';
+    ctx.stroke();
+    const label = imperial ? `${Math.round(mToYard(d))}` : `${Math.round(d)}`;
+    text(ctx, label, x, chart.y + chart.h - 6 * g, T.micro * g, C.textFaint, 'center');
+  }
+
+  // Target markers (vertical spans at plate range).
+  for (const tg of session.stage.targets) {
+    const cx = toX(tg.rangeM);
+    const centreH = targetCentreHeight(tg) - session.stage.firingHeightM;
+    const top = toY(centreH + tg.tallM / 2);
+    const bot = toY(centreH - tg.tallM / 2);
+    const isNearest = nearest?.id === tg.id;
+    const isHit = session.targets.find((rt) => rt.target.id === tg.id)?.hit;
+    ctx.strokeStyle = isNearest ? C.amber : isHit ? C.green : C.edge;
+    ctx.lineWidth = isNearest ? 2 : 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, top);
+    ctx.lineTo(cx, bot);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, toY(centreH), isNearest ? 3.5 * g : 2.5 * g, 0, Math.PI * 2);
+    ctx.fillStyle = isNearest ? C.amber : isHit ? C.green : C.textFaint;
+    ctx.fill();
+  }
+
+  // Trajectory curve.
+  ctx.strokeStyle = C.amber;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  samples.forEach((s, i) => {
+    const x = toX(s.rangeM);
+    const yy = toY(s.heightM);
+    if (i === 0) ctx.moveTo(x, yy);
+    else ctx.lineTo(x, yy);
+  });
+  ctx.stroke();
+
+  // Muzzle and impact markers.
+  ctx.fillStyle = C.green;
+  ctx.beginPath();
+  ctx.arc(toX(samples[0].rangeM), toY(samples[0].heightM), 3.5 * g, 0, Math.PI * 2);
+  ctx.fill();
+  const last = samples[samples.length - 1];
+  ctx.fillStyle = shot.quality !== null ? C.green : C.red;
+  ctx.beginPath();
+  ctx.arc(toX(last.rangeM), toY(last.heightM), 3.5 * g, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Probe from tap / scrub on the chart.
+  let probe = state.probe;
+  const pointerOnChart = ui.input.isDownIn(chart.x, chart.y, chart.w, chart.h);
+  const tappedChart = ui.input.takeTap(chart.x, chart.y, chart.w, chart.h);
+  if (pointerOnChart || tappedChart) {
+    const px = ui.input.hoverX;
+    const rangeAt = ((px - (chart.x + padL)) / Math.max(1, plotW)) * maxRange;
+    const idx = nearestPathIndex(path, clamp(rangeAt, 0, maxRange));
+    probe = makeProbe(path, idx);
+    if (
+      !state.probe ||
+      state.probe.index !== probe.index ||
+      state.shotIndex !== shotIndex
+    ) {
+      onState({ shotIndex, probe });
+    }
+  } else if (!probe) {
+    // Default cursor on impact.
+    probe = makeProbe(path, path.length - 1);
+  }
+
+  // Probe crosshair + readout point.
+  if (probe) {
+    const px = toX(probe.rangeM);
+    const py = toY(probe.heightM);
+    ctx.strokeStyle = 'rgba(232,163,61,0.55)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3 * g, 3 * g]);
+    ctx.beginPath();
+    ctx.moveTo(px, chart.y + padT);
+    ctx.lineTo(px, chart.y + chart.h - padB);
+    ctx.moveTo(chart.x + padL, py);
+    ctx.lineTo(chart.x + chart.w - padR, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(px, py, 4.5 * g, 0, Math.PI * 2);
+    ctx.fillStyle = C.amber;
+    ctx.fill();
+    ctx.strokeStyle = C.bgDeep;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  y = chart.y + chart.h + 12 * g;
+  text(ctx, t('panel.traj_hint'), r.x, y, T.micro * g, C.textFaint);
+  y += 16 * g;
+  rule(ctx, r.x, y, r.w);
+  y += 12 * g;
+
+  // Probe readouts: distance, height, speed.
+  if (probe) {
+    text(ctx, t('panel.traj_probe'), r.x, y, T.micro * g, C.amber);
+    y += 16 * g;
+    const rangeLabel = imperial
+      ? `${mToYard(probe.rangeM).toFixed(0)} yd`
+      : `${probe.rangeM.toFixed(0)} m`;
+    const heightLabel = imperial
+      ? `${mToFt(probe.heightM).toFixed(1)} ft`
+      : `${probe.heightM.toFixed(2)} m`;
+    const speedLabel = `${msToFps(probe.speed).toFixed(0)} fps`;
+    const cols: Array<[string, string]> = [
+      [t('panel.traj_distance'), rangeLabel],
+      [t('panel.traj_height'), heightLabel],
+      [t('panel.traj_speed'), speedLabel],
+    ];
+    const colW = r.w / 3;
+    cols.forEach((c, i) => {
+      const x = r.x + i * colW;
+      text(ctx, c[0], x, y, T.micro * g, C.textFaint);
+      text(ctx, c[1], x, y + 14 * g, T.body * g, C.text, 'left', 'bold');
+    });
+    y += 36 * g;
+    ui.field(
+      r.x,
+      y,
+      r.w,
+      t('panel.traj_mach_tof'),
+      `Mach ${probe.mach.toFixed(2)} · ${probe.t.toFixed(2)} s`,
+      probe.mach < 1.2 ? C.red : C.text,
+    );
+    y += 24 * g;
+  }
+
+  rule(ctx, r.x, y, r.w);
+  y += 12 * g;
+
+  // Impact summary + nearest plate.
+  text(ctx, t('panel.traj_impact'), r.x, y, T.micro * g, C.amber);
+  y += 16 * g;
+  const impactRangeLabel = imperial
+    ? `${mToYard(impactRange).toFixed(0)} yd`
+    : `${impactRange.toFixed(0)} m`;
+  ui.field(r.x, y, r.w, t('panel.traj_distance'), impactRangeLabel);
+  y += 20 * g;
+  ui.field(
+    r.x,
+    y,
+    r.w,
+    t('panel.traj_impact_speed'),
+    `${msToFps(shot.impactSpeed).toFixed(0)} fps · Mach ${shot.impactMach.toFixed(2)}`,
+    shot.transonic ? C.red : C.text,
+  );
+  y += 20 * g;
+  ui.field(
+    r.x,
+    y,
+    r.w,
+    t('panel.time_of_flight'),
+    `${shot.tof.toFixed(2)} s`,
+  );
+  y += 22 * g;
+
+  if (nearest) {
+    const nRange = imperial
+      ? `${Math.round(mToYard(nearest.rangeM))} yd`
+      : `${Math.round(nearest.rangeM)} m`;
+    const nH = targetCentreHeight(nearest) - session.stage.firingHeightM;
+    const nHLabel = imperial ? `${mToFt(nH).toFixed(1)} ft` : `${nH.toFixed(2)} m`;
+    ui.field(
+      r.x,
+      y,
+      r.w,
+      t('panel.traj_nearest'),
+      `${t(`shape.${nearest.shape}`)} · ${nRange}`,
+      C.amber,
+    );
+    y += 20 * g;
+    ui.field(r.x, y, r.w, t('panel.traj_plate_height'), nHLabel);
+    y += 20 * g;
+    if (entry.targetId === nearest.id) {
+      const miss = imperial
+        ? `${(shot.missRight * 39.3701).toFixed(1)}" R, ${(shot.missUp * 39.3701).toFixed(1)}" U`
+        : `${(shot.missRight * 100).toFixed(1)} cm R, ${(shot.missUp * 100).toFixed(1)} cm U`;
+      ui.field(
+        r.x,
+        y,
+        r.w,
+        t('panel.traj_miss'),
+        shot.quality !== null ? t('panel.traj_hit') : miss,
+        shot.quality !== null ? C.green : C.red,
+      );
+    }
   }
 }
 

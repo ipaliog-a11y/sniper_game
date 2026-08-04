@@ -179,6 +179,9 @@ export const en: Dict = {
   'brief.chrono': 'CHRONO',
   'brief.chrono_yes': 'muzzle chrono fitted — true MV each shot',
   'brief.chrono_no': 'no chrono — only box velocity',
+  'brief.traj': 'PATH',
+  'brief.traj_yes': 'trajectory plotter fitted — side-view of each round',
+  'brief.traj_no': 'no plotter — path only as a brief glass tracer',
   'brief.moa_cone': '{moa} MOA cone',
   'brief.mil_travel': '{mils} MIL travel',
   'brief.transonic_warn':
@@ -272,6 +275,7 @@ export const en: Dict = {
   'shoot.tool.dial': 'DIAL',
   'shoot.tool.solve': 'SOLVE',
   'shoot.tool.mil': 'MIL',
+  'shoot.tool.traj': 'PATH',
   'shoot.hold': 'HOLD',
   'shoot.fire': 'FIRE',
   'shoot.fire_mouse': 'FIRE / SPACE',
@@ -426,6 +430,26 @@ export const en: Dict = {
   'panel.out_of_travel':
     'The scope has run out of travel. Hold the correction on the reticle instead, or fit glass with more of it.',
 
+  // --- panels: trajectory ---
+  'panel.traj_title': 'TRAJECTORY',
+  'panel.traj_no_gear':
+    'No trajectory plotter fitted. Fit one in the armoury to record a side-view of each round.',
+  'panel.traj_no_shot': 'Fire a round to plot its path from the muzzle to the impact plane.',
+  'panel.traj_no_path': 'No path samples on this round.',
+  'panel.traj_shot_n': 'shot {n} / {total}',
+  'panel.traj_hint': 'Tap or drag the curve for distance, height and speed at that point',
+  'panel.traj_probe': 'AT CURSOR',
+  'panel.traj_distance': 'DISTANCE',
+  'panel.traj_height': 'HEIGHT',
+  'panel.traj_speed': 'SPEED',
+  'panel.traj_mach_tof': 'MACH · TOF',
+  'panel.traj_impact': 'IMPACT',
+  'panel.traj_impact_speed': 'IMPACT SPEED',
+  'panel.traj_nearest': 'NEAREST PLATE',
+  'panel.traj_plate_height': 'PLATE HEIGHT (vs optic)',
+  'panel.traj_miss': 'MISS AT PLATE',
+  'panel.traj_hit': 'HIT',
+
   // --- glossary ---
   'glossary.title': 'GLOSSARY',
   'glossary.intro': 'Terms you will meet on the range and in this trainer.',
@@ -483,6 +507,9 @@ export const en: Dict = {
   'glossary.spin_drift.term': 'Spin drift',
   'glossary.spin_drift.def':
     'Lateral walk from the bullet’s spin (right for a right-hand twist). Grows with time of flight; often a few centimetres at long range.',
+  'glossary.traj.term': 'Trajectory plotter',
+  'glossary.traj.def':
+    'Gear that records a side-view of the round just fired. Tap the curve to read distance, height above the optic line, and bullet speed at that point. Marks the nearest plate.',
   'glossary.ffp_sfp.term': 'FFP / SFP',
   'glossary.ffp_sfp.def':
     'First vs second focal plane. FFP reticles stay true at every magnification. SFP only subtends true mils at one power (usually max).',

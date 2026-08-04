@@ -44,6 +44,7 @@ const GLOSSARY_KEYS = [
   'find_next',
   'credits',
   'chrono',
+  'traj',
 ] as const;
 
 /**

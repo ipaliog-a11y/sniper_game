@@ -180,6 +180,9 @@ export const el: Dict = {
   'brief.chrono': 'CHRONO',
   'brief.chrono_yes': 'χρονογράφος — πραγματικό MV ανά βολή',
   'brief.chrono_no': 'χωρίς chrono — μόνο ταχύτητα κουτιού',
+  'brief.traj': 'ΔΙΑΔΡΟΜΗ',
+  'brief.traj_yes': 'καταγραφέας τροχιάς — πλευρική όψη κάθε βολής',
+  'brief.traj_no': 'χωρίς plotter — μόνο σύντομο ίχνος στο γυαλί',
   'brief.moa_cone': 'κώνος {moa} MOA',
   'brief.mil_travel': '{mils} MIL διαδρομή',
   'brief.transonic_warn':
@@ -273,6 +276,7 @@ export const el: Dict = {
   'shoot.tool.dial': 'ΠΥΡΓ.',
   'shoot.tool.solve': 'ΛΥΣΗ',
   'shoot.tool.mil': 'MIL',
+  'shoot.tool.traj': 'ΤΡΟΧΙΑ',
   'shoot.hold': 'ΚΡΑΤΑ',
   'shoot.fire': 'ΒΟΛΗ',
   'shoot.fire_mouse': 'ΒΟΛΗ / SPACE',
@@ -429,6 +433,26 @@ export const el: Dict = {
   'panel.not_enough_elev': 'ΑΝΕΠΑΡΚΕΣ ΥΨΟΣ',
   'panel.out_of_travel':
     'Το σκοπευτικό τελείωσε τη διαδρομή. Κράτα τη διόρθωση στα σταυρωνικά, ή βάλε γυαλί με περισσότερη.',
+
+  // --- panels: trajectory ---
+  'panel.traj_title': 'ΤΡΟΧΙΑ',
+  'panel.traj_no_gear':
+    'Χωρίς καταγραφέα τροχιάς. Τοποθέτησε έναν στο οπλοστάσιο για πλευρική όψη κάθε βολής.',
+  'panel.traj_no_shot': 'Ρίξε μια βολή για να σχεδιαστεί η διαδρομή από το στόμιο ως το σημείο κρούσης.',
+  'panel.traj_no_path': 'Δεν υπάρχουν δείγματα διαδρομής σε αυτή τη βολή.',
+  'panel.traj_shot_n': 'βολή {n} / {total}',
+  'panel.traj_hint': 'Πάτα ή σύρε την καμπύλη για απόσταση, ύψος και ταχύτητα σε εκείνο το σημείο',
+  'panel.traj_probe': 'ΣΤΟΝ ΚΕΡΣΟΡΑ',
+  'panel.traj_distance': 'ΑΠΟΣΤΑΣΗ',
+  'panel.traj_height': 'ΥΨΟΣ',
+  'panel.traj_speed': 'ΤΑΧΥΤΗΤΑ',
+  'panel.traj_mach_tof': 'MACH · TOF',
+  'panel.traj_impact': 'ΚΡΟΥΣΗ',
+  'panel.traj_impact_speed': 'ΤΑΧΥΤΗΤΑ ΚΡΟΥΣΗΣ',
+  'panel.traj_nearest': 'ΚΟΝΤΙΝΟΤΕΡΗ ΠΛΑΚΑ',
+  'panel.traj_plate_height': 'ΥΨΟΣ ΠΛΑΚΑΣ (vs οπτικό)',
+  'panel.traj_miss': 'ΑΣΤΟΧΙΑ ΣΤΗΝ ΠΛΑΚΑ',
+  'panel.traj_hit': 'ΕΥΣΤΟΧΟ',
 
   // --- catalog: rifles ---
   'catalog.ranger24.name': 'Ranger M24',
@@ -673,6 +697,9 @@ export const el: Dict = {
   'catalog.gear-chrono.name': 'Χρονογράφος στομίου',
   'catalog.gear-chrono.blurb':
     'Λέει τι κάνει πραγματικά η κάννη σήμερα, όχι τι έγραφε το κουτί.',
+  'catalog.gear-traj.name': 'Καταγραφέας τροχιάς',
+  'catalog.gear-traj.blurb':
+    'Πλευρική όψη της βολής που μόλις ρίχτηκε. Πάτα την καμπύλη για απόσταση, ύψος και ταχύτητα.',
 
   // --- glossary ---
   'glossary.title': 'ΓΛΩΣΣΑΡΙ',
@@ -731,6 +758,9 @@ export const el: Dict = {
   'glossary.spin_drift.term': 'Spin drift',
   'glossary.spin_drift.def':
     'Πλευρική μετατόπιση από την περιστροφή της σφαίρας. Μεγαλώνει με τον χρόνο πτήσης.',
+  'glossary.traj.term': 'Καταγραφέας τροχιάς',
+  'glossary.traj.def':
+    'Εξοπλισμός που καταγράφει πλευρική όψη της βολής. Πάτα την καμπύλη για απόσταση, ύψος πάνω από τη γραμμή οπτικού και ταχύτητα βλήματος. Δείχνει την κοντινότερη πλάκα.',
   'glossary.ffp_sfp.term': 'FFP / SFP',
   'glossary.ffp_sfp.def':
     'Πρώτο vs δεύτερο εστιακό επίπεδο. FFP: αληθή mil σε κάθε μεγέθυνση. SFP: αληθή mil μόνο σε μία (συνήθως max).',

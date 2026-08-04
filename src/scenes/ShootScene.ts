@@ -16,7 +16,14 @@ import { effectiveWind } from '../core/weather';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import { type Rect, bar, fillPanel, paragraph, rule, text } from '../ui/gfx';
-import { dopePanel, solutionPanel, turretPanel, weatherPanel } from '../ui/panels';
+import {
+  dopePanel,
+  solutionPanel,
+  trajectoryPanel,
+  type TrajPanelState,
+  turretPanel,
+  weatherPanel,
+} from '../ui/panels';
 import { type Splash, type Tracer, makeView, renderScope, targetAim } from '../ui/scopeView';
 import { C, Scroll, T } from '../ui/ui';
 import { MenuScene } from './MenuScene';
@@ -32,7 +39,7 @@ import { ResultScene } from './ResultScene';
  * you put it.
  */
 
-type Overlay = 'none' | 'wind' | 'dope' | 'turrets' | 'solution' | 'mil';
+type Overlay = 'none' | 'wind' | 'dope' | 'turrets' | 'solution' | 'mil' | 'traj';
 
 const HOLD_LIMIT = 8.5;
 const RECOVER_RATE = 0.55;
@@ -73,6 +80,9 @@ export class ShootScene implements Scene {
   /** Last shot's true muzzle velocity (m/s) when a chrono is fitted; null otherwise. */
   private chronoLastMs: number | null = null;
   private chronoUntil = 0;
+
+  /** Trajectory plotter overlay state (gear-gated). */
+  private trajState: TrajPanelState = { shotIndex: 0, probe: null };
 
   /** Mil-ranging tool: the two ends of the measurement, in screen pixels. */
   private milFrom: { x: number; y: number } | null = null;
@@ -363,6 +373,14 @@ export class ShootScene implements Scene {
     if (loadout.hasGear('chrono')) {
       this.chronoLastMs = shot.muzzleVelocity;
       this.chronoUntil = this.time + shot.tof + 4.5;
+    }
+
+    if (loadout.hasGear('traj')) {
+      // Point the plotter at the round just fired; probe defaults to impact.
+      this.trajState = {
+        shotIndex: Math.max(0, this.session.shots.length - 1),
+        probe: null,
+      };
     }
 
     if (outcome.newlyHit) audio.chime(true);
@@ -859,6 +877,10 @@ export class ShootScene implements Scene {
       [t('shoot.tool.solve'), 'solution'],
       [t('shoot.tool.mil'), 'mil'],
     ];
+    // Trajectory plotter only appears when the gear is on the rifle.
+    if (session.loadout.hasGear('traj')) {
+      tools.push([t('shoot.tool.traj'), 'traj']);
+    }
 
     // Tools get the whole first row when stacked, or the space the trigger and
     // the breath hold leave over when they share one.
@@ -952,7 +974,8 @@ export class ShootScene implements Scene {
     const { ui } = app;
     const session = this.session;
 
-    const w = Math.min(glass.w - 24 * g, 420 * g);
+    const maxW = this.overlay === 'traj' ? 480 * g : 420 * g;
+    const w = Math.min(glass.w - 24 * g, maxW);
     const panel: Rect = {
       x: glass.x + glass.w - w - 12 * g,
       y: glass.y + 12 * g,
@@ -1000,6 +1023,11 @@ export class ShootScene implements Scene {
         });
         break;
       }
+      case 'traj':
+        trajectoryPanel(ctx, body, panelCtx, this.trajState, (next) => {
+          this.trajState = next;
+        });
+        break;
       default:
         break;
     }

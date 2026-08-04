@@ -289,6 +289,11 @@ export class BriefScene implements Scene {
         loadout.hasGear('chrono') ? t('brief.chrono_yes') : t('brief.chrono_no'),
         loadout.hasGear('chrono') ? C.green : C.amber,
       ],
+      [
+        t('brief.traj'),
+        loadout.hasGear('traj') ? t('brief.traj_yes') : t('brief.traj_no'),
+        loadout.hasGear('traj') ? C.green : C.amber,
+      ],
     ];
     for (const [label, value, colour] of courseRows) {
       ui.field(rightX, right, colW, label, value, colour ?? C.text);
