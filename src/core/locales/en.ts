@@ -66,7 +66,7 @@ export const en: Dict = {
   // --- stage names & briefs ---
   'stage.tutorial.name': '00 — First Shots',
   'stage.tutorial.brief':
-    'Three large plates at known distances, calm air, plenty of time. Learn aim, breath, and fire. Hits pay most of the score; first-round and speed are bonuses on top. Mouse: right-hold breath, left-click or Space to fire. Touch: HOLD and FIRE on the bar.',
+    'Three large plates at known distances (100, 150, 200 m), calm air, plenty of time. Learn aim, breath, fire — and how to dial elevation in mils from the data card before you break the shot.',
   'stage.zero.name': '01 — Cold Bore',
   'stage.zero.brief':
     'Five plates at known distances inside 400 m, no wind to speak of. Confirm the rifle shoots where the card says it does.',
@@ -108,6 +108,11 @@ export const en: Dict = {
   'brief.go_hot': 'GO HOT',
   'brief.on_the_rifle': 'ON THE RIFLE',
   'brief.the_course': 'THE COURSE',
+  'brief.tutorial_dial_title': 'HOW TO DIAL TURRETS (MILS)',
+  'brief.tutorial_dial_body':
+    'The data card always lists elevation in mils. One mil ≈ 10 cm of correction at 100 m (20 cm at 200 m). Open DATA CARD, find your plate’s range, read the ELEV column (mils). Open TURRETS and use −− / − / 0 / + / ++ on elevation. Dial until the line “about … on the card” matches the plate range. On mil glass the big readout should equal the card (often 0.1 mil per click). On MOA glass (starter scope) do not convert by hand — trust that “about range” line. Windage stays at 0 here (press 0). You can re-open DIAL while hot.',
+  'brief.tutorial_dial_steps':
+    '1) DATA CARD → ELEV (mils) for 100 / 150 / 200 m   ·   2) TURRETS → dial elevation until card-range matches   ·   3) Windage 0   ·   4) GO HOT · hold breath · fire',
   'brief.gear': 'GEAR',
   'brief.nothing_fitted': 'nothing fitted',
   'brief.zero': 'ZERO',
@@ -315,6 +320,8 @@ export const en: Dict = {
   'panel.elevation_travel': 'ELEVATION  ·  {mils} MIL of travel',
   'panel.windage': 'WINDAGE',
   'panel.about_range': 'that is about {range} on the card',
+  'panel.tutorial_dial_tip':
+    'Tutorial: card ELEV is always mils. Dial elevation until this “about range” matches your plate. Windage → 0. Mil glass: match the mil number; MOA glass: trust the range line.',
   'panel.magnification': 'MAGNIFICATION',
   'panel.sfp_note':
     'second focal plane — the reticle only subtends true mils at {mag}x',

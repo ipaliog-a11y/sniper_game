@@ -129,21 +129,44 @@ export class BriefScene implements Scene {
     const session = this.session;
     const imperial = app.profile.settings.imperial;
     const loadout = session.loadout;
+    const tutorial = this.stage.id === 'tutorial';
 
-    const twoUp = r.w > 520 * g;
+    const twoUp = r.w > 520 * g && !tutorial;
     const colW = twoUp ? r.w / 2 - 14 * g : r.w;
     const rightX = twoUp ? r.x + r.w / 2 + 14 * g : r.x;
+
+    let left = r.y + 12 * g;
+
+    // Tutorial: put the mil-dial coach first so new shooters see it before kit stats.
+    if (tutorial) {
+      const pad = 12 * g;
+      const maxTextW = r.w - pad * 2;
+      const body = t('brief.tutorial_dial_body');
+      const steps = t('brief.tutorial_dial_steps');
+      // Rough wrap estimates so the panel can be filled before text is drawn.
+      const charW = T.small * g * 0.48;
+      const bodyLines = Math.max(4, Math.ceil(body.length / Math.max(20, maxTextW / charW)));
+      const stepLines = Math.max(2, Math.ceil(steps.length / Math.max(24, maxTextW / (T.micro * g * 0.48))));
+      const bodyH = bodyLines * T.small * g * 1.45;
+      const stepsH = stepLines * T.micro * g * 1.45;
+      const coachH = 30 * g + bodyH + 10 * g + stepsH + 12 * g;
+      fillPanel(ctx, { x: r.x, y: left, w: r.w, h: coachH }, 8, 'rgba(232,163,61,0.08)', C.amber);
+      text(ctx, t('brief.tutorial_dial_title'), r.x + pad, left + 14 * g, T.small * g, C.amber, 'left', 'bold');
+      const drawnBody = paragraph(ctx, body, r.x + pad, left + 28 * g, maxTextW, T.small * g, C.text);
+      paragraph(ctx, steps, r.x + pad, left + 28 * g + drawnBody + 8 * g, maxTextW, T.micro * g, C.textDim);
+      left += coachH + 12 * g;
+    }
 
     const briefHeight = paragraph(
       ctx,
       t(`stage.${this.stage.id}.brief`),
       r.x,
-      r.y + 12 * g,
+      left,
       colW,
       T.small * g,
       C.textDim,
     );
-    let left = r.y + 12 * g + briefHeight + 14 * g;
+    left += briefHeight + 14 * g;
     rule(ctx, r.x, left, colW);
     left += 16 * g;
 

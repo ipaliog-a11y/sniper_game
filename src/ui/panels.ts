@@ -462,6 +462,19 @@ export function turretPanel(
   }
   y += 18 * g;
 
+  if (session.stage.id === 'tutorial') {
+    const tipH = paragraph(
+      ctx,
+      t('panel.tutorial_dial_tip'),
+      r.x,
+      y,
+      r.w,
+      T.small * g,
+      C.amber,
+    );
+    y += tipH + 10 * g;
+  }
+
   rule(ctx, r.x, y, r.w);
   y += 16 * g;
 

@@ -193,7 +193,7 @@ export const STAGES: Stage[] = [
     id: 'tutorial',
     name: '00 — First Shots',
     brief:
-      'Three large plates at known distances, calm air, plenty of time. Learn aim, breath, and fire. Hits pay most of the score; first-round and speed are bonuses on top. Mouse: right-hold breath, left-click or Space to fire. Touch: HOLD and FIRE on the bar.',
+      'Three large plates at known distances (100, 150, 200 m), calm air, plenty of time. Learn aim, breath, fire, and dialling elevation in mils from the data card before you break the shot.',
     presetId: 'calm',
     firingHeightM: 8,
     seed: 42,
