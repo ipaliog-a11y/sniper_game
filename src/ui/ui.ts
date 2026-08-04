@@ -72,7 +72,12 @@ export class Ui {
     return this.input.takeTap(r.x, r.y, r.w, r.h);
   }
 
-  /** A button that fires once on press and then repeats while it is held. */
+  /**
+   * Hold-to-repeat control: one fire on press, then auto-repeat after a short
+   * delay while held. Must not also fire on release — the old path called
+   * takeTap after the press-fire, so every “+1 click” was applied twice (0.2
+   * mil steps on a 0.1 mil turret).
+   */
   stepper(id: string, r: Rect, label: string, disabled = false): boolean {
     const { ctx } = this;
     const held = !disabled && this.input.isHeldIn(r.x, r.y, r.w, r.h);
@@ -91,7 +96,14 @@ export class Ui {
 
     const last = this.repeats.get(id);
     if (!held) {
-      this.repeats.delete(id);
+      // Consume any release tap so a press-fire is not followed by a second
+      // takeTap on pointer-up (that was the double-step bug).
+      if (last !== undefined) {
+        this.input.takeTap(r.x, r.y, r.w, r.h);
+        this.repeats.delete(id);
+        return false;
+      }
+      // Pointer never registered as held (edge case): still allow a clean tap.
       return this.input.takeTap(r.x, r.y, r.w, r.h);
     }
     if (last === undefined) {
