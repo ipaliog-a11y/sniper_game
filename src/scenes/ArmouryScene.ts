@@ -7,8 +7,15 @@ import {
   SUPPORTS,
 } from '../core/catalog/attachments';
 import { CARTRIDGES, type Cartridge, cartridgesFor } from '../core/catalog/cartridges';
+import { DETAIL_TABS, itemDetailById } from '../core/catalog/itemDetails';
 import { RIFLES, type Rifle } from '../core/catalog/rifles';
-import { catalogBlurb, catalogName } from '../core/catalogLabels';
+import {
+  catalogBlurb,
+  catalogDetail,
+  catalogName,
+  catalogNotes,
+  catalogRole,
+} from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
 import { buildDope } from '../core/scope';
@@ -65,6 +72,9 @@ export class ArmouryScene implements Scene {
   readonly name = 'armoury';
   private tab = 0;
   private scroll = new Scroll('armoury');
+  /** Open item-detail overlay (rifle / glass / muzzle), or null. */
+  private detailId: string | null = null;
+  private detailScroll = new Scroll('armoury-detail');
   /** Data cards cost tens of milliseconds to build, so never build one twice. */
   private dopeCache = new Map<string, ReturnType<typeof buildDope>>();
   private readonly freeKit: boolean;
@@ -76,6 +86,14 @@ export class ArmouryScene implements Scene {
   }
 
   update(): void {}
+
+  private tabKey(): Tab {
+    return TABS[this.tab];
+  }
+
+  private hasDetails(tab: Tab = this.tabKey()): boolean {
+    return DETAIL_TABS.has(tab);
+  }
 
   private entries(app: App): Entry[] {
     const profile = app.profile;
@@ -296,9 +314,10 @@ export class ArmouryScene implements Scene {
       TAB_LABEL_KEYS.map((k) => t(k)),
       this.tab,
     );
-    if (picked >= 0 && picked !== this.tab) {
+    if (picked >= 0 && picked !== this.tab && !this.detailId) {
       this.tab = picked;
       this.scroll.offset = 0;
+      this.detailId = null;
       audio.tap();
     }
 
@@ -317,6 +336,7 @@ export class ArmouryScene implements Scene {
     };
 
     const entries = this.entries(app);
+    const modalOpen = this.detailId !== null;
     // Stats wrap into however many columns fit, and the card grows to hold them
     // rather than letting the rows print on top of each other.
     const statCols = view.w > 380 * g ? 3 : 2;
@@ -324,8 +344,11 @@ export class ArmouryScene implements Scene {
     const statRows = Math.ceil(maxStats / statCols);
     const cardH = (86 + statRows * 30) * g;
     const gap = 10 * g;
-    this.scroll.update(ui.input, view, entries.length * (cardH + gap), 1 / 60);
-    const blocked = this.scroll.isDragging(ui.input);
+    if (!modalOpen) {
+      this.scroll.update(ui.input, view, entries.length * (cardH + gap), 1 / 60);
+    }
+    const blocked = modalOpen || this.scroll.isDragging(ui.input);
+    const showDetailsBtn = this.hasDetails();
 
     ctx.save();
     ctx.beginPath();
@@ -351,19 +374,86 @@ export class ArmouryScene implements Scene {
       );
 
       const pad = 14 * g;
-      text(
-        ctx,
+      const actionW = 88 * g;
+      const detailsW = 88 * g;
+      const action: Rect = {
+        x: r.x + r.w - pad - actionW,
+        y: r.y + 10 * g,
+        w: actionW,
+        h: 30 * g,
+      };
+      const detailsBtn: Rect = {
+        x: action.x - (showDetailsBtn ? detailsW + 8 * g : 0),
+        y: r.y + 10 * g,
+        w: detailsW,
+        h: 30 * g,
+      };
+      const nameMaxW = (showDetailsBtn ? detailsBtn.x : action.x) - r.x - pad - 8 * g;
+
+      ui.fitText(
         entry.name,
         r.x + pad,
         r.y + 20 * g,
+        Math.max(40 * g, nameMaxW),
         T.body * g,
         entry.usable ? C.text : C.textFaint,
         'left',
         'bold',
       );
 
-      const action: Rect = { x: r.x + r.w - pad - 88 * g, y: r.y + 10 * g, w: 88 * g, h: 30 * g };
-      if (entry.equipped) {
+      if (showDetailsBtn && itemDetailById(entry.id) && !modalOpen) {
+        if (ui.button(detailsBtn, t('armoury.details'), { size: T.small * g })) {
+          audio.tap();
+          this.detailId = entry.id;
+          this.detailScroll.offset = 0;
+        }
+      }
+
+      if (!modalOpen) {
+        if (entry.equipped) {
+          text(
+            ctx,
+            t('armoury.fitted'),
+            action.x + action.w,
+            r.y + 25 * g,
+            T.small * g,
+            C.amber,
+            'right',
+            'bold',
+          );
+        } else if (!held) {
+          if (
+            ui.button(action, t('common.cr', { n: price.toLocaleString() }), {
+              size: T.small * g,
+              disabled: !affordable,
+              accent: affordable,
+            })
+          ) {
+            if (buy(profile, entry.id, price)) {
+              audio.chime(true);
+              app.toast(t('armoury.bought', { name: entry.name }), 'good');
+              this.equip(app, entry.id);
+            }
+          }
+        } else if (!entry.usable) {
+          text(
+            ctx,
+            t('armoury.owned'),
+            action.x + action.w,
+            r.y + 25 * g,
+            T.small * g,
+            C.textFaint,
+            'right',
+          );
+        } else if (
+          ui.button(action, entry.equipped ? t('armoury.fitted') : t('armoury.fit'), {
+            size: T.small * g,
+          })
+        ) {
+          audio.click();
+          this.equip(app, entry.id);
+        }
+      } else if (entry.equipped) {
         text(
           ctx,
           t('armoury.fitted'),
@@ -374,37 +464,6 @@ export class ArmouryScene implements Scene {
           'right',
           'bold',
         );
-      } else if (!held) {
-        if (
-          ui.button(action, t('common.cr', { n: price.toLocaleString() }), {
-            size: T.small * g,
-            disabled: !affordable,
-            accent: affordable,
-          })
-        ) {
-          if (buy(profile, entry.id, price)) {
-            audio.chime(true);
-            app.toast(t('armoury.bought', { name: entry.name }), 'good');
-            this.equip(app, entry.id);
-          }
-        }
-      } else if (!entry.usable) {
-        text(
-          ctx,
-          t('armoury.owned'),
-          action.x + action.w,
-          r.y + 25 * g,
-          T.small * g,
-          C.textFaint,
-          'right',
-        );
-      } else if (
-        ui.button(action, entry.equipped ? t('armoury.fitted') : t('armoury.fit'), {
-          size: T.small * g,
-        })
-      ) {
-        audio.click();
-        this.equip(app, entry.id);
       }
 
       paragraph(ctx, entry.blurb, r.x + pad, r.y + 44 * g, r.w - pad * 2, T.small * g, C.textDim);
@@ -432,6 +491,213 @@ export class ArmouryScene implements Scene {
     });
 
     ctx.restore();
+
+    if (this.detailId) {
+      this.drawDetailWindow(ctx, app, entries);
+    }
+  }
+
+  /**
+   * Full-screen detail overlay for a rifle, optic, or muzzle. Image slot is a
+   * placeholder until artwork is added under public/gear/.
+   */
+  private drawDetailWindow(ctx: CanvasRenderingContext2D, app: App, entries: Entry[]): void {
+    const { ui } = app;
+    const g = app.gauge;
+    const safe = app.safe;
+    const id = this.detailId!;
+    const entry = entries.find((e) => e.id === id);
+    const meta = itemDetailById(id);
+    if (!entry || !meta) {
+      this.detailId = null;
+      return;
+    }
+
+    // Dim the armoury underneath and swallow taps outside the panel.
+    ctx.fillStyle = 'rgba(8,11,10,0.86)';
+    ctx.fillRect(0, 0, app.width, app.height);
+
+    const panelW = Math.min(safe.w, 480 * g);
+    const panelH = Math.min(safe.h - 12 * g, 560 * g);
+    const panel: Rect = {
+      x: app.width / 2 - panelW / 2,
+      y: app.height / 2 - panelH / 2,
+      w: panelW,
+      h: panelH,
+    };
+    fillPanel(ctx, panel, 10, C.panel, C.amber);
+
+    const pad = 14 * g;
+    text(
+      ctx,
+      t('armoury.details_title'),
+      panel.x + pad,
+      panel.y + 16 * g,
+      T.micro * g,
+      C.textFaint,
+    );
+    text(
+      ctx,
+      entry.name,
+      panel.x + pad,
+      panel.y + 34 * g,
+      T.head * g,
+      C.text,
+      'left',
+      'bold',
+    );
+
+    const close: Rect = {
+      x: panel.x + panel.w - pad - 86 * g,
+      y: panel.y + 12 * g,
+      w: 86 * g,
+      h: 28 * g,
+    };
+    if (ui.button(close, t('armoury.details_close'), { size: T.small * g })) {
+      audio.tap();
+      this.detailId = null;
+      return;
+    }
+
+    const role = catalogRole(id);
+    if (role) {
+      ui.fitText(
+        role,
+        panel.x + pad,
+        panel.y + 52 * g,
+        panel.w - pad * 2 - 90 * g,
+        T.small * g,
+        C.amber,
+      );
+    }
+
+    rule(ctx, panel.x + pad, panel.y + 64 * g, panel.w - pad * 2);
+
+    // Scrollable body under the chrome.
+    const body: Rect = {
+      x: panel.x + pad,
+      y: panel.y + 74 * g,
+      w: panel.w - pad * 2,
+      h: panel.h - 74 * g - pad,
+    };
+
+    // Measure content height (image + specs + prose + notes).
+    const imgH = Math.min(148 * g, body.w * 0.42);
+    const statCols = body.w > 300 * g ? 3 : 2;
+    const statRows = Math.ceil(entry.stats.length / statCols);
+    const specsH = 18 * g + statRows * 28 * g;
+    // Approximate prose height from character count so scroll max is stable.
+    const detailText = catalogDetail(id);
+    const notes = catalogNotes(id);
+    // Mono glyph width is ~0.6em; pad lines so scroll max is never short.
+    const charsPerLine = Math.max(18, Math.floor(body.w / (T.small * g * 0.62)));
+    const detailLines = Math.max(4, Math.ceil(detailText.length / charsPerLine) + 2);
+    const detailH = detailLines * T.small * g * 1.45;
+    const notesH = notes.length
+      ? 22 * g +
+        notes.reduce(
+          (sum, n) =>
+            sum + (Math.max(1, Math.ceil(n.length / charsPerLine)) + 1) * T.small * g * 1.4 + 10 * g,
+          0,
+        )
+      : 0;
+    const contentH =
+      imgH + 14 * g + specsH + 12 * g + 16 * g + detailH + 12 * g + notesH + 48 * g;
+
+    this.detailScroll.update(ui.input, body, contentH, 1 / 60);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(body.x, body.y, body.w, body.h);
+    ctx.clip();
+
+    let y = body.y - this.detailScroll.offset;
+
+    // Image placeholder (artwork later: public/gear/{id}.png via meta.image).
+    const img: Rect = { x: body.x, y, w: body.w, h: imgH };
+    fillPanel(ctx, img, 8, C.bgDeep, C.edgeSoft);
+    // Corner marks so the empty frame reads as a photo slot.
+    ctx.strokeStyle = C.edge;
+    ctx.lineWidth = 1;
+    const m = 10 * g;
+    for (const [ox, oy, sx, sy] of [
+      [img.x + m, img.y + m, 1, 1],
+      [img.x + img.w - m, img.y + m, -1, 1],
+      [img.x + m, img.y + img.h - m, 1, -1],
+      [img.x + img.w - m, img.y + img.h - m, -1, -1],
+    ] as const) {
+      ctx.beginPath();
+      ctx.moveTo(ox, oy + sy * 16 * g);
+      ctx.lineTo(ox, oy);
+      ctx.lineTo(ox + sx * 16 * g, oy);
+      ctx.stroke();
+    }
+    text(
+      ctx,
+      t('armoury.image_soon'),
+      img.x + img.w / 2,
+      img.y + img.h / 2 - 8 * g,
+      T.body * g,
+      C.textDim,
+      'center',
+      'bold',
+    );
+    text(
+      ctx,
+      t('armoury.image_hint'),
+      img.x + img.w / 2,
+      img.y + img.h / 2 + 12 * g,
+      T.micro * g,
+      C.textFaint,
+      'center',
+    );
+    y += imgH + 14 * g;
+
+    text(ctx, t('armoury.spec_sheet'), body.x, y + 6 * g, T.micro * g, C.textFaint);
+    y += 18 * g;
+    const colGap = 10 * g;
+    const colW = (body.w - colGap * (statCols - 1)) / statCols;
+    entry.stats.forEach((stat, si) => {
+      const cx = body.x + (si % statCols) * (colW + colGap);
+      const cy = y + Math.floor(si / statCols) * 28 * g;
+      text(ctx, stat[0], cx, cy, T.micro * g, C.textFaint);
+      ui.fitText(stat[1], cx, cy + 13 * g, colW - 4 * g, T.small * g, C.text);
+    });
+    y += statRows * 28 * g + 12 * g;
+
+    rule(ctx, body.x, y, body.w);
+    y += 14 * g;
+
+    const proseH = paragraph(ctx, detailText, body.x, y, body.w, T.small * g, C.textDim);
+    y += proseH + 12 * g;
+
+    if (notes.length) {
+      text(ctx, t('armoury.field_notes'), body.x, y + 4 * g, T.micro * g, C.amber);
+      y += 18 * g;
+      for (const note of notes) {
+        text(ctx, '·', body.x, y + 2 * g, T.small * g, C.amber);
+        const nh = paragraph(ctx, note, body.x + 12 * g, y, body.w - 12 * g, T.small * g, C.text);
+        y += Math.max(nh, T.small * g * 1.4) + 8 * g;
+      }
+    }
+
+    ctx.restore();
+
+    // Close when the user taps the dimmed area around the panel.
+    const strips: Rect[] = [
+      { x: 0, y: 0, w: app.width, h: panel.y },
+      { x: 0, y: panel.y + panel.h, w: app.width, h: app.height - (panel.y + panel.h) },
+      { x: 0, y: panel.y, w: panel.x, h: panel.h },
+      { x: panel.x + panel.w, y: panel.y, w: app.width - (panel.x + panel.w), h: panel.h },
+    ];
+    for (const s of strips) {
+      if (s.w <= 0 || s.h <= 0) continue;
+      if (ui.input.takeTap(s.x, s.y, s.w, s.h)) {
+        audio.tap();
+        this.detailId = null;
+        return;
+      }
+    }
   }
 
   private drawSummary(

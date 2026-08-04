@@ -232,6 +232,13 @@ export const en: Dict = {
   'armoury.stat.transonic': 'TRANSONIC',
   'armoury.wobble': '{pct}% wobble',
   'armoury.travel_up': '{mils} MIL up',
+  'armoury.details': 'DETAILS',
+  'armoury.details_close': 'CLOSE',
+  'armoury.details_title': 'ITEM DETAILS',
+  'armoury.image_soon': 'Image coming soon',
+  'armoury.image_hint': 'Photo slot reserved — artwork will land here later',
+  'armoury.field_notes': 'FIELD NOTES',
+  'armoury.spec_sheet': 'SPEC SHEET',
 
   // --- shoot HUD ---
   'shoot.exit': 'EXIT',
