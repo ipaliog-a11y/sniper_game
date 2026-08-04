@@ -8,6 +8,7 @@ import {
 } from '../core/catalog/attachments';
 import { CARTRIDGES, type Cartridge, cartridgesFor } from '../core/catalog/cartridges';
 import { RIFLES, type Rifle } from '../core/catalog/rifles';
+import { catalogBlurb, catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
 import { buildDope } from '../core/scope';
@@ -68,8 +69,8 @@ export class ArmouryScene implements Scene {
       case 'rifle':
         return RIFLES.map((r: Rifle) => ({
           id: r.id,
-          name: r.name,
-          blurb: r.blurb,
+          name: catalogName(r.id, r.name),
+          blurb: catalogBlurb(r.id, r.blurb),
           cost: r.cost,
           equipped: r.id === selection.rifleId,
           usable: true,
@@ -87,14 +88,14 @@ export class ArmouryScene implements Scene {
         const compatible = new Set(cartridgesFor(rifle.chambering).map((c) => c.id));
         return CARTRIDGES.map((c: Cartridge) => ({
           id: c.id,
-          name: `${c.name}`,
-          blurb: c.blurb,
+          name: catalogName(c.id, c.name),
+          blurb: catalogBlurb(c.id, c.blurb),
           cost: c.cost,
           equipped: c.id === selection.cartridgeId,
           usable: compatible.has(c.id),
           reason: compatible.has(c.id)
             ? undefined
-            : t('armoury.not_chambered', { rifle: rifle.name }),
+            : t('armoury.not_chambered', { rifle: catalogName(rifle.id, rifle.name) }),
           stats: [
             [t('armoury.stat.chambering'), c.chambering.toUpperCase()],
             [t('armoury.stat.bullet'), `${c.grains} gr ${c.grade}`],
@@ -109,8 +110,8 @@ export class ArmouryScene implements Scene {
       case 'optic':
         return OPTICS.map((o) => ({
           id: o.id,
-          name: o.name,
-          blurb: o.blurb,
+          name: catalogName(o.id, o.name),
+          blurb: catalogBlurb(o.id, o.blurb),
           cost: o.cost,
           equipped: o.id === selection.opticId,
           usable: true,
@@ -130,8 +131,8 @@ export class ArmouryScene implements Scene {
       case 'muzzle':
         return MUZZLES.map((m) => ({
           id: m.id,
-          name: m.name,
-          blurb: m.blurb,
+          name: catalogName(m.id, m.name),
+          blurb: catalogBlurb(m.id, m.blurb),
           cost: m.cost,
           equipped: m.id === selection.muzzleId,
           usable: true,
@@ -154,8 +155,8 @@ export class ArmouryScene implements Scene {
       case 'support':
         return SUPPORTS.map((s) => ({
           id: s.id,
-          name: s.name,
-          blurb: s.blurb,
+          name: catalogName(s.id, s.name),
+          blurb: catalogBlurb(s.id, s.blurb),
           cost: s.cost,
           equipped: s.id === selection.supportId,
           usable: true,
@@ -171,8 +172,8 @@ export class ArmouryScene implements Scene {
         const fitted = selection.gearIds;
         return GEAR.map((gear) => ({
           id: gear.id,
-          name: gear.name,
-          blurb: gear.blurb,
+          name: catalogName(gear.id, gear.name),
+          blurb: catalogBlurb(gear.id, gear.blurb),
           cost: gear.cost,
           equipped: fitted.includes(gear.id),
           usable: fitted.includes(gear.id) || fitted.length < GEAR_SLOTS,
@@ -198,7 +199,7 @@ export class ArmouryScene implements Scene {
         if (!compatible.some((c) => c.id === selection.cartridgeId)) {
           const affordable = compatible.find((c) => owns(app.profile, c.id)) ?? compatible[0];
           selection.cartridgeId = affordable.id;
-          app.toast(t('armoury.ammo_switched', { name: affordable.name }));
+          app.toast(t('armoury.ammo_switched', { name: catalogName(affordable.id, affordable.name) }));
         }
         break;
       }
@@ -402,7 +403,7 @@ export class ArmouryScene implements Scene {
     const pad = 12 * g;
     const half = (r.w - pad * 2) / 2;
     app.ui.fitText(
-      `${loadout.rifle.name} · ${loadout.cartridge.name}`,
+      `${catalogName(loadout.rifle.id, loadout.rifle.name)} · ${catalogName(loadout.cartridge.id, loadout.cartridge.name)}`,
       r.x + pad,
       r.y + 15 * g,
       half + 20 * g,
@@ -414,7 +415,7 @@ export class ArmouryScene implements Scene {
     // Full gear names when there is room for them, a count when there is not.
     const gearNames = loadout.gear.length
       ? half > 200 * g
-        ? loadout.gear.map((gear) => gear.name).join(', ')
+        ? loadout.gear.map((gear) => catalogName(gear.id, gear.name)).join(', ')
         : t('armoury.gear_count', { n: loadout.gear.length, max: GEAR_SLOTS })
       : t('armoury.no_gear');
     app.ui.fitText(

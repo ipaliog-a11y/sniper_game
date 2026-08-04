@@ -1,4 +1,5 @@
 import { densityAltitude } from '../core/atmosphere';
+import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { type Rect, fillPanel, inset, measure, paragraph, rule, text } from './gfx';
 import {
@@ -251,7 +252,7 @@ export function dopePanel(
   text(ctx, t('panel.data_card'), r.x, y, T.small * g, C.amber);
   text(
     ctx,
-    `${session.loadout.cartridge.name} · ${session.loadout.rifle.name}`,
+    `${catalogName(session.loadout.cartridge.id, session.loadout.cartridge.name)} · ${catalogName(session.loadout.rifle.id, session.loadout.rifle.name)}`,
     r.x + r.w,
     y,
     T.micro * g,
@@ -362,7 +363,15 @@ export function turretPanel(
 
   let y = r.y + 12 * g;
   text(ctx, t('panel.turrets'), r.x, y, T.small * g, C.amber);
-  text(ctx, `${optic.name} · ${step}${unit}/click`, r.x + r.w, y, T.micro * g, C.textFaint, 'right');
+  text(
+    ctx,
+    `${catalogName(optic.id, optic.name)} · ${step}${unit}/click`,
+    r.x + r.w,
+    y,
+    T.micro * g,
+    C.textFaint,
+    'right',
+  );
   y += 16 * g;
   rule(ctx, r.x, y, r.w);
   y += 12 * g;

@@ -312,4 +312,113 @@ export const el: Dict = {
   'panel.not_enough_elev': 'ΑΝΕΠΑΡΚΕΣ ΥΨΟΣ',
   'panel.out_of_travel':
     'Το σκοπευτικό τελείωσε τη διαδρομή. Κράτα τη διόρθωση στα σταυρωνικά, ή βάλε γυαλί με περισσότερη.',
+
+  // --- catalog: rifles ---
+  'catalog.ranger24.name': 'Ranger M24',
+  'catalog.ranger24.blurb':
+    'Σχολικό όπλο με ξύλινο κοντάκι. Τίποτα δεν εντυπωσιάζει και τίποτα δεν πάει στραβά.',
+  'catalog.mk14.name': 'Mk14 Marksman',
+  'catalog.mk14.blurb':
+    'Αερίου. Μισή ακρίβεια από τα κλείστρα, τετραπλάσια ταχύτητα δεύτερης βολής.',
+  'catalog.prs26.name': 'Sabre PRS',
+  'catalog.prs26.blurb':
+    'Σασί για αγώνες. Αρκετά βαρύ ώστε να κάθεται μόνο του.',
+  'catalog.aw300.name': 'Arctic AW300',
+  'catalog.aw300.blurb':
+    'Μάγκνουμ για κρύο. Τιμωρεί τις γρήγορες βολές· βάναυσα επίπεδο όταν δεν βιάζεσαι.',
+  'catalog.lr338.name': 'Vanguard LR338',
+  'catalog.lr338.blurb':
+    'Εδώ αρχίζει το μίλι. Είκοσι ίντσες ράγας και ανάκρουση που τη νιώθεις στα δόντια.',
+  'catalog.am50.name': 'Hadron AM50',
+  'catalog.am50.blurb':
+    'Αντιϋλικό. Δεν νοιάζεται για τον άνεμο και ο άνεμος δεν νοιάζεται για σένα.',
+
+  // --- catalog: ammo ---
+  'catalog.308-m80.name': '7.62 M80 Ball',
+  'catalog.308-m80.blurb': 'Πυρομαχικά κιβωτίου. Φθηνά, ασυνεπή και ειλικρινή γι’ αυτό.',
+  'catalog.308-168.name': '168 gr HPBT Match',
+  'catalog.308-168.blurb': 'Το κλασικό φορτίο των 300 γιάρδων. Διαηχητικό πριν τα 800 m.',
+  'catalog.308-175.name': '175 gr SMK Match',
+  'catalog.308-175.blurb': 'Αυτό που περίμενε το .308. Υπερηχητικό περίπου μέχρι τα 900 m.',
+  'catalog.308-sub.name': '190 gr Subsonic',
+  'catalog.308-sub.blurb': 'Ήσυχο, και πέφτει σαν τούβλο. Μόνο μέσα στα 200 m.',
+  'catalog.65-130.name': '130 gr AB Hunting',
+  'catalog.65-130.blurb': 'Γρήγορο και επίπεδο μέσα στα 600 m. Μετά χάνει τη συζήτηση.',
+  'catalog.65-140.name': '140 gr ELD Match',
+  'catalog.65-140.blurb': 'Ο λόγος που σταμάτησαν όλοι να τσακώνονται για το 6.5 Creedmoor.',
+  'catalog.65-147.name': '147 gr ELD Match',
+  'catalog.65-147.blurb': 'Πιο αργό στο στόμιο, ακόμα υπερηχητικό όταν το 140 δεν είναι.',
+  'catalog.300-190.name': '190 gr Match',
+  'catalog.300-190.blurb': 'Επίπεδο μέχρι τα 800 m και χτυπάει σαν φορτηγό όταν φτάνει.',
+  'catalog.300-215.name': '215 gr Hybrid Match',
+  'catalog.300-215.blurb': 'Βαρύ για το διαμέτρημα· σχεδόν αγνοεί πλαγιοάνεμο 10 mph.',
+  'catalog.338-250.name': '250 gr Scenar',
+  'catalog.338-250.blurb': 'Το ελαφρύτερο .338. Πολύ γρήγορο, πολύ δυνατό, πολύ ακριβό.',
+  'catalog.338-300.name': '300 gr SMK',
+  'catalog.338-300.blurb': 'Υπερηχητικό πέρα από τα 1500 m. Από αυτό φτιάχνεται το μίλι.',
+  'catalog.50-750.name': '750 gr A-MAX',
+  'catalog.50-750.blurb': 'Υπερηχητικό πέρα από δύο χιλιόμετρα. Χαλάει ώμους.',
+  'catalog.50-ap.name': 'Mk 211 AP',
+  'catalog.50-ap.blurb': 'Φτιαγμένο για μπλοκ μηχανών, όχι για αγώνες.',
+
+  // --- catalog: optics ---
+  'catalog.opt-duplex.name': 'Hunter 3-9x40',
+  'catalog.opt-duplex.blurb':
+    'Σκοπευτικό κυνηγιού με καπάκια πυργίσκων και απλό σταυρό. Η μέτρηση απόστασης είναι μάντεμα.',
+  'catalog.opt-mildot.name': 'Vector 4-16x50 FFP',
+  'catalog.opt-mildot.blurb':
+    'Mil-dot πρώτου εστιακού επιπέδου. Τα σταυρωνικά σημαίνουν το ίδιο σε κάθε μεγέθυνση.',
+  'catalog.opt-sfp.name': 'Meridian 6-24x50 SFP',
+  'catalog.opt-sfp.blurb':
+    'Φωτεινό, φθηνό για τη μεγέθυνση, και τα σταυρωνικά λένε την αλήθεια μόνο στα 24x.',
+  'catalog.opt-tree.name': 'Ardent 5-25x56 FFP',
+  'catalog.opt-tree.blurb':
+    'Ρετικλέ «χριστουγεννιάτικο δέντρο» και 26 mil διαδρομής. Κράτα τη διόρθωση χωρίς πυργίσκους.',
+  'catalog.opt-elite.name': 'Ardent 7-35x56 FFP',
+  'catalog.opt-elite.blurb':
+    'Τριάντα πέντε φορές. Σε αυτή τη μεγέθυνση το mirage γίνεται ανεμοδείκτης.',
+
+  // --- catalog: muzzle ---
+  'catalog.muz-none.name': 'Γυμνό στόμιο',
+  'catalog.muz-none.blurb': 'Σπείρωμα και προστατευτικό. Τίποτα ανάμεσα σε σένα και την έκρηξη.',
+  'catalog.muz-brake.name': 'Φρένο Terminator',
+  'catalog.muz-brake.blurb':
+    'Κόβει σχεδόν στο μισό την ανάκρουση και σηκώνει σύννεφο σκόνης που δείχνει πού είσαι.',
+  'catalog.muz-can.name': 'Σιγαστήρας Hushmark',
+  'catalog.muz-can.blurb':
+    'Ήσυχος, χωρίς σκόνη, λίγη επιπλέον ταχύτητα και πολύ βάρος στην κάννη.',
+  'catalog.muz-tuner.name': 'Αρμονικός ρυθμιστής',
+  'catalog.muz-tuner.blurb':
+    'Βάρος στο στόμιο που ησυχάζει το μαστίγωμα της κάννης. Καθαρή ακρίβεια, τίποτα άλλο.',
+
+  // --- catalog: support ---
+  'catalog.sup-none.name': 'Χωρίς στήριξη',
+  'catalog.sup-none.blurb': 'Αγκώνες και ελπίδα.',
+  'catalog.sup-bag.name': 'Οπίσθιο μαξιλάρι',
+  'catalog.sup-bag.blurb': 'Βγάζει το κάθετο από το κράτημα με κόστος ενός σάντουιτς.',
+  'catalog.sup-bipod.name': 'Δίποδο Recon',
+  'catalog.sup-bipod.blurb':
+    'Σωστά φορτωμένο σκοτώνει το μεγαλύτερο μέρος του τρεμούλιασματος και όλη την κινητικότητα.',
+  'catalog.sup-tripod.name': 'Τρίποδο ballhead',
+  'catalog.sup-tripod.blurb': 'Το πιο σταθερό πράγμα για βολή. Αργεί αιώνια να ισοπεδωθεί.',
+
+  // --- catalog: gear ---
+  'catalog.gear-lrf.name': 'Αποστασιόμετρο λέιζερ',
+  'catalog.gear-lrf.blurb':
+    'Σου δίνει την απόσταση στο μέτρο. Χωρίς αυτό μετράς σε mil και κάνεις αριθμητική.',
+  'catalog.gear-kestrel.name': 'Μετεωρόμετρο',
+  'catalog.gear-kestrel.blurb':
+    'Διαβάζει θερμοκρασία, πίεση, υγρασία και τον άνεμο ακριβώς στο σημείο βολής.',
+  'catalog.gear-solver.name': 'Βαλλιστικός υπολογιστής',
+  'catalog.gear-solver.blurb':
+    'Μετατρέπει όποιους αριθμούς του δώσεις σε ρύθμιση και κράτημα. Σκουπίδια μέσα, άστοχο έξω.',
+  'catalog.gear-level.name': 'Επίπεδο αντι-κλίσης',
+  'catalog.gear-level.blurb':
+    'Φυσαλίδα κάτω στην εικόνα του σκοπευτικού. Χωρίς αυτή δεν βλέπεις ότι είσαι γερμένος.',
+  'catalog.gear-spotter.name': 'Κιάλι παρατήρησης',
+  'catalog.gear-spotter.blurb':
+    'Δείχνει το splash του άστοχου αρκετά καθαρά για να διορθώσεις αντί να μαντεύεις.',
+  'catalog.gear-chrono.name': 'Χρονογράφος στομίου',
+  'catalog.gear-chrono.blurb':
+    'Λέει τι κάνει πραγματικά η κάννη σήμερα, όχι τι έγραφε το κουτί.',
 };

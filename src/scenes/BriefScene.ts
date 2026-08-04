@@ -1,3 +1,4 @@
+import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import type { Stage } from '../core/range';
 import { type Session, createSession } from '../core/session';
@@ -150,21 +151,21 @@ export class BriefScene implements Scene {
     left += 20 * g;
     const rifleRows: Array<[string, string, string?]> = [
       [
-        loadout.rifle.name.toUpperCase(),
+        catalogName(loadout.rifle.id, loadout.rifle.name).toUpperCase(),
         t('brief.fps_today', { fps: msToFps(loadout.muzzleVelocity).toFixed(0) }),
       ],
       [
-        loadout.cartridge.name.toUpperCase(),
+        catalogName(loadout.cartridge.id, loadout.cartridge.name).toUpperCase(),
         t('brief.moa_cone', { moa: loadout.dispersionMoa.toFixed(2) }),
       ],
       [
-        loadout.optic.name.toUpperCase(),
+        catalogName(loadout.optic.id, loadout.optic.name).toUpperCase(),
         t('brief.mil_travel', { mils: loadout.optic.elevationTravelMils }),
       ],
       [
         t('brief.gear'),
         loadout.gear.length
-          ? loadout.gear.map((x) => x.name).join(' · ')
+          ? loadout.gear.map((x) => catalogName(x.id, x.name)).join(' · ')
           : t('brief.nothing_fitted'),
         loadout.gear.length ? C.text : C.textFaint,
       ],

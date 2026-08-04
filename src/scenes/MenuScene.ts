@@ -1,3 +1,4 @@
+import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
 import { STAGES } from '../core/range';
@@ -96,7 +97,12 @@ export class MenuScene implements Scene {
       audio.tap();
       app.set(new StageSelectScene());
     }
-    if (item(t('menu.armoury'), `${loadout.rifle.name} · ${loadout.cartridge.name}`)) {
+    if (
+      item(
+        t('menu.armoury'),
+        `${catalogName(loadout.rifle.id, loadout.rifle.name)} · ${catalogName(loadout.cartridge.id, loadout.cartridge.name)}`,
+      )
+    ) {
       audio.unlock();
       audio.tap();
       app.set(new ArmouryScene());

@@ -84,6 +84,13 @@ export class ShootScene implements Scene {
   private confirmExit = false;
   private confirmExitUntil = 0;
 
+  /**
+   * Primary pointers that have already broken a shot this press. Lets you
+   * left-click fire while right-hold is held without double-firing or needing
+   * to release breath first.
+   */
+  private mouseShotIds = new Set<number>();
+
   constructor(session: Session) {
     this.session = session;
   }
@@ -252,20 +259,50 @@ export class ShootScene implements Scene {
     }
   }
 
+  private onGlass(glass: Rect, x: number, y: number): boolean {
+    return x >= glass.x && x <= glass.x + glass.w && y >= glass.y && y <= glass.y + glass.h;
+  }
+
   /**
-   * Left-click (no drag) on the glass breaks the shot. UI widgets consume their
-   * own taps first, so tools, EXIT and the FIRE button still win over this.
+   * Left-click on the glass breaks the shot. Works while right-hold is held
+   * (fire on button-down once per press). Clean left-click releases still fire
+   * when breath is not held. UI widgets consume their own taps first.
    */
   private handleMouseFire(app: App, glass: Rect): void {
     if (!this.isMouseMode(app)) return;
-    // Any tool overlay owns the pointer; only fire when looking through the glass.
     if (this.overlay !== 'none') return;
-    for (const r of app.input.releases) {
+
+    const input = app.input;
+    // Drop ids for pointers that are gone so the next press can fire again.
+    for (const id of [...this.mouseShotIds]) {
+      if (!input.pointers.has(id)) this.mouseShotIds.delete(id);
+    }
+
+    const holdingBreath = input.isButtonHeld(2);
+
+    // While right-hold is down, fire on left press so you never have to let go
+    // of breath to break the shot. (Without RMB, press-to-fire would steal
+    // EXIT / toolbar taps that resolve on release.)
+    if (holdingBreath) {
+      for (const p of input.pointers.values()) {
+        if (p.button !== 0) continue;
+        if (this.mouseShotIds.has(p.id)) continue;
+        if (p.claim !== null && p.claim !== 'aim') continue;
+        if (p.dragging || p.travel > 12) continue;
+        if (!this.onGlass(glass, p.startX, p.startY)) continue;
+        if (!this.onGlass(glass, p.x, p.y)) continue;
+        this.mouseShotIds.add(p.id);
+        this.shoot(app);
+        return;
+      }
+      return;
+    }
+
+    // Normal mouse: primary release that nothing else ate.
+    for (const r of input.releases) {
       if (r.consumed || r.button !== 0 || r.travel > 12) continue;
-      if (r.startX < glass.x || r.startX > glass.x + glass.w) continue;
-      if (r.startY < glass.y || r.startY > glass.y + glass.h) continue;
-      if (r.x < glass.x || r.x > glass.x + glass.w) continue;
-      if (r.y < glass.y || r.y > glass.y + glass.h) continue;
+      if (!this.onGlass(glass, r.startX, r.startY)) continue;
+      if (!this.onGlass(glass, r.x, r.y)) continue;
       r.consumed = true;
       this.shoot(app);
       return;
@@ -291,7 +328,10 @@ export class ShootScene implements Scene {
     this.aimEl += kick;
     this.aimAz += kick * 0.35 * (loadout.rifle.rightHandTwist ? 1 : -1);
     this.breath = clamp(this.breath + 0.06, 0, 1);
-    this.holding = false;
+    // Keep the hold if the shooter is still right-holding breath in mouse mode.
+    if (!(this.isMouseMode(app) && app.input.isButtonHeld(2))) {
+      this.holding = false;
+    }
 
     const shot = outcome.shot;
     this.tracers.push({ path: shot.path, age: 0, tof: shot.tof });
