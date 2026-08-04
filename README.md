@@ -238,10 +238,11 @@ dictates.
 - [ ] Verify PWA install + offline cache after each Pages deploy
 
 ### Progression & meta
-- [ ] Career stats: best FRH%, mean radial, stage history charts
-- [ ] Medals / ribbons for Distinguished clears and clean first-round stages
+- [x] Career stats: FRH%, mean radial, stage history, overview (CAREER menu)
+- [x] Medals / achievements (bronze–gold catalogue, unlock toasts)
 - [ ] Soft daily / weekly challenge (fixed seed of the day)
 - [ ] Export / import profile (local JSON) for device swaps
+- [ ] Career charts / sparklines (optional polish on top of the history log)
 
 ### Simulation depth (only if it teaches something)
 - [ ] Mirage as a readable wind cue, not only atmosphere noise
@@ -249,6 +250,52 @@ dictates.
 - [ ] Optional “true range” coach after the shot in assist mode
 - [ ] Keep refusing features that break the “numbers mean the same on a range”
       rule — see DESIGN.md
+
+### Graphics (suggestions — keep 2D angular projection)
+Ideas only; none scheduled. Improve the scope picture and equipment read without
+breaking mil truth (see DESIGN.md). Suggested priority top → bottom.
+
+**High impact, low risk**
+- [ ] Steel plates: sheen, edge bevel, stand posts; hit splash / paint-dust that
+      lasts a beat (scored the same as today)
+- [ ] Mover dust trail / clearer lateral motion read on stage 06
+- [ ] Mirage lean/boil more obviously tracks crosswind; better glass = cleaner
+      picture (ties to simulation “readable mirage” above)
+- [ ] Atmosphere keyed harder to weather: rain streaks, wet ground, fog falloff,
+      last-light warm rim, storm greys
+- [ ] Scope tube chrome: vignette, optional dust on cheap glass, soft edge on
+      poor optics at high power — without lying about subtension
+- [ ] Shot signature: short flinch, flash outside the tube, brake dust vs can
+      quiet (muzzle kit becomes visible)
+- [ ] UI polish: stage-select biome thumbnails, result hit map as a steel plate
+      graphic, keep olive/gunmetal catalogue tone (match armoury product art)
+
+**Medium effort**
+- [ ] Prop silhouette variety (3–5 shapes per kind: tree, building, scrub)
+- [ ] Depth layering: far props more haze / lower alpha; near props sharper
+- [ ] Stronger flags / windsocks (fabric flap, multi-segment sock) as free wind
+      gauges
+- [ ] Optional faint bullet path / TOF arc in glass (kit-gated?), pairs with
+      trajectory plotter
+- [ ] Night / low-light look for storm and last-light stages (dim reticle, plate
+      catch-light)
+
+**Careful / later only**
+- [ ] Offline-rendered plate sprites sized in pure angular space (mil ranging
+      must stay exact)
+- [ ] Optional WebGL post only inside the scope circle (blur/bloom) — pure canvas
+      remains the default for PWA / low-end Android
+
+**Do not chase (product constraints)**
+- Real-time 3D terrain or photoreal skyboxes that lie about distance
+- Cinematic camera outside the scope
+- Busy particle systems that tank phones
+- Anything that makes a mil-dot not equal one mil
+
+**Movers content (related)**
+- Stage 06 already teaches lead correctly (impact at arrival). Optional later:
+  Free Field moving plates, mixed static+mover strings, clearer post-shot
+  lead short/long feedback — not a more complex motion model.
 
 ### Polish & distribution
 - [ ] More complete Greek (and room for a third language)

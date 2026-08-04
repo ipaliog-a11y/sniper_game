@@ -18,6 +18,8 @@ import type { Grade } from './scoring';
 
 const KEY = 'coldbore.profile.v1';
 
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+
 export interface StageRecord {
   bestFraction: number;
   bestPoints: number;
@@ -69,7 +71,17 @@ export interface Settings {
   aimSensitivity: number;
   /** Invert the drag direction, for people who think of it as moving the rifle. */
   invertDrag: boolean;
+  /** Master audio on/off. When false, nothing is heard. */
   sound: boolean;
+  /**
+   * Master volume 0..1 (only applies when sound is on). Default 1 = full
+   * internal headroom; the engine still soft-limits peaks.
+   */
+  masterVolume: number;
+  /** Shots, impacts, bolt, UI ticks. */
+  soundSfx: boolean;
+  /** Ambient wind / environment bed. */
+  soundEnv: boolean;
   /** Show the true firing solution regardless of kit. Practice mode. */
   assist: boolean;
   /** Interface language. */
@@ -108,6 +120,9 @@ export const DEFAULT_SETTINGS: Settings = {
   aimSensitivity: 1,
   invertDrag: false,
   sound: true,
+  masterVolume: 1,
+  soundSfx: true,
+  soundEnv: true,
   assist: false,
   language: 'en',
   controlMode: 'touch',
@@ -172,6 +187,14 @@ export function loadProfile(): Profile {
           ? parsed.settings.controlMode
           : base.settings.controlMode,
         debugFreeShop: Boolean(parsed.settings?.debugFreeShop),
+        sound: parsed.settings?.sound !== false,
+        masterVolume: clamp01(
+          typeof parsed.settings?.masterVolume === 'number'
+            ? parsed.settings.masterVolume
+            : base.settings.masterVolume,
+        ),
+        soundSfx: parsed.settings?.soundSfx !== false,
+        soundEnv: parsed.settings?.soundEnv !== false,
       },
       career: migrateCareer(parsed.career),
     };

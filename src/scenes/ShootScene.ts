@@ -326,7 +326,10 @@ export class ShootScene implements Scene {
     if (!outcome) return;
 
     const loadout = session.loadout;
-    audio.shot(loadout.muzzle.loudness, clamp(loadout.massKg / 0.02, 0, 1));
+    // Calibre weight for the boom: light match pills vs .50. Loudness / signature
+    // come from the muzzle device (bare, brake, can).
+    const calibre = clamp((loadout.cartridge.grains - 100) / 550, 0, 1);
+    audio.shot(loadout.muzzle.loudness, calibre, loadout.muzzle.signature);
     this.cycle = loadout.cycleSeconds + loadout.settleSeconds * 0.4;
     this.recoilKick = 1;
 
@@ -384,7 +387,11 @@ export class ShootScene implements Scene {
     }
 
     if (outcome.newlyHit) audio.chime(true);
-    setTimeout(() => audio.bolt(), Math.max(0, (loadout.settleSeconds * 0.5) * 1000));
+    const cycleDelayMs = Math.max(0, loadout.settleSeconds * 0.5 * 1000);
+    setTimeout(() => {
+      if (loadout.rifle.action === 'semi') audio.semiCycle();
+      else audio.bolt();
+    }, cycleDelayMs);
 
     if (outcome.outOfAmmo && session.phase === 'live') {
       app.toast(t('shoot.out_of_ammo'), 'bad');

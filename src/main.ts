@@ -7,7 +7,7 @@ const boot = document.getElementById('boot');
 if (!canvas) throw new Error('No canvas to draw on.');
 
 const app = new App(canvas);
-audio.enabled = app.profile.settings.sound;
+audio.applySettings(app.profile.settings);
 
 // Browsers hold the audio context shut until the user does something. The first
 // touch anywhere opens it, and after that the game manages its own sound.

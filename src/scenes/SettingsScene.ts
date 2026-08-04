@@ -33,7 +33,7 @@ export class SettingsScene implements Scene {
 
     const view: Rect = { x: safe.x, y: safe.y + 44 * g, w: safe.w, h: safe.h - 44 * g };
     // Content height is fixed enough for the scroll region on short phones.
-    this.scroll.update(ui.input, view, 720 * g, 1 / 60);
+    this.scroll.update(ui.input, view, 920 * g, 1 / 60);
 
     ctx.save();
     ctx.beginPath();
@@ -99,10 +99,52 @@ export class SettingsScene implements Scene {
       () => (s.invertDrag = !s.invertDrag),
       t('settings.invert_note'),
     );
+
+    // --- sound --------------------------------------------------------
+    text(ctx, t('settings.sound_section'), safe.x, y + 2 * g, T.micro * g, C.amber);
+    y += 16 * g;
     row(t('settings.sound'), s.sound, () => {
       s.sound = !s.sound;
-      audio.enabled = s.sound;
-    });
+      audio.applySettings(s);
+    }, t('settings.sound_note'));
+    row(
+      t('settings.sound_sfx'),
+      s.soundSfx,
+      () => {
+        s.soundSfx = !s.soundSfx;
+        audio.applySettings(s);
+      },
+      t('settings.sound_sfx_note'),
+    );
+    row(
+      t('settings.sound_env'),
+      s.soundEnv,
+      () => {
+        s.soundEnv = !s.soundEnv;
+        audio.applySettings(s);
+      },
+      t('settings.sound_env_note'),
+    );
+
+    text(ctx, t('settings.master_volume'), safe.x, y + 2 * g, T.micro * g, C.textFaint);
+    text(
+      ctx,
+      `${Math.round(s.masterVolume * 100)}%`,
+      safe.x + w,
+      y + 2 * g,
+      T.body * g,
+      C.text,
+      'right',
+    );
+    y += 18 * g;
+    const nextVol = ui.slider('master-vol', { x: safe.x, y, w, h: 20 * g }, s.masterVolume, 0, 1);
+    if (Math.abs(nextVol - s.masterVolume) > 0.001) {
+      s.masterVolume = nextVol;
+      audio.applySettings(s);
+      app.save();
+    }
+    y += 36 * g;
+
     row(
       t('settings.practice'),
       s.assist,
@@ -187,6 +229,7 @@ export class SettingsScene implements Scene {
       if (this.confirmWipe) {
         app.profile = defaultProfile();
         setLanguage(app.profile.settings.language);
+        audio.applySettings(app.profile.settings);
         app.save();
         app.toast(t('settings.erased'), 'bad');
         this.confirmWipe = false;
