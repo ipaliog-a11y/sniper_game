@@ -73,11 +73,21 @@ export class App {
     this.input.setScale(1);
   };
 
-  /** The usable box, kept clear of notches and home indicators. */
+  /**
+   * The usable box, kept clear of notches and home indicators.
+   * On wide / ultrawide screens the column is capped and centered so menus
+   * and full-width buttons do not stretch edge-to-edge.
+   */
   get safe(): Rect {
     const pad = Math.max(10, Math.min(this.width, this.height) * 0.022);
     const top = pad + (this.height > this.width ? 12 : 0);
-    return { x: pad, y: top, w: this.width - pad * 2, h: this.height - top - pad - 6 };
+    const bottom = pad + 6;
+    const available = this.width - pad * 2;
+    // ~large-phone / small-tablet width; still wide enough for two-col weather.
+    const maxContentW = 720 * this.gauge;
+    const w = Math.min(available, maxContentW);
+    const x = (this.width - w) / 2;
+    return { x, y: top, w, h: this.height - top - bottom };
   }
 
   get portrait(): boolean {
