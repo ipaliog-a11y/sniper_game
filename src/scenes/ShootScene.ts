@@ -11,7 +11,7 @@ import {
   tick,
 } from '../core/session';
 import { spotterCall } from '../core/shot';
-import { clamp, mToYard, msToMph, radToMil, rangeFromMils } from '../core/units';
+import { clamp, mToYard, msToFps, msToMph, radToMil, rangeFromMils } from '../core/units';
 import { effectiveWind } from '../core/weather';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
@@ -69,6 +69,10 @@ export class ShootScene implements Scene {
   private callUntil = 0;
   private time = 0;
   private ending = 0;
+
+  /** Last shot's true muzzle velocity (m/s) when a chrono is fitted; null otherwise. */
+  private chronoLastMs: number | null = null;
+  private chronoUntil = 0;
 
   /** Mil-ranging tool: the two ends of the measurement, in screen pixels. */
   private milFrom: { x: number; y: number } | null = null;
@@ -355,6 +359,12 @@ export class ShootScene implements Scene {
     this.callHit = shot.quality !== null;
     this.callUntil = this.time + shot.tof + 3.2;
 
+    // Chronograph: each round's true exit speed, not the box number.
+    if (loadout.hasGear('chrono')) {
+      this.chronoLastMs = shot.muzzleVelocity;
+      this.chronoUntil = this.time + shot.tof + 4.5;
+    }
+
     if (outcome.newlyHit) audio.chime(true);
     setTimeout(() => audio.bolt(), Math.max(0, (loadout.settleSeconds * 0.5) * 1000));
 
@@ -595,6 +605,37 @@ export class ShootScene implements Scene {
     const down = session.targets.filter((tgt) => tgt.hit).length;
     stat(right, statTop + 72 * g, t('shoot.plates'), `${down}/${session.targets.length}`);
 
+    // Muzzle chronograph: live last shot + running mean for the string.
+    if (session.loadout.hasGear('chrono')) {
+      const readings = session.shots.map((s) => s.shot.muzzleVelocity);
+      const last =
+        this.chronoLastMs !== null
+          ? msToFps(this.chronoLastMs)
+          : readings.length
+            ? msToFps(readings[readings.length - 1])
+            : null;
+      const mean =
+        readings.length > 0
+          ? msToFps(readings.reduce((a, b) => a + b, 0) / readings.length)
+          : msToFps(session.loadout.muzzleVelocity);
+      const chronoY = statTop + 108 * g;
+      if (last !== null) {
+        stat(right, chronoY, t('shoot.chrono'), `${last.toFixed(0)}`, C.green);
+      } else {
+        stat(right, chronoY, t('shoot.chrono'), t('shoot.chrono_ready'), C.amber);
+      }
+      if (readings.length >= 2) {
+        text(
+          ctx,
+          t('shoot.chrono_avg', { fps: mean.toFixed(0) }),
+          right,
+          chronoY + 28 * g,
+          T.micro * g,
+          C.textFaint,
+        );
+      }
+    }
+
     // Breath meter under the tube: the one thing the shooter has to watch.
     const meterW = Math.min(radius * 1.1, 220 * g);
     const meter: Rect = {
@@ -645,23 +686,38 @@ export class ShootScene implements Scene {
       const band = glass.w - 2 * (left + 80 * g);
       const roomy = band > 150 * g;
       const w = roomy ? Math.min(band, 340 * g) : Math.min(glass.w - 24 * g, 340 * g);
+      const showChrono =
+        session.loadout.hasGear('chrono') &&
+        this.chronoLastMs !== null &&
+        this.time < this.chronoUntil;
       const box: Rect = {
         x: cx - w / 2,
         y: roomy ? glass.y + pad : statTop + 96 * g,
         w,
-        h: 30 * g,
+        h: showChrono ? 44 * g : 30 * g,
       };
       const hit = this.callHit;
       fillPanel(ctx, box, 6, 'rgba(8,11,10,0.85)', hit ? C.green : C.edge);
       app.ui.fitText(
         this.call,
         cx,
-        box.y + box.h / 2,
+        showChrono ? box.y + 13 * g : box.y + box.h / 2,
         box.w - 16 * g,
         T.small * g,
         hit ? C.green : C.text,
         'center',
       );
+      if (showChrono && this.chronoLastMs !== null) {
+        text(
+          ctx,
+          t('shoot.chrono_shot', { fps: msToFps(this.chronoLastMs).toFixed(0) }),
+          cx,
+          box.y + 32 * g,
+          T.micro * g,
+          C.amber,
+          'center',
+        );
+      }
     }
 
     // What is under the reticle right now, and how far away it is.

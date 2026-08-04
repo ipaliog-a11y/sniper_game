@@ -5,7 +5,7 @@ import { gradeColour, nextGradeAbove } from '../core/scoring';
 import type { Session } from '../core/session';
 import type { ShotResult } from '../core/shot';
 import { recordStage } from '../core/store';
-import { mToYard } from '../core/units';
+import { mToYard, msToFps } from '../core/units';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import { type Rect, bar, fillPanel, rule, text } from '../ui/gfx';
@@ -141,6 +141,35 @@ export class ResultScene implements Scene {
       );
     });
     y += 34 * g;
+
+    // Chronograph string stats when the kit recorded every exit velocity.
+    if (this.session.loadout.hasGear('chrono') && this.session.shots.length > 0) {
+      const fps = this.session.shots.map((s) => msToFps(s.shot.muzzleVelocity));
+      const mean = fps.reduce((a, b) => a + b, 0) / fps.length;
+      const es = Math.max(...fps) - Math.min(...fps);
+      const variance =
+        fps.length > 1
+          ? fps.reduce((s, v) => s + (v - mean) * (v - mean), 0) / (fps.length - 1)
+          : 0;
+      const sd = Math.sqrt(variance);
+      const chronoPanel: Rect = { x: safe.x, y, w: safe.w, h: 28 * g };
+      fillPanel(ctx, chronoPanel, 6, 'rgba(127,201,138,0.08)', C.edgeSoft);
+      text(
+        ctx,
+        t('result.chrono_line', {
+          n: fps.length,
+          mean: mean.toFixed(0),
+          es: es.toFixed(0),
+          sd: sd.toFixed(1),
+        }),
+        safe.x + 12 * g,
+        y + 15 * g,
+        T.small * g,
+        C.green,
+      );
+      y += 34 * g;
+    }
+
     rule(ctx, safe.x, y, safe.w);
     y += 8 * g;
 

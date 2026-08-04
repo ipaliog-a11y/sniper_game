@@ -1,5 +1,6 @@
 import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
+import { claimedMuzzleVelocityFps } from '../core/loadout';
 import type { Stage } from '../core/range';
 import { type Session, createSession } from '../core/session';
 import { msToFps, mToYard } from '../core/units';
@@ -172,10 +173,16 @@ export class BriefScene implements Scene {
 
     text(ctx, t('brief.on_the_rifle'), r.x, left, T.small * g, C.amber);
     left += 20 * g;
+    const hasChrono = loadout.hasGear('chrono');
+    const trueFps = msToFps(loadout.muzzleVelocity).toFixed(0);
+    const boxFps = claimedMuzzleVelocityFps(loadout).toFixed(0);
     const rifleRows: Array<[string, string, string?]> = [
       [
         catalogName(loadout.rifle.id, loadout.rifle.name).toUpperCase(),
-        t('brief.fps_today', { fps: msToFps(loadout.muzzleVelocity).toFixed(0) }),
+        hasChrono
+          ? t('brief.fps_chrono', { fps: trueFps })
+          : t('brief.fps_claimed', { fps: boxFps }),
+        hasChrono ? C.green : C.amber,
       ],
       [
         catalogName(loadout.cartridge.id, loadout.cartridge.name).toUpperCase(),
@@ -231,6 +238,11 @@ export class BriefScene implements Scene {
         t('brief.weather'),
         loadout.hasGear('kestrel') ? t('brief.weather_yes') : t('brief.weather_no'),
         loadout.hasGear('kestrel') ? C.green : C.amber,
+      ],
+      [
+        t('brief.chrono'),
+        loadout.hasGear('chrono') ? t('brief.chrono_yes') : t('brief.chrono_no'),
+        loadout.hasGear('chrono') ? C.green : C.amber,
       ],
     ];
     for (const [label, value, colour] of courseRows) {

@@ -204,4 +204,16 @@ export const dispersionRadiusAt = (loadout: ResolvedLoadout, rangeM: number) =>
 
 export const muzzleVelocityFps = (loadout: ResolvedLoadout) => msToFps(loadout.muzzleVelocity);
 
+/**
+ * What the box / muzzle device claims, without today's temperature or barrel
+ * length trim. Without a chronograph this is all the shooter is allowed to
+ * treat as known; the real mean sits a little off it most days.
+ */
+export function claimedMuzzleVelocityMs(loadout: ResolvedLoadout): number {
+  return fpsToMs(loadout.cartridge.velocityFps + loadout.muzzle.velocityDeltaFps);
+}
+
+export const claimedMuzzleVelocityFps = (loadout: ResolvedLoadout) =>
+  msToFps(claimedMuzzleVelocityMs(loadout));
+
 export { GEAR, GEAR_SLOTS, MUZZLES, OPTICS, SUPPORTS };

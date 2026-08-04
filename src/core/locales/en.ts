@@ -130,6 +130,11 @@ export const en: Dict = {
   'brief.weather_yes': 'meter fitted',
   'brief.weather_no': 'estimate it',
   'brief.fps_today': '{fps} fps today',
+  'brief.fps_claimed': '{fps} fps claimed (box)',
+  'brief.fps_chrono': '{fps} fps metered today',
+  'brief.chrono': 'CHRONO',
+  'brief.chrono_yes': 'muzzle chrono fitted — true MV each shot',
+  'brief.chrono_no': 'no chrono — only box velocity',
   'brief.moa_cone': '{moa} MOA cone',
   'brief.mil_travel': '{mils} MIL travel',
   'brief.transonic_warn':
@@ -192,6 +197,10 @@ export const en: Dict = {
   'shoot.clock': 'CLOCK',
   'shoot.clock_practice': '∞',
   'shoot.plates': 'PLATES',
+  'shoot.chrono': 'CHRONO',
+  'shoot.chrono_ready': '—',
+  'shoot.chrono_avg': 'avg {fps} fps',
+  'shoot.chrono_shot': 'chrono {fps} fps',
   'shoot.breathe': 'BREATHE',
   'shoot.holding': 'HOLDING {s}s',
   'shoot.breathing': 'BREATHING',
@@ -263,6 +272,7 @@ export const en: Dict = {
   'result.view_no_hits': 'No hits on this plate',
   'result.view_right': 'RIGHT →',
   'result.view_up': '↑ UP',
+  'result.chrono_line': 'CHRONO · {n} rds · mean {mean} fps · ES {es} · SD {sd}',
   'result.unlock_yes': 'Unlocked {name}',
   'result.unlock_yes_detail': 'You cleared the {pct}% gate on this stage.',
   'result.unlock_no': 'Still locked: {name}',
@@ -461,4 +471,7 @@ export const en: Dict = {
   'glossary.credits.term': 'Credits (cr)',
   'glossary.credits.def':
     'In-game currency earned from stage payouts. Spent in the armoury on rifles, ammo, glass, and gear.',
+  'glossary.chrono.term': 'Muzzle chronograph',
+  'glossary.chrono.def':
+    'Gear that measures true muzzle velocity each shot. Without it you only see the box claim on the brief. With it: live CHRONO fps on the HUD, per-shot readout after fire, and mean / ES / SD on the result card. Real MV already varies shot-to-shot; the chrono just lets you see it.',
 };

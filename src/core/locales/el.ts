@@ -131,6 +131,11 @@ export const el: Dict = {
   'brief.weather_yes': 'μετεωρόμετρο τοποθετημένο',
   'brief.weather_no': 'εκτίμησέ το',
   'brief.fps_today': '{fps} fps σήμερα',
+  'brief.fps_claimed': '{fps} fps (κουτί)',
+  'brief.fps_chrono': '{fps} fps μετρημένα σήμερα',
+  'brief.chrono': 'CHRONO',
+  'brief.chrono_yes': 'χρονογράφος — πραγματικό MV ανά βολή',
+  'brief.chrono_no': 'χωρίς chrono — μόνο ταχύτητα κουτιού',
   'brief.moa_cone': 'κώνος {moa} MOA',
   'brief.mil_travel': '{mils} MIL διαδρομή',
   'brief.transonic_warn':
@@ -193,6 +198,10 @@ export const el: Dict = {
   'shoot.clock': 'ΧΡΟΝΟΣ',
   'shoot.clock_practice': '∞',
   'shoot.plates': 'ΠΛΑΚΕΣ',
+  'shoot.chrono': 'CHRONO',
+  'shoot.chrono_ready': '—',
+  'shoot.chrono_avg': 'μέσο {fps} fps',
+  'shoot.chrono_shot': 'chrono {fps} fps',
   'shoot.breathe': 'ΑΝΑΠΝΕΥΣΕ',
   'shoot.holding': 'ΚΡΑΤΗΜΑ {s}s',
   'shoot.breathing': 'ΑΝΑΠΝΟΗ',
@@ -264,6 +273,7 @@ export const el: Dict = {
   'result.view_no_hits': 'Κανένα εύστοχο σε αυτή την πλάκα',
   'result.view_right': 'ΔΕΞΙΑ →',
   'result.view_up': '↑ ΠΑΝΩ',
+  'result.chrono_line': 'CHRONO · {n} βολές · μέσο {mean} fps · ES {es} · SD {sd}',
   'result.unlock_yes': 'Ξεκλείδωσε: {name}',
   'result.unlock_yes_detail': 'Πέρασες το όριο {pct}% σε αυτό το στάδιο.',
   'result.unlock_no': 'Ακόμα κλειδωμένο: {name}',
@@ -574,4 +584,7 @@ export const el: Dict = {
   'glossary.credits.term': 'Credits (cr)',
   'glossary.credits.def':
     'Νόμισμα από τις αμοιβές σταδίων. Ξοδεύεται στο οπλοστάσιο για όπλα, πυρομαχικά, γυαλί και εξοπλισμό.',
+  'glossary.chrono.term': 'Χρονογράφος στομίου',
+  'glossary.chrono.def':
+    'Μετρά την πραγματική ταχύτητα εξόδου ανά βολή. Χωρίς αυτό βλέπεις μόνο την ταχύτητα κουτιού στην ενημέρωση. Με αυτό: CHRONO fps στο HUD, ανάγνωση μετά από κάθε βολή, και μέσο / ES / SD στην κάρτα αποτελεσμάτων.',
 };
