@@ -6,7 +6,7 @@ export const el: Dict = {
   'menu.subtitle': 'Π Ρ Ο Π Ο Ν Η Τ Η Σ   Α Κ Ρ Ι Β Ε Ι Α Σ',
   'menu.stages_cleared': '{cleared} από {total} στάδια   ·   {credits} cr',
   'menu.course': 'ΣΕΙΡΑ ΒΟΛΗΣ',
-  'menu.course_sub': '{count} στάδια · εκπαίδευση έως δύο μίλια',
+  'menu.course_sub': '{count} στάδια · εκπαίδευση έως τον ορίζοντα',
   'menu.free_field': 'ΕΛΕΥΘΕΡΟ ΠΕΔΙΟ',
   'menu.free_field_sub': 'οι πλάκες σου · καιρός · οποιοδήποτε κιτ · ρολόι μετρά πάνω',
   'menu.armoury': 'ΟΠΛΟΣΤΑΣΙΟ',
@@ -143,6 +143,9 @@ export const el: Dict = {
   'stage.two-mile.name': '10 — Δύο Μίλια',
   'stage.two-mile.brief':
     'Τρεις χιλιάδες διακόσια δεκαοκτώ μέτρα. Η πτώση μετράται σε ορόφους, ο άνεμος σε μέτρα κράτησης, και το Coriolis δεν είναι υποσημείωση. Φέρε .50 BMG ή πραγματικό ELR μάγκνουμ, βαθύ γυαλί και solver που ξέρει γεωγραφικό πλάτος.',
+  'stage.horizon.name': '11 — Ορίζοντας',
+  'stage.horizon.brief':
+    'Τρεις χιλιάδες πεντακόσια σαράντα μέτρα — απόσταση κλάσης TAC-50. Χρόνος πτήσης κοντά στα δέκα δευτερόλεπτα, στρώματα ανέμου που δεν βλέπεις, και τελική πλάκα που ανταμείβει μόνο πλήρες ELR setup: .50 match, βαθύ γυαλί, μετρητής, solver και υπομονή.',
 
   // --- weather presets ---
   'weather.calm.name': 'Ήσυχο Πρωινό',
@@ -485,6 +488,8 @@ export const el: Dict = {
   'achieve.beyond_clear.desc': 'Καθάρισε το στάδιο Beyond the Mile (πέρα από 1,5 μίλια).',
   'achieve.two_mile_clear.name': 'Χάλυβας στα δύο μίλια',
   'achieve.two_mile_clear.desc': 'Καθάρισε το στάδιο των δύο μιλίων.',
+  'achieve.horizon_clear.name': 'Πέρα από τον ορίζοντα',
+  'achieve.horizon_clear.desc': 'Καθάρισε το στάδιο Horizon (3540 m / κλάση TAC-50).',
   'achieve.course_complete.name': 'Πλήρης σειρά',
   'achieve.course_complete.desc': 'Καθάρισε όλα τα βαθμολογούμενα στάδια.',
   'achieve.grade_marksman.name': 'Κορδέλα σκοπευτή',

@@ -6,7 +6,7 @@ export const en: Dict = {
   'menu.subtitle': 'P R E C I S I O N   R I F L E   T R A I N E R',
   'menu.stages_cleared': '{cleared} of {total} stages cleared   ·   {credits} cr',
   'menu.course': 'COURSE OF FIRE',
-  'menu.course_sub': '{count} stages · tutorial through two miles',
+  'menu.course_sub': '{count} stages · tutorial through the horizon',
   'menu.free_field': 'FREE FIELD',
   'menu.free_field_sub': 'your plates · weather · any kit · clock counts up',
   'menu.armoury': 'ARMOURY',
@@ -142,6 +142,9 @@ export const en: Dict = {
   'stage.two-mile.name': '10 — Two Miles',
   'stage.two-mile.brief':
     'Three thousand two hundred and eighteen metres. Drop is measured in storeys, wind in metres of hold, and Coriolis is no longer a footnote. Bring a .50 BMG or a true ELR magnum, deep glass, and a solver that knows latitude.',
+  'stage.horizon.name': '11 — Horizon',
+  'stage.horizon.brief':
+    'Three thousand five hundred and forty metres — TAC-50 class distance. Flight time near ten seconds, wind layers you cannot see, and a final plate that rewards only a full ELR stack: .50 match, deep glass, meter, solver, and patience.',
 
   // --- weather presets ---
   'weather.calm.name': 'Still Morning',
@@ -486,6 +489,8 @@ export const en: Dict = {
   'achieve.beyond_clear.desc': 'Clear Beyond the Mile (past 1.5 miles).',
   'achieve.two_mile_clear.name': 'Two-mile steel',
   'achieve.two_mile_clear.desc': 'Clear the two-mile stage.',
+  'achieve.horizon_clear.name': 'Over the horizon',
+  'achieve.horizon_clear.desc': 'Clear Horizon (3540 m / TAC-50 class).',
   'achieve.course_complete.name': 'Course complete',
   'achieve.course_complete.desc': 'Clear every graded course stage.',
   'achieve.grade_marksman.name': 'Marksman ribbon',

@@ -20,8 +20,8 @@ export const FREE_FIELD_SHAPES: TargetShape[] = ['gong', 'silhouette', 'head', '
 export const FREE_FIELD_MIN_TARGETS = 1;
 export const FREE_FIELD_MAX_TARGETS = 8;
 export const FREE_FIELD_MIN_RANGE_M = 100;
-/** Two miles — matches the deep end of the graded course. */
-export const FREE_FIELD_MAX_RANGE_M = 3218;
+/** Horizon stage depth — matches the deep end of the graded course. */
+export const FREE_FIELD_MAX_RANGE_M = 3540;
 export const FREE_FIELD_RANGE_STEP_M = 25;
 
 export interface FreeFieldTargetConfig {

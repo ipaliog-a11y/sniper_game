@@ -219,6 +219,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     check: (p) => Boolean(p.records['two-mile']?.cleared),
   },
   {
+    id: 'horizon_clear',
+    tier: 'gold',
+    check: (p) => Boolean(p.records.horizon?.cleared),
+  },
+  {
     id: 'course_complete',
     tier: 'gold',
     check: (p) => gradedStages().every((s) => p.records[s.id]?.cleared),

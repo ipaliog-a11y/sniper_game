@@ -106,7 +106,7 @@ export interface Dope {
 /** Printed card rows out to two miles; rows stop early if the bullet dies. */
 const CARD_RANGES = [
   100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1750, 2000,
-  2250, 2500, 2750, 3000, 3218, 3500,
+  2250, 2500, 2750, 3000, 3218, 3500, 3540, 3800,
 ];
 
 /**

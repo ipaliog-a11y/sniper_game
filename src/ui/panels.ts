@@ -509,7 +509,7 @@ export function turretPanel(
   text(ctx, dist(session.scope.parallaxM, settings.imperial), r.x + r.w, y, T.body * g, C.text, 'right');
   y += 18 * g;
   const parSlider: Rect = { x: r.x, y, w: r.w, h: 20 * g };
-  const nextPar = ui.slider('par', parSlider, session.scope.parallaxM, 50, 3600);
+  const nextPar = ui.slider('par', parSlider, session.scope.parallaxM, 50, 4000);
   if (Math.abs(nextPar - session.scope.parallaxM) > 0.5) {
     session.scope.parallaxM = nextPar;
     changed = true;

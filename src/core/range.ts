@@ -454,6 +454,28 @@ export const STAGES: Stage[] = [
       gong('e3', 3218, 7, 1.8, { label: '2 MI' }),
     ],
   },
+  {
+    id: 'horizon',
+    name: '11 — Horizon',
+    brief:
+      'Three thousand five hundred and forty metres — TAC-50 class distance. Flight time near ten seconds, wind layers you cannot see, and a final plate that rewards only a full ELR stack: .50 match, deep glass, meter, solver, and patience.',
+    presetId: 'calm',
+    biomeId: 'desert',
+    firingHeightM: 55,
+    seed: 35401,
+    rounds: 8,
+    timeLimitS: 900,
+    parPerTargetS: 150,
+    ordered: true,
+    reward: 20000,
+    unlockScore: 0.48,
+    targets: [
+      gong('h1', 3000, -3, 1.7, { label: '1.9 MI' }),
+      gong('h2', 3300, 2, 1.9, { label: '2.1 MI' }),
+      // ~JTF2 / TAC-50 class confirmed-hit distance.
+      gong('h3', 3540, 6, 2.2, { label: '2.2 MI' }),
+    ],
+  },
 ];
 
 export const stageById = (id: string) => STAGES.find((s) => s.id === id);
