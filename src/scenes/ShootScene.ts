@@ -178,6 +178,27 @@ export class ShootScene implements Scene {
 
   // --- input -----------------------------------------------------------
 
+  private isMouseMode(app: App): boolean {
+    return app.profile.settings.controlMode === 'mouse';
+  }
+
+  /** Mouse wheel changes magnification; touch still pinches. */
+  private handleWheelZoom(app: App): void {
+    if (!this.isMouseMode(app)) return;
+    // Panels that scroll (data card) keep the wheel for themselves.
+    if (this.overlay === 'dope') return;
+    const dy = app.input.wheel;
+    if (dy === 0) return;
+    const optic = this.session.loadout.optic;
+    // Wheel down zooms out — same sense as most maps and CAD viewports.
+    const factor = Math.exp(-dy * 0.0018);
+    this.session.scope.magnification = clamp(
+      this.session.scope.magnification * factor,
+      optic.magMin,
+      optic.magMax,
+    );
+  }
+
   private handleAim(app: App, glass: Rect): void {
     const input = app.input;
     const settings = app.profile.settings;
@@ -185,11 +206,14 @@ export class ShootScene implements Scene {
     const fov = fieldOfView(optic, this.session.scope.magnification);
     const radius = Math.min(glass.w, glass.h) / 2;
     const pxPerRad = (radius * 2) / fov;
+    const mouse = this.isMouseMode(app);
 
-    // Pinch to change magnification.
+    // Pinch to change magnification (touch). Mouse uses the wheel instead.
     const claimed = input.byClaim('aim');
-    const dragging = claimed.length > 0 ? claimed : input.free().filter((p) => p.dragging);
-    if (dragging.length >= 2) {
+    const dragging = claimed.length > 0
+      ? claimed
+      : input.free().filter((p) => p.dragging && p.button === 0);
+    if (!mouse && dragging.length >= 2) {
       const [a, b] = dragging;
       const now = Math.hypot(a.x - b.x, a.y - b.y);
       const before = Math.hypot(a.x - a.dx - (b.x - b.dx), a.y - a.dy - (b.y - b.dy));
@@ -205,6 +229,8 @@ export class ShootScene implements Scene {
     }
 
     for (const p of input.pointers.values()) {
+      // Right button is breath-hold in mouse mode; never drag the rifle with it.
+      if (p.button !== 0) continue;
       if (p.claim !== null && p.claim !== 'aim') continue;
       if (p.claim === null) {
         if (!p.dragging) continue;
@@ -223,6 +249,26 @@ export class ShootScene implements Scene {
       this.aimEl -= p.dy * scale;
       this.aimEl = clamp(this.aimEl, -0.35, 0.35);
       this.aimAz = clamp(this.aimAz, -0.6, 0.6);
+    }
+  }
+
+  /**
+   * Left-click (no drag) on the glass breaks the shot. UI widgets consume their
+   * own taps first, so tools, EXIT and the FIRE button still win over this.
+   */
+  private handleMouseFire(app: App, glass: Rect): void {
+    if (!this.isMouseMode(app)) return;
+    // Any tool overlay owns the pointer; only fire when looking through the glass.
+    if (this.overlay !== 'none') return;
+    for (const r of app.input.releases) {
+      if (r.consumed || r.button !== 0 || r.travel > 12) continue;
+      if (r.startX < glass.x || r.startX > glass.x + glass.w) continue;
+      if (r.startY < glass.y || r.startY > glass.y + glass.h) continue;
+      if (r.x < glass.x || r.x > glass.x + glass.w) continue;
+      if (r.y < glass.y || r.y > glass.y + glass.h) continue;
+      r.consumed = true;
+      this.shoot(app);
+      return;
     }
   }
 
@@ -388,6 +434,7 @@ export class ShootScene implements Scene {
     const barH = (app.width < 560 * g ? 104 : 54) * g;
     const glass: Rect = { x: 0, y: 0, w: app.width, h: app.height - barH };
 
+    this.handleWheelZoom(app);
     if (this.overlay === 'none') this.handleAim(app, glass);
     else if (this.overlay === 'mil') this.handleMilTool(app, glass);
 
@@ -424,6 +471,9 @@ export class ShootScene implements Scene {
     if (this.overlay !== 'none' && this.overlay !== 'mil') {
       this.drawOverlay(ctx, app, glass);
     }
+
+    // After every widget has had a chance to consume its tap: left-click fire.
+    this.handleMouseFire(app, glass);
 
     void ui;
     void settings;
@@ -743,7 +793,10 @@ export class ShootScene implements Scene {
       w: breathW,
       h: rowH,
     };
-    const holdingNow = app.input.isHeldIn(breath.x, breath.y, breath.w, breath.h);
+    // Touch: hold the HOLD button. Mouse: right mouse button anywhere, or the button.
+    const holdingNow =
+      app.input.isHeldIn(breath.x, breath.y, breath.w, breath.h) ||
+      (this.isMouseMode(app) && app.input.isButtonHeld(2));
     this.holding = holdingNow && this.holdTime < HOLD_LIMIT + 4;
     fillPanel(
       ctx,

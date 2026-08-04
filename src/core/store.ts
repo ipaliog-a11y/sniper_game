@@ -19,6 +19,36 @@ export interface StageRecord {
   cleared: boolean;
 }
 
+/** How the shoot scene is driven: finger-friendly buttons, or mouse bindings. */
+export type ControlMode = 'touch' | 'mouse';
+
+export const CONTROL_MODES: ControlMode[] = ['touch', 'mouse'];
+
+export const CONTROL_MODE_LABELS: Record<ControlMode, string> = {
+  touch: 'Touch',
+  mouse: 'Mouse',
+};
+
+export function isControlMode(value: unknown): value is ControlMode {
+  return value === 'touch' || value === 'mouse';
+}
+
+export function nextControlMode(mode: ControlMode): ControlMode {
+  const i = CONTROL_MODES.indexOf(mode);
+  return CONTROL_MODES[(i + 1) % CONTROL_MODES.length];
+}
+
+/** Prefer mouse on fine-pointer desktops; phones stay on touch. */
+export function defaultControlMode(): ControlMode {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'touch';
+  try {
+    if (window.matchMedia('(pointer: fine)').matches) return 'mouse';
+  } catch {
+    /* matchMedia can throw in odd embeds */
+  }
+  return 'touch';
+}
+
 export interface Settings {
   /** Yards, inches and Fahrenheit, or the sensible ones. */
   imperial: boolean;
@@ -31,6 +61,11 @@ export interface Settings {
   assist: boolean;
   /** Interface language. */
   language: Lang;
+  /**
+   * Shoot controls. Touch keeps HOLD/FIRE on the toolbar; mouse uses the
+   * wheel for zoom, right-hold for breath, and left-click to fire.
+   */
+  controlMode: ControlMode;
 }
 
 export interface Profile {
@@ -50,7 +85,19 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: true,
   assist: false,
   language: 'en',
+  controlMode: 'touch',
 };
+
+/** Fresh profile; control mode picks mouse on desktop when the DOM is there. */
+export function defaultProfile(): Profile {
+  return {
+    credits: STARTING_CREDITS,
+    owned: [...STARTER_KIT],
+    loadout: { ...DEFAULT_LOADOUT, gearIds: [] },
+    records: {},
+    settings: { ...DEFAULT_SETTINGS, controlMode: defaultControlMode() },
+  };
+}
 
 /** Free kit. Enough to shoot the first stage and not one thing more. */
 export const STARTER_KIT = [
@@ -60,16 +107,6 @@ export const STARTER_KIT = [
   'muz-none',
   'sup-none',
 ];
-
-export function defaultProfile(): Profile {
-  return {
-    credits: STARTING_CREDITS,
-    owned: [...STARTER_KIT],
-    loadout: { ...DEFAULT_LOADOUT, gearIds: [] },
-    records: {},
-    settings: { ...DEFAULT_SETTINGS },
-  };
-}
 
 function storage(): Storage | null {
   try {
@@ -104,6 +141,9 @@ export function loadProfile(): Profile {
         language: isLang(parsed.settings?.language)
           ? parsed.settings.language
           : base.settings.language,
+        controlMode: isControlMode(parsed.settings?.controlMode)
+          ? parsed.settings.controlMode
+          : base.settings.controlMode,
       },
     };
   } catch {

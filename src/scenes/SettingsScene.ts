@@ -1,5 +1,5 @@
 import { LANG_LABELS, nextLanguage, setLanguage, t } from '../core/i18n';
-import { defaultProfile } from '../core/store';
+import { defaultProfile, nextControlMode } from '../core/store';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import { type Rect, paragraph, rule, text } from '../ui/gfx';
@@ -56,6 +56,30 @@ export class SettingsScene implements Scene {
     }
     y += 36 * g;
     text(ctx, t('settings.language_note'), safe.x, y, T.micro * g, C.textFaint);
+    y += 22 * g;
+
+    // Controls: touch (toolbar) vs mouse (wheel / RMB / LMB).
+    text(ctx, t('settings.controls'), safe.x, y + 2 * g, T.micro * g, C.textFaint);
+    const modeBtn: Rect = { x: safe.x + w - 140 * g, y, w: 140 * g, h: 32 * g };
+    if (
+      ui.button(modeBtn, t(`settings.controls_${s.controlMode}`), {
+        size: T.small * g,
+        accent: true,
+      })
+    ) {
+      s.controlMode = nextControlMode(s.controlMode);
+      audio.click();
+      app.save();
+    }
+    y += 36 * g;
+    text(
+      ctx,
+      s.controlMode === 'mouse' ? t('settings.controls_mouse_note') : t('settings.controls_touch_note'),
+      safe.x,
+      y,
+      T.micro * g,
+      C.textFaint,
+    );
     y += 22 * g;
 
     row(t('settings.imperial'), s.imperial, () => (s.imperial = !s.imperial), t('settings.imperial_note'));

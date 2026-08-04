@@ -1,7 +1,8 @@
 /**
  * Pointer handling for mouse and touch as one thing. Taps and drags are
  * separated by distance, not by device, so the whole game works the same way
- * under a finger and under a cursor.
+ * under a finger and under a cursor. Mouse button is tracked so shoot scenes
+ * can bind right-hold and left-click without treating every button as a finger.
  */
 
 export interface Pointer {
@@ -20,6 +21,11 @@ export interface Pointer {
   dragging: boolean;
   /** Claimed by a widget or a scene region, so nothing else steals it. */
   claim: string | null;
+  /**
+   * Which button started this pointer. 0 = primary (left / finger), 1 = middle,
+   * 2 = secondary (right). Touch always reports 0.
+   */
+  button: number;
 }
 
 export interface Release {
@@ -31,6 +37,7 @@ export interface Release {
   travel: number;
   claim: string | null;
   consumed: boolean;
+  button: number;
 }
 
 const TAP_SLOP = 12;
@@ -81,6 +88,8 @@ export class Input {
       travel: 0,
       dragging: false,
       claim: null,
+      // Touch and pen report 0; mouse uses the real button index.
+      button: e.pointerType === 'mouse' ? e.button : 0,
     });
   };
 
@@ -114,6 +123,7 @@ export class Input {
       travel: pointer.travel,
       claim: pointer.claim,
       consumed: false,
+      button: pointer.button,
     });
   };
 
@@ -141,10 +151,11 @@ export class Input {
     }
   }
 
-  /** A tap that started and ended inside the same box, and did not wander. */
+  /** A primary-button tap that started and ended inside the same box, and did not wander. */
   takeTap(x: number, y: number, w: number, h: number, claim: string | null = null): boolean {
     for (const r of this.releases) {
       if (r.consumed) continue;
+      if (r.button !== 0) continue;
       if (r.claim !== claim) continue;
       if (r.travel > TAP_SLOP) continue;
       if (r.x < x || r.x > x + w || r.y < y || r.y > y + h) continue;
@@ -157,6 +168,7 @@ export class Input {
 
   isDownIn(x: number, y: number, w: number, h: number): boolean {
     for (const p of this.pointers.values()) {
+      if (p.button !== 0) continue;
       if (p.dragging) continue;
       if (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h) return true;
     }
@@ -166,7 +178,16 @@ export class Input {
   /** Held anywhere inside a box, drag or not — for hold-to-repeat buttons. */
   isHeldIn(x: number, y: number, w: number, h: number): boolean {
     for (const p of this.pointers.values()) {
+      if (p.button !== 0) continue;
       if (p.startX >= x && p.startX <= x + w && p.startY >= y && p.startY <= y + h) return true;
+    }
+    return false;
+  }
+
+  /** True while any pointer started with this mouse button is still down. */
+  isButtonHeld(button: number): boolean {
+    for (const p of this.pointers.values()) {
+      if (p.button === button) return true;
     }
     return false;
   }
