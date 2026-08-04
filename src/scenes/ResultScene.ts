@@ -1,3 +1,4 @@
+import { t } from '../core/i18n';
 import type { StageScore } from '../core/scoring';
 import { gradeColour } from '../core/scoring';
 import type { Session } from '../core/session';
@@ -58,10 +59,19 @@ export class ResultScene implements Scene {
     const score = this.score;
     const imperial = app.profile.settings.imperial;
 
-    ui.fitText(this.session.stage.name, safe.x, safe.y + 12 * g, safe.w * 0.6, T.head * g, C.text, 'left', 'bold');
+    ui.fitText(
+      t(`stage.${this.session.stage.id}.name`),
+      safe.x,
+      safe.y + 12 * g,
+      safe.w * 0.6,
+      T.head * g,
+      C.text,
+      'left',
+      'bold',
+    );
     text(
       ctx,
-      score.grade.toUpperCase(),
+      t(`grade.${score.grade}`).toUpperCase(),
       safe.x + safe.w,
       safe.y + 12 * g,
       T.head * g,
@@ -77,7 +87,7 @@ export class ResultScene implements Scene {
     text(ctx, `${shown}`, safe.x, y + 10 * g, T.huge * g, C.text, 'left', 'bold');
     text(ctx, `/ ${score.maxPoints}`, safe.x + 96 * g, y + 18 * g, T.body * g, C.textFaint);
 
-    text(ctx, 'FIRST ROUND HITS', safe.x + safe.w, y - 4 * g, T.micro * g, C.textFaint, 'right');
+    text(ctx, t('result.frh'), safe.x + safe.w, y - 4 * g, T.micro * g, C.textFaint, 'right');
     text(
       ctx,
       `${score.frhPercent.toFixed(0)}%`,
@@ -95,11 +105,11 @@ export class ResultScene implements Scene {
     y += 22 * g;
 
     const summary: Array<[string, string]> = [
-      ['PLATES', `${score.hits} / ${score.targets}`],
-      ['ROUNDS', `${score.shots}`],
-      ['TIME', `${score.elapsedS.toFixed(1)} s`],
-      ['MEAN MISS', `${score.meanRadialMil.toFixed(2)} MIL`],
-      ['PAYOUT', `${score.reward.toLocaleString()} cr`],
+      [t('result.plates'), `${score.hits} / ${score.targets}`],
+      [t('result.rounds'), `${score.shots}`],
+      [t('result.time'), `${score.elapsedS.toFixed(1)} s`],
+      [t('result.mean_miss'), `${score.meanRadialMil.toFixed(2)} MIL`],
+      [t('result.payout'), `${score.reward.toLocaleString()} cr`],
     ];
     const colW = safe.w / summary.length;
     summary.forEach(([label, value], i) => {
@@ -120,41 +130,42 @@ export class ResultScene implements Scene {
     ctx.rect(view.x, view.y, view.w, view.h);
     ctx.clip();
 
-    score.perTarget.forEach((t, i) => {
-      const runtime = this.session.targets.find((r) => r.target.id === t.targetId);
+    score.perTarget.forEach((tgt, i) => {
+      const runtime = this.session.targets.find((r) => r.target.id === tgt.targetId);
       const ry = view.y + 4 * g + i * rowH - this.scroll.offset;
       if (ry > view.y + view.h || ry + rowH < view.y) return;
       const r: Rect = { x: view.x, y: ry, w: view.w, h: rowH - 6 * g };
-      fillPanel(ctx, r, 6, t.hit ? 'rgba(127,201,138,0.07)' : 'rgba(224,112,95,0.06)', C.edgeSoft);
+      fillPanel(ctx, r, 6, tgt.hit ? 'rgba(127,201,138,0.07)' : 'rgba(224,112,95,0.06)', C.edgeSoft);
 
       const range = runtime ? runtime.target.rangeM : 0;
       const label = imperial ? `${Math.round(mToYard(range))} yd` : `${Math.round(range)} m`;
       text(ctx, label, r.x + 12 * g, r.y + 15 * g, T.body * g, C.text, 'left', 'bold');
       text(
         ctx,
-        runtime ? runtime.target.shape : '',
+        runtime ? t(`shape.${runtime.target.shape}`) : '',
         r.x + 12 * g,
         r.y + 31 * g,
         T.micro * g,
         C.textFaint,
       );
 
-      const detail = t.hit
-        ? `${t.firstRound ? 'first round' : `${t.rounds} rounds`} · ${t.timeToHitS.toFixed(1)} s · ${Math.round(
-            t.quality * 100,
-          )}% centred`
-        : t.rounds > 0
-          ? `${t.rounds} rounds, no hit`
-          : 'never engaged';
-      text(ctx, detail, r.x + 90 * g, r.y + 23 * g, T.small * g, t.hit ? C.textDim : C.red);
+      const detail = tgt.hit
+        ? `${tgt.firstRound ? t('result.first_round') : t('result.n_rounds', { n: tgt.rounds })} · ${tgt.timeToHitS.toFixed(1)} s · ${t(
+            'result.centred',
+            { pct: Math.round(tgt.quality * 100) },
+          )}`
+        : tgt.rounds > 0
+          ? t('result.no_hit', { n: tgt.rounds })
+          : t('result.never');
+      text(ctx, detail, r.x + 90 * g, r.y + 23 * g, T.small * g, tgt.hit ? C.textDim : C.red);
 
       text(
         ctx,
-        `${t.points}`,
+        `${tgt.points}`,
         r.x + r.w - 12 * g,
         r.y + 23 * g,
         T.body * g,
-        t.hit ? C.text : C.textFaint,
+        tgt.hit ? C.text : C.textFaint,
         'right',
         'bold',
       );
@@ -164,11 +175,11 @@ export class ResultScene implements Scene {
     const half = safe.w / 2 - 5 * g;
     const again: Rect = { x: safe.x, y: safe.y + safe.h - footerH, w: half, h: footerH - 4 * g };
     const next: Rect = { x: safe.x + half + 10 * g, y: again.y, w: half, h: again.h };
-    if (ui.button(again, 'SHOOT IT AGAIN', { size: T.body * g })) {
+    if (ui.button(again, t('result.again'), { size: T.body * g })) {
       audio.tap();
       app.set(new BriefScene(this.session.stage));
     }
-    if (ui.button(next, 'COURSE OF FIRE', { accent: true, size: T.body * g })) {
+    if (ui.button(next, t('result.course'), { accent: true, size: T.body * g })) {
       audio.tap();
       app.set(new StageSelectScene());
     }

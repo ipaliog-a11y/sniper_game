@@ -1,4 +1,5 @@
 import { DEFAULT_LOADOUT, type LoadoutSelection } from './loadout';
+import { type Lang, isLang } from './i18n';
 import type { Grade } from './scoring';
 
 /**
@@ -28,6 +29,8 @@ export interface Settings {
   sound: boolean;
   /** Show the true firing solution regardless of kit. Practice mode. */
   assist: boolean;
+  /** Interface language. */
+  language: Lang;
 }
 
 export interface Profile {
@@ -46,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   invertDrag: false,
   sound: true,
   assist: false,
+  language: 'en',
 };
 
 /** Free kit. Enough to shoot the first stage and not one thing more. */
@@ -94,7 +98,13 @@ export function loadProfile(): Profile {
         : base.owned,
       loadout: { ...base.loadout, ...(parsed.loadout ?? {}) },
       records: parsed.records ?? {},
-      settings: { ...base.settings, ...(parsed.settings ?? {}) },
+      settings: {
+        ...base.settings,
+        ...(parsed.settings ?? {}),
+        language: isLang(parsed.settings?.language)
+          ? parsed.settings.language
+          : base.settings.language,
+      },
     };
   } catch {
     return defaultProfile();

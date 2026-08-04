@@ -1,3 +1,4 @@
+import { LANG_LABELS, nextLanguage, setLanguage, t } from '../core/i18n';
 import { defaultProfile } from '../core/store';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
@@ -18,9 +19,9 @@ export class SettingsScene implements Scene {
     const safe = app.safe;
     const s = profile.settings;
 
-    text(ctx, 'SETTINGS', safe.x, safe.y + 12 * g, T.head * g, C.text, 'left', 'bold');
+    text(ctx, t('settings.title'), safe.x, safe.y + 12 * g, T.head * g, C.text, 'left', 'bold');
     const back: Rect = { x: safe.x + safe.w - 78 * g, y: safe.y, w: 78 * g, h: 30 * g };
-    if (ui.button(back, 'MENU', { size: T.small * g })) {
+    if (ui.button(back, t('common.menu'), { size: T.small * g })) {
       audio.tap();
       app.save();
       app.set(new MenuScene());
@@ -44,20 +45,38 @@ export class SettingsScene implements Scene {
       y += rowH;
     };
 
-    row('IMPERIAL UNITS', s.imperial, () => (s.imperial = !s.imperial), 'yards, inches and Fahrenheit');
-    row('INVERT AIM DRAG', s.invertDrag, () => (s.invertDrag = !s.invertDrag), 'drag the picture instead of the rifle');
-    row('SOUND', s.sound, () => {
+    // Language sits at the top so players find it before anything else.
+    text(ctx, t('settings.language'), safe.x, y + 2 * g, T.micro * g, C.textFaint);
+    const langBtn: Rect = { x: safe.x + w - 140 * g, y, w: 140 * g, h: 32 * g };
+    if (ui.button(langBtn, LANG_LABELS[s.language], { size: T.small * g, accent: true })) {
+      s.language = nextLanguage(s.language);
+      setLanguage(s.language);
+      audio.click();
+      app.save();
+    }
+    y += 36 * g;
+    text(ctx, t('settings.language_note'), safe.x, y, T.micro * g, C.textFaint);
+    y += 22 * g;
+
+    row(t('settings.imperial'), s.imperial, () => (s.imperial = !s.imperial), t('settings.imperial_note'));
+    row(
+      t('settings.invert'),
+      s.invertDrag,
+      () => (s.invertDrag = !s.invertDrag),
+      t('settings.invert_note'),
+    );
+    row(t('settings.sound'), s.sound, () => {
       s.sound = !s.sound;
       audio.enabled = s.sound;
     });
     row(
-      'PRACTICE MODE',
+      t('settings.practice'),
       s.assist,
       () => (s.assist = !s.assist),
-      'shows ranges and the true firing solution regardless of kit; scores still count',
+      t('settings.practice_note'),
     );
 
-    text(ctx, 'AIM SENSITIVITY', safe.x, y + 2 * g, T.micro * g, C.textFaint);
+    text(ctx, t('settings.aim_sens'), safe.x, y + 2 * g, T.micro * g, C.textFaint);
     text(ctx, `${s.aimSensitivity.toFixed(2)}x`, safe.x + w, y + 2 * g, T.body * g, C.text, 'right');
     y += 18 * g;
     const next = ui.slider('sens', { x: safe.x, y, w, h: 20 * g }, s.aimSensitivity, 0.3, 2.5);
@@ -70,20 +89,12 @@ export class SettingsScene implements Scene {
     rule(ctx, safe.x, y, w);
     y += 18 * g;
 
-    paragraph(
-      ctx,
-      'Aiming is geared per radian, so higher magnification is automatically finer. This only changes the overall gearing.',
-      safe.x,
-      y,
-      w,
-      T.small * g,
-      C.textDim,
-    );
+    paragraph(ctx, t('settings.aim_note'), safe.x, y, w, T.small * g, C.textDim);
     y += 46 * g;
 
     const wipe: Rect = { x: safe.x, y, w, h: 40 * g };
     if (
-      ui.button(wipe, this.confirmWipe ? 'TAP AGAIN TO ERASE EVERYTHING' : 'RESET PROGRESS', {
+      ui.button(wipe, this.confirmWipe ? t('settings.reset_confirm') : t('settings.reset'), {
         danger: this.confirmWipe,
         accent: this.confirmWipe,
         size: T.small * g,
@@ -91,21 +102,15 @@ export class SettingsScene implements Scene {
     ) {
       if (this.confirmWipe) {
         app.profile = defaultProfile();
+        setLanguage(app.profile.settings.language);
         app.save();
-        app.toast('Progress erased', 'bad');
+        app.toast(t('settings.erased'), 'bad');
         this.confirmWipe = false;
       } else {
         this.confirmWipe = true;
       }
     }
     y += 50 * g;
-    text(
-      ctx,
-      'kit, credits and every score card',
-      safe.x,
-      y,
-      T.micro * g,
-      C.textFaint,
-    );
+    text(ctx, t('settings.reset_note'), safe.x, y, T.micro * g, C.textFaint);
   }
 }

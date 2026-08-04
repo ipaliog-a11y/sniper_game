@@ -1,3 +1,4 @@
+import { t } from '../core/i18n';
 import type { Stage } from '../core/range';
 import { type Session, createSession } from '../core/session';
 import { msToFps, mToYard } from '../core/units';
@@ -15,7 +16,12 @@ import { StageSelectScene } from './StageSelectScene';
  * are ready or not, so this screen is where stages are actually won.
  */
 
-const TABS = ['BRIEF', 'WEATHER', 'DATA CARD', 'TURRETS'];
+const TAB_KEYS = [
+  'brief.tab.brief',
+  'brief.tab.weather',
+  'brief.tab.card',
+  'brief.tab.turrets',
+] as const;
 
 export class BriefScene implements Scene {
   readonly name = 'brief';
@@ -47,16 +53,26 @@ export class BriefScene implements Scene {
     const safe = app.safe;
     const session = this.session;
 
-    ui.fitText(this.stage.name, safe.x, safe.y + 12 * g, safe.w - 160 * g, T.head * g, C.text, 'left', 'bold');
+    ui.fitText(
+      t(`stage.${this.stage.id}.name`),
+      safe.x,
+      safe.y + 12 * g,
+      safe.w - 160 * g,
+      T.head * g,
+      C.text,
+      'left',
+      'bold',
+    );
     const back: Rect = { x: safe.x + safe.w - 78 * g, y: safe.y, w: 78 * g, h: 30 * g };
-    if (ui.button(back, 'BACK', { size: T.small * g })) {
+    if (ui.button(back, t('common.back'), { size: T.small * g })) {
       audio.tap();
       audio.stopWind();
       app.set(new StageSelectScene());
     }
 
+    const tabs = TAB_KEYS.map((k) => t(k));
     const tabRect: Rect = { x: safe.x, y: safe.y + 38 * g, w: safe.w, h: 30 * g };
-    const picked = ui.tabs(tabRect, TABS, this.tab);
+    const picked = ui.tabs(tabRect, tabs, this.tab);
     if (picked >= 0) {
       this.tab = picked;
       audio.tap();
@@ -94,7 +110,7 @@ export class BriefScene implements Scene {
     }
 
     const go: Rect = { x: safe.x, y: safe.y + safe.h - goH, w: safe.w, h: goH - 4 * g };
-    if (ui.button(go, 'GO HOT', { accent: true, size: T.head * g })) {
+    if (ui.button(go, t('brief.go_hot'), { accent: true, size: T.head * g })) {
       audio.unlock();
       audio.bolt();
       app.set(new ShootScene(session));
@@ -117,23 +133,47 @@ export class BriefScene implements Scene {
     const colW = twoUp ? r.w / 2 - 14 * g : r.w;
     const rightX = twoUp ? r.x + r.w / 2 + 14 * g : r.x;
 
-    const briefHeight = paragraph(ctx, this.stage.brief, r.x, r.y + 12 * g, colW, T.small * g, C.textDim);
+    const briefHeight = paragraph(
+      ctx,
+      t(`stage.${this.stage.id}.brief`),
+      r.x,
+      r.y + 12 * g,
+      colW,
+      T.small * g,
+      C.textDim,
+    );
     let left = r.y + 12 * g + briefHeight + 14 * g;
     rule(ctx, r.x, left, colW);
     left += 16 * g;
 
-    text(ctx, 'ON THE RIFLE', r.x, left, T.small * g, C.amber);
+    text(ctx, t('brief.on_the_rifle'), r.x, left, T.small * g, C.amber);
     left += 20 * g;
     const rifleRows: Array<[string, string, string?]> = [
-      [loadout.rifle.name.toUpperCase(), `${msToFps(loadout.muzzleVelocity).toFixed(0)} fps today`],
-      [loadout.cartridge.name.toUpperCase(), `${loadout.dispersionMoa.toFixed(2)} MOA cone`],
-      [loadout.optic.name.toUpperCase(), `${loadout.optic.elevationTravelMils} MIL travel`],
       [
-        'GEAR',
-        loadout.gear.length ? loadout.gear.map((x) => x.name).join(' · ') : 'nothing fitted',
+        loadout.rifle.name.toUpperCase(),
+        t('brief.fps_today', { fps: msToFps(loadout.muzzleVelocity).toFixed(0) }),
+      ],
+      [
+        loadout.cartridge.name.toUpperCase(),
+        t('brief.moa_cone', { moa: loadout.dispersionMoa.toFixed(2) }),
+      ],
+      [
+        loadout.optic.name.toUpperCase(),
+        t('brief.mil_travel', { mils: loadout.optic.elevationTravelMils }),
+      ],
+      [
+        t('brief.gear'),
+        loadout.gear.length
+          ? loadout.gear.map((x) => x.name).join(' · ')
+          : t('brief.nothing_fitted'),
         loadout.gear.length ? C.text : C.textFaint,
       ],
-      ['ZERO', imperial ? `${Math.round(mToYard(loadout.zeroRangeM))} yd` : `${loadout.zeroRangeM} m`],
+      [
+        t('brief.zero'),
+        imperial
+          ? `${Math.round(mToYard(loadout.zeroRangeM))} yd`
+          : `${loadout.zeroRangeM} m`,
+      ],
     ];
     for (const [label, value, colour] of rifleRows) {
       ui.field(r.x, left, colW, label, value, colour ?? C.text);
@@ -146,26 +186,26 @@ export class BriefScene implements Scene {
       rule(ctx, r.x, right - 8 * g, colW);
     }
 
-    text(ctx, 'THE COURSE', rightX, right, T.small * g, C.amber);
+    text(ctx, t('brief.the_course'), rightX, right, T.small * g, C.amber);
     right += 20 * g;
     const courseRows: Array<[string, string, string?]> = [
-      ['TARGETS', `${this.stage.targets.length}`],
-      ['ROUNDS', `${this.stage.rounds}`],
-      ['TIME LIMIT', `${Math.round(this.stage.timeLimitS)} s`],
-      ['PAR PER TARGET', `${Math.round(this.stage.parPerTargetS)} s`],
+      [t('brief.targets'), `${this.stage.targets.length}`],
+      [t('brief.rounds'), `${this.stage.rounds}`],
+      [t('brief.time_limit'), `${Math.round(this.stage.timeLimitS)} s`],
+      [t('brief.par'), `${Math.round(this.stage.parPerTargetS)} s`],
       [
-        'RANGING',
-        loadout.hasGear('lrf') ? 'rangefinder fitted' : 'mil the targets yourself',
+        t('brief.ranging'),
+        loadout.hasGear('lrf') ? t('brief.ranging_lrf') : t('brief.ranging_mil'),
         loadout.hasGear('lrf') ? C.green : C.amber,
       ],
       [
-        'SOLUTION',
-        loadout.hasGear('solver') ? 'solver fitted' : 'read it off the card',
+        t('brief.solution'),
+        loadout.hasGear('solver') ? t('brief.solution_yes') : t('brief.solution_no'),
         loadout.hasGear('solver') ? C.green : C.amber,
       ],
       [
-        'WEATHER',
-        loadout.hasGear('kestrel') ? 'meter fitted' : 'estimate it',
+        t('brief.weather'),
+        loadout.hasGear('kestrel') ? t('brief.weather_yes') : t('brief.weather_no'),
         loadout.hasGear('kestrel') ? C.green : C.amber,
       ],
     ];
@@ -175,17 +215,18 @@ export class BriefScene implements Scene {
     }
 
     // A quiet warning if the load simply will not reach.
-    const furthest = this.stage.targets.reduce((m, t) => Math.max(m, t.rangeM), 0);
+    const furthest = this.stage.targets.reduce((m, tgt) => Math.max(m, tgt.rangeM), 0);
     const transonic = session.dope.transonicRangeM;
     if (transonic && furthest > transonic) {
       const warnY = Math.min(r.y + r.h - 48 * g, Math.max(left, right) + 12 * g);
       const warn: Rect = { x: rightX, y: warnY, w: colW, h: 44 * g };
       fillPanel(ctx, warn, 6, 'rgba(224,112,95,0.10)', C.red);
+      const rangeStr = imperial
+        ? `${Math.round(mToYard(transonic))} yd`
+        : `${Math.round(transonic)} m`;
       paragraph(
         ctx,
-        `This load goes transonic at ${
-          imperial ? `${Math.round(mToYard(transonic))} yd` : `${Math.round(transonic)} m`
-        } and the far targets are past it. Expect the groups to open up.`,
+        t('brief.transonic_warn', { range: rangeStr }),
         warn.x + 10 * g,
         warn.y + 13 * g,
         warn.w - 20 * g,

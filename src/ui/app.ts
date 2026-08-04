@@ -1,3 +1,4 @@
+import { setLanguage } from '../core/i18n';
 import { type Profile, loadProfile, saveProfile } from '../core/store';
 import type { Rect } from './gfx';
 import { Input } from './input';
@@ -51,6 +52,7 @@ export class App {
     this.input = new Input(canvas);
     this.ui = new Ui(ctx, this.input);
     this.profile = loadProfile();
+    setLanguage(this.profile.settings.language);
     window.addEventListener('resize', this.resize);
     window.addEventListener('orientationchange', this.resize);
     this.resize();

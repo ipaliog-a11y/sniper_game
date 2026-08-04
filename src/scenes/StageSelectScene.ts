@@ -1,3 +1,4 @@
+import { t } from '../core/i18n';
 import { STAGES, stageMaxRange } from '../core/range';
 import { gradeColour } from '../core/scoring';
 import { presetById } from '../core/weather';
@@ -32,9 +33,9 @@ export class StageSelectScene implements Scene {
     const safe = app.safe;
     const imperial = profile.settings.imperial;
 
-    text(ctx, 'COURSE OF FIRE', safe.x, safe.y + 12 * g, T.head * g, C.text, 'left', 'bold');
+    text(ctx, t('stages.title'), safe.x, safe.y + 12 * g, T.head * g, C.text, 'left', 'bold');
     const back: Rect = { x: safe.x + safe.w - 78 * g, y: safe.y, w: 78 * g, h: 30 * g };
-    if (ui.button(back, 'MENU', { size: T.small * g })) {
+    if (ui.button(back, t('common.menu'), { size: T.small * g })) {
       audio.tap();
       app.set(new MenuScene());
     }
@@ -63,21 +64,36 @@ export class StageSelectScene implements Scene {
       fillPanel(ctx, r, 8, open ? C.panel : 'rgba(21,29,25,0.45)', open ? C.edge : C.edgeSoft);
 
       const pad = 14 * g;
-      text(ctx, stage.name, r.x + pad, r.y + 20 * g, T.body * g, open ? C.text : C.textFaint, 'left', 'bold');
+      const stageName = t(`stage.${stage.id}.name`);
+      text(ctx, stageName, r.x + pad, r.y + 20 * g, T.body * g, open ? C.text : C.textFaint, 'left', 'bold');
 
       const preset = presetById(stage.presetId);
       const maxRange = stageMaxRange(stage);
-      const meta = `${stage.targets.length} targets · to ${
-        imperial ? `${Math.round(mToYard(maxRange))} yd` : `${Math.round(maxRange)} m`
-      } · ${stage.rounds} rounds · ${preset.name}`;
+      const rangeStr = imperial
+        ? `${Math.round(mToYard(maxRange))} yd`
+        : `${Math.round(maxRange)} m`;
+      const meta = t('stages.meta', {
+        targets: stage.targets.length,
+        range: rangeStr,
+        rounds: stage.rounds,
+        weather: t(`weather.${preset.id}.name`),
+      });
       text(ctx, meta, r.x + pad, r.y + 38 * g, T.micro * g, C.textFaint);
 
       if (open) {
-        paragraph(ctx, stage.brief, r.x + pad, r.y + 58 * g, r.w - pad * 2 - 74 * g, T.small * g, C.textDim);
+        paragraph(
+          ctx,
+          t(`stage.${stage.id}.brief`),
+          r.x + pad,
+          r.y + 58 * g,
+          r.w - pad * 2 - 74 * g,
+          T.small * g,
+          C.textDim,
+        );
       } else {
         text(
           ctx,
-          `locked — shoot ${Math.round(stage.unlockScore * 100)}% on the previous stage`,
+          t('stages.locked', { pct: Math.round(stage.unlockScore * 100) }),
           r.x + pad,
           r.y + 62 * g,
           T.small * g,
@@ -87,10 +103,22 @@ export class StageSelectScene implements Scene {
 
       if (record && record.attempts > 0) {
         const colour = gradeColour(record.bestGrade);
-        text(ctx, record.bestGrade.toUpperCase(), r.x + r.w - pad, r.y + 20 * g, T.small * g, colour, 'right', 'bold');
         text(
           ctx,
-          `${Math.round(record.bestFraction * 100)}%  ·  ${record.bestPoints} pts`,
+          t(`grade.${record.bestGrade}`).toUpperCase(),
+          r.x + r.w - pad,
+          r.y + 20 * g,
+          T.small * g,
+          colour,
+          'right',
+          'bold',
+        );
+        text(
+          ctx,
+          t('stages.record', {
+            pct: Math.round(record.bestFraction * 100),
+            pts: record.bestPoints,
+          }),
           r.x + r.w - pad,
           r.y + 38 * g,
           T.micro * g,
@@ -98,7 +126,7 @@ export class StageSelectScene implements Scene {
           'right',
         );
       } else if (open) {
-        text(ctx, 'not shot', r.x + r.w - pad, r.y + 20 * g, T.micro * g, C.textFaint, 'right');
+        text(ctx, t('stages.not_shot'), r.x + r.w - pad, r.y + 20 * g, T.micro * g, C.textFaint, 'right');
       }
 
       if (open && !blocked && ui.input.takeTap(r.x, r.y, r.w, r.h)) {

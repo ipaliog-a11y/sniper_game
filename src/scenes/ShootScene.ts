@@ -1,3 +1,4 @@
+import { t } from '../core/i18n';
 import { targetInclination, targetMils } from '../core/range';
 import { fieldOfView, reticleScale } from '../core/scope';
 import {
@@ -64,6 +65,7 @@ export class ShootScene implements Scene {
   private overlay: Overlay = 'none';
   private dopeScroll = new Scroll('shootdope');
   private call = '';
+  private callHit = false;
   private callUntil = 0;
   private time = 0;
   private ending = 0;
@@ -114,7 +116,7 @@ export class ShootScene implements Scene {
       this.breath = clamp(this.breath + dt * (this.holdTime > HOLD_LIMIT ? 0.55 : 0.09), 0, 1);
       if (this.holdTime > HOLD_LIMIT + 4) {
         this.holding = false;
-        app.toast('Out of air — breathe', 'bad');
+        app.toast(t('shoot.out_of_air'), 'bad');
       }
     } else {
       this.holdTime = Math.max(0, this.holdTime - dt * 2);
@@ -268,16 +270,17 @@ export class ShootScene implements Scene {
     const call = target
       ? hasSpotter || shot.quality !== null
         ? spotterCall(shot)
-        : 'Lost the splash. No call.'
-      : 'Round into the dirt.';
+        : t('shoot.lost_splash')
+      : t('shoot.round_dirt');
     this.call = call;
+    this.callHit = shot.quality !== null;
     this.callUntil = this.time + shot.tof + 3.2;
 
     if (outcome.newlyHit) audio.chime(true);
     setTimeout(() => audio.bolt(), Math.max(0, (loadout.settleSeconds * 0.5) * 1000));
 
     if (outcome.outOfAmmo && session.phase === 'live') {
-      app.toast('Out of ammunition', 'bad');
+      app.toast(t('shoot.out_of_ammo'), 'bad');
       session.phase = 'complete';
     }
   }
@@ -294,7 +297,7 @@ export class ShootScene implements Scene {
     const session = this.session;
     const up = exposedTargets(session);
     if (up.length === 0) {
-      app.toast('Nothing up right now', 'bad');
+      app.toast(t('shoot.nothing_up'), 'bad');
       return;
     }
 
@@ -455,11 +458,11 @@ export class ShootScene implements Scene {
     const exitBtn: Rect = {
       x: left,
       y: glass.y + pad,
-      w: this.confirmExit ? 128 * g : 62 * g,
+      w: this.confirmExit ? 148 * g : 72 * g,
       h: 26 * g,
     };
     if (
-      app.ui.button(exitBtn, this.confirmExit ? 'ABANDON RUN?' : 'EXIT', {
+      app.ui.button(exitBtn, this.confirmExit ? t('shoot.abandon') : t('shoot.exit'), {
         size: T.micro * g,
         accent: this.confirmExit,
         danger: this.confirmExit,
@@ -476,28 +479,34 @@ export class ShootScene implements Scene {
     }
 
     const statTop = glass.y + 52 * g;
-    stat(left, statTop, 'ELEV', `${dial.toFixed(1)} MIL`, C.amber);
+    stat(left, statTop, t('shoot.elev'), `${dial.toFixed(1)} MIL`, C.amber);
     stat(
       left,
       statTop + 36 * g,
-      'WIND',
+      t('shoot.wind'),
       `${Math.abs(windDial).toFixed(1)} ${windDial >= 0 ? 'R' : 'L'}`,
       C.amber,
     );
-    stat(left, statTop + 72 * g, 'MAG', `${session.scope.magnification.toFixed(1)}x`);
+    stat(left, statTop + 72 * g, t('shoot.mag'), `${session.scope.magnification.toFixed(1)}x`);
 
     const right = Math.min(app.width - pad - 76 * g, cx + radius + 12 * g);
-    stat(right, statTop, 'ROUNDS', `${session.roundsLeft}`, session.roundsLeft <= 2 ? C.red : C.text);
+    stat(
+      right,
+      statTop,
+      t('shoot.rounds'),
+      `${session.roundsLeft}`,
+      session.roundsLeft <= 2 ? C.red : C.text,
+    );
     const remaining = Math.max(0, session.stage.timeLimitS - session.clockS);
     stat(
       right,
       statTop + 36 * g,
-      'CLOCK',
+      t('shoot.clock'),
       `${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, '0')}`,
       remaining < 20 ? C.red : C.text,
     );
-    const down = session.targets.filter((t) => t.hit).length;
-    stat(right, statTop + 72 * g, 'PLATES', `${down}/${session.targets.length}`);
+    const down = session.targets.filter((tgt) => tgt.hit).length;
+    stat(right, statTop + 72 * g, t('shoot.plates'), `${down}/${session.targets.length}`);
 
     // Breath meter under the tube: the one thing the shooter has to watch.
     const meterW = Math.min(radius * 1.1, 220 * g);
@@ -517,7 +526,11 @@ export class ShootScene implements Scene {
     );
     text(
       ctx,
-      overheld ? 'BREATHE' : this.holding ? `HOLDING ${this.holdTime.toFixed(1)}s` : 'BREATHING',
+      overheld
+        ? t('shoot.breathe')
+        : this.holding
+          ? t('shoot.holding', { s: this.holdTime.toFixed(1) })
+          : t('shoot.breathing'),
       cx,
       meter.y - 10 * g,
       T.micro * g,
@@ -529,7 +542,7 @@ export class ShootScene implements Scene {
     if (this.cycle > 0) {
       text(
         ctx,
-        session.loadout.rifle.action === 'bolt' ? 'CYCLING' : 'RECOVERING',
+        session.loadout.rifle.action === 'bolt' ? t('shoot.cycling') : t('shoot.recovering'),
         cx,
         glass.y + glass.h - 76 * g,
         T.small * g,
@@ -551,7 +564,7 @@ export class ShootScene implements Scene {
         w,
         h: 30 * g,
       };
-      const hit = this.call.toLowerCase().includes('hit') || this.call.includes('Centre');
+      const hit = this.callHit;
       fillPanel(ctx, box, 6, 'rgba(8,11,10,0.85)', hit ? C.green : C.edge);
       app.ui.fitText(
         this.call,
@@ -575,10 +588,10 @@ export class ShootScene implements Scene {
         ? settings.imperial
           ? `${Math.round(mToYard(known))} yd`
           : `${Math.round(known)} m`
-        : `${targetMils(aimed.target).toFixed(1)} mil tall — range unknown`;
+        : t('shoot.range_unknown', { mils: targetMils(aimed.target).toFixed(1) });
       text(
         ctx,
-        `${aimed.target.shape.toUpperCase()}  ·  ${label}`,
+        `${t(`shape.${aimed.target.shape}`)}  ·  ${label}`,
         cx,
         glass.y + glass.h - 58 * g,
         T.small * g,
@@ -614,43 +627,50 @@ export class ShootScene implements Scene {
     const box: Rect = { x: glass.x + glass.w / 2 - w / 2, y: glass.y + 14 * g, w, h: 96 * g };
     fillPanel(ctx, box, 8, 'rgba(8,11,10,0.9)', C.amber);
     const pad = 12 * g;
-    text(ctx, 'RANGE BY RETICLE', box.x + pad, box.y + 16 * g, T.small * g, C.amber, 'left', 'bold');
     text(
       ctx,
-      'drag across the target, top to bottom',
+      t('shoot.mil_title'),
       box.x + pad,
-      box.y + 32 * g,
-      T.micro * g,
-      C.textFaint,
+      box.y + 16 * g,
+      T.small * g,
+      C.amber,
+      'left',
+      'bold',
     );
+    text(ctx, t('shoot.mil_hint'), box.x + pad, box.y + 32 * g, T.micro * g, C.textFaint);
 
     const cycle: Rect = { x: box.x + box.w - pad - 120 * g, y: box.y + 44 * g, w: 120 * g, h: 26 * g };
-    if (app.ui.button(cycle, size ? size.label : 'no targets', { size: T.micro * g })) {
+    if (app.ui.button(cycle, size ? size.label : t('shoot.no_targets'), { size: T.micro * g })) {
       this.milTargetIndex++;
       audio.click();
     }
 
     if (reading && reading.mils > 0.05) {
       const imperial = app.profile.settings.imperial;
-      text(ctx, `${reading.mils.toFixed(2)} MIL`, box.x + pad, box.y + 58 * g, T.head * g, C.text, 'left', 'bold');
-      const r = reading.rangeM;
       text(
         ctx,
-        imperial ? `${Math.round(mToYard(r))} yd` : `${Math.round(r)} m`,
+        `${reading.mils.toFixed(2)} MIL`,
         box.x + pad,
-        box.y + 80 * g,
-        T.body * g,
-        C.amber,
+        box.y + 58 * g,
+        T.head * g,
+        C.text,
+        'left',
+        'bold',
       );
+      const r = reading.rangeM;
+      const rangeLabel = imperial
+        ? `${Math.round(mToYard(r))} yd`
+        : `${Math.round(r)} m`;
+      text(ctx, rangeLabel, box.x + pad, box.y + 80 * g, T.body * g, C.amber);
       const confirm: Rect = { x: box.x + box.w - pad - 120 * g, y: box.y + 70 * g, w: 120 * g, h: 22 * g };
-      if (app.ui.button(confirm, 'RECORD IT', { size: T.micro * g, accent: true })) {
+      if (app.ui.button(confirm, t('shoot.record_it'), { size: T.micro * g, accent: true })) {
         const aimed = targetUnderAim(this.session, this.aimAz + this.swayAz, this.aimEl + this.swayEl);
         if (aimed) {
           this.session.known[aimed.target.id] = r;
-          app.toast(`Recorded ${Math.round(r)} m`, 'good');
+          app.toast(t('shoot.recorded', { range: rangeLabel }), 'good');
           this.overlay = 'none';
         } else {
-          app.toast('Put the reticle on the target first', 'bad');
+          app.toast(t('shoot.reticle_first'), 'bad');
         }
       }
     } else {
@@ -677,12 +697,12 @@ export class ShootScene implements Scene {
     const rowH = twoRow ? (r.h - pad * 3) / 2 : r.h - pad * 2;
 
     const tools: Array<[string, Overlay | 'find']> = [
-      ['FIND', 'find'],
-      ['WIND', 'wind'],
-      ['CARD', 'dope'],
-      ['DIAL', 'turrets'],
-      ['SOLVE', 'solution'],
-      ['MIL', 'mil'],
+      [t('shoot.find'), 'find'],
+      [t('shoot.tool.wind'), 'wind'],
+      [t('shoot.tool.card'), 'dope'],
+      [t('shoot.tool.dial'), 'turrets'],
+      [t('shoot.tool.solve'), 'solution'],
+      [t('shoot.tool.mil'), 'mil'],
     ];
 
     // Tools get the whole first row when stacked, or the space the trigger and
@@ -734,7 +754,7 @@ export class ShootScene implements Scene {
     );
     text(
       ctx,
-      'HOLD',
+      t('shoot.hold'),
       breath.x + breath.w / 2,
       breath.y + breath.h / 2,
       T.small * g,
@@ -751,12 +771,16 @@ export class ShootScene implements Scene {
     };
     const ready = this.cycle <= 0 && session.roundsLeft > 0 && session.phase === 'live';
     if (
-      ui.button(trigger, ready ? 'FIRE' : this.cycle > 0 ? '· · ·' : 'EMPTY', {
-        accent: ready,
-        danger: !ready,
-        disabled: !ready,
-        size: T.head * g,
-      })
+      ui.button(
+        trigger,
+        ready ? t('shoot.fire') : this.cycle > 0 ? '· · ·' : t('shoot.empty'),
+        {
+          accent: ready,
+          danger: !ready,
+          disabled: !ready,
+          size: T.head * g,
+        },
+      )
     ) {
       this.shoot(app);
     }
@@ -810,7 +834,7 @@ export class ShootScene implements Scene {
           session.scope.elevationClicks = elev;
           session.scope.windageClicks = wind;
           audio.click();
-          app.toast('Dialled');
+          app.toast(t('shoot.dialled'));
           this.overlay = 'none';
         });
         break;

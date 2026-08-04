@@ -6,6 +6,7 @@ import {
   type Wind,
   fire,
 } from './ballistics';
+import { t } from './i18n';
 import type { ResolvedLoadout } from './loadout';
 import { type Target, scoreImpact, targetInclination, targetOffsetAt } from './range';
 import { type Rng, gaussian } from './rng';
@@ -187,18 +188,24 @@ export function resolveShot(input: ShotInput): ShotResult {
  * the shooter has to act on it.
  */
 export function spotterCall(shot: ShotResult): string {
-  if (!shot.target) return 'No call — nothing out there.';
-  if (shot.short) return 'Short. It never got there.';
+  if (!shot.target) return t('spotter.none');
+  if (shot.short) return t('spotter.short');
   if (shot.quality !== null) {
-    if (shot.quality > 0.75) return 'Centre. Good hit.';
-    if (shot.quality > 0.4) return 'Hit.';
-    return 'Edge of the plate. It counted.';
+    if (shot.quality > 0.75) return t('spotter.centre');
+    if (shot.quality > 0.4) return t('spotter.hit');
+    return t('spotter.edge');
   }
   const parts: string[] = [];
   const v = Math.abs(shot.missUpMil);
   const h = Math.abs(shot.missRightMil);
-  if (v >= 0.05) parts.push(`${v.toFixed(1)} ${shot.missUp > 0 ? 'high' : 'low'}`);
-  if (h >= 0.05) parts.push(`${h.toFixed(1)} ${shot.missRight > 0 ? 'right' : 'left'}`);
-  if (parts.length === 0) return 'Splash on the edge. Send it again.';
-  return `Miss — come ${parts.join(' and ')}.`;
+  if (v >= 0.05) {
+    parts.push(`${v.toFixed(1)} ${shot.missUp > 0 ? t('spotter.high') : t('spotter.low')}`);
+  }
+  if (h >= 0.05) {
+    parts.push(
+      `${h.toFixed(1)} ${shot.missRight > 0 ? t('spotter.right') : t('spotter.left')}`,
+    );
+  }
+  if (parts.length === 0) return t('spotter.splash');
+  return t('spotter.miss', { parts: parts.join(t('spotter.and')) });
 }

@@ -8,6 +8,7 @@ import {
 } from '../core/catalog/attachments';
 import { CARTRIDGES, type Cartridge, cartridgesFor } from '../core/catalog/cartridges';
 import { RIFLES, type Rifle } from '../core/catalog/rifles';
+import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
 import { buildDope } from '../core/scope';
 import { buy, owns } from '../core/store';
@@ -28,7 +29,14 @@ import { MenuScene } from './MenuScene';
 
 type Tab = 'rifle' | 'ammo' | 'optic' | 'muzzle' | 'support' | 'gear';
 const TABS: Tab[] = ['rifle', 'ammo', 'optic', 'muzzle', 'support', 'gear'];
-const TAB_LABELS = ['RIFLE', 'AMMO', 'GLASS', 'MUZZLE', 'SUPPORT', 'GEAR'];
+const TAB_LABEL_KEYS = [
+  'armoury.tab.rifle',
+  'armoury.tab.ammo',
+  'armoury.tab.optic',
+  'armoury.tab.muzzle',
+  'armoury.tab.support',
+  'armoury.tab.gear',
+] as const;
 
 interface Entry {
   id: string;
@@ -66,12 +74,12 @@ export class ArmouryScene implements Scene {
           equipped: r.id === selection.rifleId,
           usable: true,
           stats: [
-            ['CHAMBERING', r.chambering.toUpperCase()],
-            ['BARREL / TWIST', `${r.barrelIn}" 1:${r.twistIn}`],
-            ['PRECISION', `${r.precisionMoa.toFixed(2)} MOA`],
-            ['CYCLE', `${r.cycleSeconds.toFixed(1)} s`],
-            ['MASS', `${r.massKg.toFixed(1)} kg`],
-            ['RAIL', `${r.railMils} MIL`],
+            [t('armoury.stat.chambering'), r.chambering.toUpperCase()],
+            [t('armoury.stat.barrel'), `${r.barrelIn}" 1:${r.twistIn}`],
+            [t('armoury.stat.precision'), `${r.precisionMoa.toFixed(2)} MOA`],
+            [t('armoury.stat.cycle'), `${r.cycleSeconds.toFixed(1)} s`],
+            [t('armoury.stat.mass'), `${r.massKg.toFixed(1)} kg`],
+            [t('armoury.stat.rail'), `${r.railMils} MIL`],
           ],
         }));
 
@@ -84,14 +92,16 @@ export class ArmouryScene implements Scene {
           cost: c.cost,
           equipped: c.id === selection.cartridgeId,
           usable: compatible.has(c.id),
-          reason: compatible.has(c.id) ? undefined : `${rifle.name} is not chambered for it`,
+          reason: compatible.has(c.id)
+            ? undefined
+            : t('armoury.not_chambered', { rifle: rifle.name }),
           stats: [
-            ['CHAMBERING', c.chambering.toUpperCase()],
-            ['BULLET', `${c.grains} gr ${c.grade}`],
-            ['BC', `${c.bc.toFixed(3)} ${c.dragModel}`],
-            ['VELOCITY', `${c.velocityFps} fps @ ${c.referenceBarrelIn}"`],
-            ['VELOCITY SD', `${c.velocitySd} fps`],
-            ['DISPERSION', `${c.dispersionMoa.toFixed(2)} MOA`],
+            [t('armoury.stat.chambering'), c.chambering.toUpperCase()],
+            [t('armoury.stat.bullet'), `${c.grains} gr ${c.grade}`],
+            [t('armoury.stat.bc'), `${c.bc.toFixed(3)} ${c.dragModel}`],
+            [t('armoury.stat.velocity'), `${c.velocityFps} fps @ ${c.referenceBarrelIn}"`],
+            [t('armoury.stat.velocity_sd'), `${c.velocitySd} fps`],
+            [t('armoury.stat.dispersion'), `${c.dispersionMoa.toFixed(2)} MOA`],
           ],
         }));
       }
@@ -105,12 +115,15 @@ export class ArmouryScene implements Scene {
           equipped: o.id === selection.opticId,
           usable: true,
           stats: [
-            ['MAGNIFICATION', `${o.magMin}–${o.magMax}x`],
-            ['TURRETS', `${o.turretUnit}, ${(o.clickRad / (o.turretUnit === 'MIL' ? 0.001 : 0.000290888)).toFixed(2)}/click`],
-            ['TRAVEL', `${o.elevationTravelMils} MIL up`],
-            ['RETICLE', `${o.reticle} · ${o.ffp ? 'FFP' : `SFP @ ${o.trueAtMag}x`}`],
-            ['GLASS', `${Math.round(o.glass * 100)}%`],
-            ['MASS', `${o.massKg.toFixed(2)} kg`],
+            [t('armoury.stat.magnification'), `${o.magMin}–${o.magMax}x`],
+            [
+              t('armoury.stat.turrets'),
+              `${o.turretUnit}, ${(o.clickRad / (o.turretUnit === 'MIL' ? 0.001 : 0.000290888)).toFixed(2)}/click`,
+            ],
+            [t('armoury.stat.travel'), t('armoury.travel_up', { mils: o.elevationTravelMils })],
+            [t('armoury.stat.reticle'), `${o.reticle} · ${o.ffp ? 'FFP' : `SFP @ ${o.trueAtMag}x`}`],
+            [t('armoury.stat.glass'), `${Math.round(o.glass * 100)}%`],
+            [t('armoury.stat.mass'), `${o.massKg.toFixed(2)} kg`],
           ],
         }));
 
@@ -123,12 +136,18 @@ export class ArmouryScene implements Scene {
           equipped: m.id === selection.muzzleId,
           usable: true,
           stats: [
-            ['RECOIL', `${Math.round(m.recoilFactor * 100)}%`],
-            ['VELOCITY', `${m.velocityDeltaFps >= 0 ? '+' : ''}${m.velocityDeltaFps} fps`],
-            ['DISPERSION', `${m.dispersionMoa >= 0 ? '+' : ''}${m.dispersionMoa.toFixed(2)} MOA`],
-            ['SIGNATURE', `${Math.round(m.signature * 100)}%`],
-            ['REPORT', `${Math.round(m.loudness * 100)}%`],
-            ['MASS', `${m.massKg.toFixed(2)} kg`],
+            [t('armoury.stat.recoil'), `${Math.round(m.recoilFactor * 100)}%`],
+            [
+              t('armoury.stat.velocity'),
+              `${m.velocityDeltaFps >= 0 ? '+' : ''}${m.velocityDeltaFps} fps`,
+            ],
+            [
+              t('armoury.stat.dispersion'),
+              `${m.dispersionMoa >= 0 ? '+' : ''}${m.dispersionMoa.toFixed(2)} MOA`,
+            ],
+            [t('armoury.stat.signature'), `${Math.round(m.signature * 100)}%`],
+            [t('armoury.stat.report'), `${Math.round(m.loudness * 100)}%`],
+            [t('armoury.stat.mass'), `${m.massKg.toFixed(2)} kg`],
           ],
         }));
 
@@ -141,10 +160,10 @@ export class ArmouryScene implements Scene {
           equipped: s.id === selection.supportId,
           usable: true,
           stats: [
-            ['HOLD', `${Math.round(s.swayFactor * 100)}% wobble`],
-            ['DRIFT RATE', `${Math.round(s.swaySpeed * 100)}%`],
-            ['SET UP', `${s.setupSeconds.toFixed(1)} s`],
-            ['MASS', `${s.massKg.toFixed(2)} kg`],
+            [t('armoury.stat.hold'), t('armoury.wobble', { pct: Math.round(s.swayFactor * 100) })],
+            [t('armoury.stat.drift'), `${Math.round(s.swaySpeed * 100)}%`],
+            [t('armoury.stat.setup'), `${s.setupSeconds.toFixed(1)} s`],
+            [t('armoury.stat.mass'), `${s.massKg.toFixed(2)} kg`],
           ],
         }));
 
@@ -157,8 +176,11 @@ export class ArmouryScene implements Scene {
           cost: gear.cost,
           equipped: fitted.includes(gear.id),
           usable: fitted.includes(gear.id) || fitted.length < GEAR_SLOTS,
-          reason: fitted.includes(gear.id) || fitted.length < GEAR_SLOTS ? undefined : 'all three pockets are full',
-          stats: [['MASS', `${gear.massKg.toFixed(2)} kg`]],
+          reason:
+            fitted.includes(gear.id) || fitted.length < GEAR_SLOTS
+              ? undefined
+              : t('armoury.pockets_full'),
+          stats: [[t('armoury.stat.mass'), `${gear.massKg.toFixed(2)} kg`]],
         }));
       }
     }
@@ -176,7 +198,7 @@ export class ArmouryScene implements Scene {
         if (!compatible.some((c) => c.id === selection.cartridgeId)) {
           const affordable = compatible.find((c) => owns(app.profile, c.id)) ?? compatible[0];
           selection.cartridgeId = affordable.id;
-          app.toast(`Ammunition switched to ${affordable.name}`);
+          app.toast(t('armoury.ammo_switched', { name: affordable.name }));
         }
         break;
       }
@@ -209,10 +231,10 @@ export class ArmouryScene implements Scene {
     const safe = app.safe;
     const imperial = profile.settings.imperial;
 
-    text(ctx, 'ARMOURY', safe.x, safe.y + 12 * g, T.head * g, C.text, 'left', 'bold');
+    text(ctx, t('armoury.title'), safe.x, safe.y + 12 * g, T.head * g, C.text, 'left', 'bold');
     text(
       ctx,
-      `${profile.credits.toLocaleString()} cr`,
+      t('common.cr', { n: profile.credits.toLocaleString() }),
       safe.x + safe.w - 84 * g,
       safe.y + 14 * g,
       T.body * g,
@@ -221,13 +243,17 @@ export class ArmouryScene implements Scene {
       'bold',
     );
     const back: Rect = { x: safe.x + safe.w - 78 * g, y: safe.y, w: 78 * g, h: 30 * g };
-    if (ui.button(back, 'MENU', { size: T.small * g })) {
+    if (ui.button(back, t('common.menu'), { size: T.small * g })) {
       audio.tap();
       app.set(new MenuScene());
     }
 
     const tabRect: Rect = { x: safe.x, y: safe.y + 38 * g, w: safe.w, h: 30 * g };
-    const picked = ui.tabs(tabRect, TAB_LABELS, this.tab);
+    const picked = ui.tabs(
+      tabRect,
+      TAB_LABEL_KEYS.map((k) => t(k)),
+      this.tab,
+    );
     if (picked >= 0 && picked !== this.tab) {
       this.tab = picked;
       this.scroll.offset = 0;
@@ -293,10 +319,19 @@ export class ArmouryScene implements Scene {
 
       const action: Rect = { x: r.x + r.w - pad - 88 * g, y: r.y + 10 * g, w: 88 * g, h: 30 * g };
       if (entry.equipped) {
-        text(ctx, 'FITTED', action.x + action.w, r.y + 25 * g, T.small * g, C.amber, 'right', 'bold');
+        text(
+          ctx,
+          t('armoury.fitted'),
+          action.x + action.w,
+          r.y + 25 * g,
+          T.small * g,
+          C.amber,
+          'right',
+          'bold',
+        );
       } else if (!held) {
         if (
-          ui.button(action, `${entry.cost.toLocaleString()} cr`, {
+          ui.button(action, t('common.cr', { n: entry.cost.toLocaleString() }), {
             size: T.small * g,
             disabled: !affordable,
             accent: affordable,
@@ -304,13 +339,25 @@ export class ArmouryScene implements Scene {
         ) {
           if (buy(profile, entry.id, entry.cost)) {
             audio.chime(true);
-            app.toast(`Bought ${entry.name}`, 'good');
+            app.toast(t('armoury.bought', { name: entry.name }), 'good');
             this.equip(app, entry.id);
           }
         }
       } else if (!entry.usable) {
-        text(ctx, 'OWNED', action.x + action.w, r.y + 25 * g, T.small * g, C.textFaint, 'right');
-      } else if (ui.button(action, entry.equipped ? 'FITTED' : 'FIT', { size: T.small * g })) {
+        text(
+          ctx,
+          t('armoury.owned'),
+          action.x + action.w,
+          r.y + 25 * g,
+          T.small * g,
+          C.textFaint,
+          'right',
+        );
+      } else if (
+        ui.button(action, entry.equipped ? t('armoury.fitted') : t('armoury.fit'), {
+          size: T.small * g,
+        })
+      ) {
         audio.click();
         this.equip(app, entry.id);
       }
@@ -368,8 +415,8 @@ export class ArmouryScene implements Scene {
     const gearNames = loadout.gear.length
       ? half > 200 * g
         ? loadout.gear.map((gear) => gear.name).join(', ')
-        : `${loadout.gear.length}/${GEAR_SLOTS} gear fitted`
-      : 'no gear fitted';
+        : t('armoury.gear_count', { n: loadout.gear.length, max: GEAR_SLOTS })
+      : t('armoury.no_gear');
     app.ui.fitText(
       gearNames,
       r.x + r.w - pad,
@@ -394,15 +441,19 @@ export class ArmouryScene implements Scene {
       ? imperial
         ? `${Math.round(mToYard(dope.transonicRangeM))} yd`
         : `${Math.round(dope.transonicRangeM)} m`
-      : 'beyond the card';
+      : t('armoury.beyond_card');
 
     const stats: Array<[string, string, string?]> = [
-      ['MUZZLE', `${msToFps(loadout.muzzleVelocity).toFixed(0)} fps`],
-      ['GROUP', `${loadout.dispersionMoa.toFixed(2)} MOA`],
-      ['STABILITY', loadout.stability.toFixed(2), loadout.stability < 1.4 ? C.red : C.text],
-      ['HOLD', `${loadout.swayMils.toFixed(2)} MIL`],
-      ['RECOIL', `${loadout.recoilKick.toFixed(2)} m/s`],
-      ['TRANSONIC', supersonic],
+      [t('armoury.stat.muzzle'), `${msToFps(loadout.muzzleVelocity).toFixed(0)} fps`],
+      [t('armoury.stat.group'), `${loadout.dispersionMoa.toFixed(2)} MOA`],
+      [
+        t('armoury.stat.stability'),
+        loadout.stability.toFixed(2),
+        loadout.stability < 1.4 ? C.red : C.text,
+      ],
+      [t('armoury.stat.hold'), `${loadout.swayMils.toFixed(2)} MIL`],
+      [t('armoury.stat.recoil'), `${loadout.recoilKick.toFixed(2)} m/s`],
+      [t('armoury.stat.transonic'), supersonic],
     ];
     const colW = (r.w - pad * 2) / stats.length;
     stats.forEach((stat, i) => {
