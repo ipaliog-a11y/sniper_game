@@ -509,16 +509,19 @@ export class ShootScene implements Scene {
     const optic = session.loadout.optic;
     const fov = fieldOfView(optic, session.scope.magnification);
     const radius = Math.min(glass.w, glass.h) / 2 - 2;
-    // Recoil lifts the picture and the eye box narrows for a moment.
-    const recoilLift = this.recoilKick * this.recoilKick * session.loadout.recoilKick * 0.0022;
+    // Recoil lifts the picture, jabs it sideways, and narrows the eye box.
+    const kickAmt = this.recoilKick * this.recoilKick;
+    const recoilLift = kickAmt * session.loadout.recoilKick * 0.0022;
+    const recoilJab =
+      kickAmt * session.loadout.recoilKick * 0.00055 * (session.loadout.rifle.rightHandTwist ? 1 : -1);
     const view = makeView(
       glass.x + glass.w / 2,
       glass.y + glass.h / 2,
       radius,
       fov,
-      this.aimAz + this.swayAz,
+      this.aimAz + this.swayAz + recoilJab,
       this.aimEl + this.swayEl + recoilLift,
-      this.cant,
+      this.cant + kickAmt * 0.012,
     );
 
     renderScope(ctx, {
@@ -529,6 +532,8 @@ export class ShootScene implements Scene {
       splashes: this.splashes,
       showLevel: session.loadout.hasGear('level'),
       eyeRelief: 1 - this.recoilKick * 0.8,
+      shotKick: this.recoilKick,
+      muzzleSignature: session.loadout.muzzle.signature,
     });
 
     this.drawHud(ctx, app, view.cx, radius, glass);
