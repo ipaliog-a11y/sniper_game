@@ -110,7 +110,7 @@ export function weatherPanel(
     ],
     [t('panel.humidity'), `${(est.humidity * 100).toFixed(0)} %`],
     [
-      t('panel.elevation'),
+      t('panel.station_elevation'),
       settings.imperial ? `${Math.round(mToFt(est.altitudeM))} ft` : `${Math.round(est.altitudeM)} m`,
     ],
     [

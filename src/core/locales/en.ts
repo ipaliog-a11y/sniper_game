@@ -242,7 +242,7 @@ export const en: Dict = {
   'panel.temperature': 'TEMPERATURE',
   'panel.station_pressure': 'STATION PRESSURE',
   'panel.humidity': 'HUMIDITY',
-  'panel.elevation': 'ELEVATION',
+  'panel.station_elevation': 'ELEVATION',
   'panel.density_altitude': 'DENSITY ALTITUDE',
   'panel.lat_facing': 'LATITUDE / FACING',
   'panel.wind': 'WIND',

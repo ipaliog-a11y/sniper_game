@@ -243,7 +243,7 @@ export const el: Dict = {
   'panel.temperature': 'ΘΕΡΜΟΚΡΑΣΙΑ',
   'panel.station_pressure': 'ΠΙΕΣΗ ΣΤΑΘΜΟΥ',
   'panel.humidity': 'ΥΓΡΑΣΙΑ',
-  'panel.elevation': 'ΥΨΟΜΕΤΡΟ',
+  'panel.station_elevation': 'ΥΨΟΜΕΤΡΟ',
   'panel.density_altitude': 'ΥΨΟΣ ΠΥΚΝΟΤΗΤΑΣ',
   'panel.lat_facing': 'ΓΕΩΓΡ. ΠΛΑΤΟΣ / ΚΑΤΕΥΘΥΝΣΗ',
   'panel.wind': 'ΑΝΕΜΟΣ',
