@@ -1,8 +1,9 @@
 import { t } from '../core/i18n';
-import { isTutorialStage, nextCourseStage } from '../core/range';
+import { type Target, isTutorialStage, nextCourseStage } from '../core/range';
 import type { StageScore } from '../core/scoring';
 import { gradeColour, nextGradeAbove } from '../core/scoring';
 import type { Session } from '../core/session';
+import type { ShotResult } from '../core/shot';
 import { recordStage } from '../core/store';
 import { mToYard } from '../core/units';
 import { type App, type Scene } from '../ui/app';
@@ -15,7 +16,7 @@ import { StageSelectScene } from './StageSelectScene';
 /**
  * The score card. Shows the grade, a plain breakdown of where the points came
  * from, and — for course stages — whether the next stage unlocked and what
- * the next grade still needs.
+ * the next grade still needs. Per-target VIEW opens a plate with hit marks.
  */
 export class ResultScene implements Scene {
   readonly name = 'result';
@@ -24,6 +25,8 @@ export class ResultScene implements Scene {
   private scroll = new Scroll('result');
   private reveal = 0;
   private banked = false;
+  /** Target id currently shown in the hit-map overlay, or null. */
+  private viewTargetId: string | null = null;
 
   constructor(session: Session, score: StageScore) {
     this.session = session;
@@ -185,10 +188,27 @@ export class ResultScene implements Scene {
           : t('result.never');
       text(ctx, detail, r.x + 90 * g, r.y + 23 * g, T.small * g, tgt.hit ? C.textDim : C.red);
 
+      // VIEW sits left of the points when the plate was engaged.
+      const canView = tgt.rounds > 0 || tgt.hit;
+      const viewW = 72 * g;
+      const ptsX = r.x + r.w - 12 * g;
+      if (canView) {
+        const viewBtn: Rect = {
+          x: ptsX - viewW - 44 * g,
+          y: r.y + 8 * g,
+          w: viewW,
+          h: r.h - 16 * g,
+        };
+        if (ui.button(viewBtn, t('result.view_target'), { size: T.micro * g, accent: tgt.hit })) {
+          audio.tap();
+          this.viewTargetId = tgt.targetId;
+        }
+      }
+
       text(
         ctx,
         `${tgt.points}`,
-        r.x + r.w - 12 * g,
+        ptsX,
         r.y + 23 * g,
         T.body * g,
         tgt.hit ? C.text : C.textFaint,
@@ -201,13 +221,259 @@ export class ResultScene implements Scene {
     const half = safe.w / 2 - 5 * g;
     const again: Rect = { x: safe.x, y: safe.y + safe.h - footerH, w: half, h: footerH - 4 * g };
     const next: Rect = { x: safe.x + half + 10 * g, y: again.y, w: half, h: again.h };
-    if (ui.button(again, t('result.again'), { size: T.body * g })) {
-      audio.tap();
-      app.set(new BriefScene(this.session.stage));
+    if (!this.viewTargetId) {
+      if (ui.button(again, t('result.again'), { size: T.body * g })) {
+        audio.tap();
+        app.set(new BriefScene(this.session.stage));
+      }
+      if (ui.button(next, t('result.course'), { accent: true, size: T.body * g })) {
+        audio.tap();
+        app.set(new StageSelectScene());
+      }
     }
-    if (ui.button(next, t('result.course'), { accent: true, size: T.body * g })) {
+
+    if (this.viewTargetId) {
+      this.drawTargetView(ctx, app, this.viewTargetId);
+    }
+  }
+
+  /**
+   * Full-screen overlay: plate silhouette to scale, every successful impact
+   * marked where it landed relative to the target centre.
+   */
+  private drawTargetView(ctx: CanvasRenderingContext2D, app: App, targetId: string): void {
+    const { ui } = app;
+    const g = app.gauge;
+    const safe = app.safe;
+    const runtime = this.session.targets.find((r) => r.target.id === targetId);
+    if (!runtime) {
+      this.viewTargetId = null;
+      return;
+    }
+    const target = runtime.target;
+    const imperial = app.profile.settings.imperial;
+
+    // Dim the score card underneath.
+    ctx.fillStyle = 'rgba(8,11,10,0.82)';
+    ctx.fillRect(0, 0, app.width, app.height);
+
+    const panelW = Math.min(safe.w, 420 * g);
+    const panelH = Math.min(safe.h - 20 * g, 480 * g);
+    const panel: Rect = {
+      x: app.width / 2 - panelW / 2,
+      y: app.height / 2 - panelH / 2,
+      w: panelW,
+      h: panelH,
+    };
+    fillPanel(ctx, panel, 10, C.panel, C.edge);
+
+    const rangeLabel = imperial
+      ? `${Math.round(mToYard(target.rangeM))} yd`
+      : `${Math.round(target.rangeM)} m`;
+    text(
+      ctx,
+      t('result.view_title', {
+        shape: t(`shape.${target.shape}`),
+        range: rangeLabel,
+      }),
+      panel.x + 14 * g,
+      panel.y + 18 * g,
+      T.body * g,
+      C.text,
+      'left',
+      'bold',
+    );
+    text(
+      ctx,
+      t('result.view_hint'),
+      panel.x + 14 * g,
+      panel.y + 34 * g,
+      T.micro * g,
+      C.textFaint,
+    );
+
+    const close: Rect = {
+      x: panel.x + panel.w - 88 * g,
+      y: panel.y + 10 * g,
+      w: 74 * g,
+      h: 28 * g,
+    };
+    if (ui.button(close, t('result.view_close'), { size: T.small * g })) {
       audio.tap();
-      app.set(new StageSelectScene());
+      this.viewTargetId = null;
+      return;
+    }
+
+    // Canvas for the plate — leave room for the legend under it.
+    const canvas: Rect = {
+      x: panel.x + 16 * g,
+      y: panel.y + 48 * g,
+      w: panel.w - 32 * g,
+      h: panel.h - 110 * g,
+    };
+    fillPanel(ctx, canvas, 6, C.bgDeep, C.edgeSoft);
+
+    const hits = this.session.shots
+      .filter((s) => s.targetId === targetId && s.shot.quality !== null)
+      .map((s) => s.shot);
+
+    this.paintTargetWithHits(ctx, target, canvas, hits, g);
+
+    const legendY = panel.y + panel.h - 48 * g;
+    text(ctx, t('result.view_hits', { n: hits.length }), panel.x + 14 * g, legendY, T.small * g, C.green);
+    text(
+      ctx,
+      t('result.view_legend'),
+      panel.x + 14 * g,
+      legendY + 16 * g,
+      T.micro * g,
+      C.textFaint,
+    );
+
+    // Tap outside the panel closes.
+    for (const rel of app.input.releases) {
+      if (rel.consumed || rel.button !== 0 || rel.travel > 12) continue;
+      const inPanel =
+        rel.x >= panel.x &&
+        rel.x <= panel.x + panel.w &&
+        rel.y >= panel.y &&
+        rel.y <= panel.y + panel.h;
+      if (!inPanel) {
+        rel.consumed = true;
+        this.viewTargetId = null;
+        audio.tap();
+        break;
+      }
+    }
+  }
+
+  private paintTargetWithHits(
+    ctx: CanvasRenderingContext2D,
+    target: Target,
+    canvas: Rect,
+    hits: ShotResult[],
+    g: number,
+  ): void {
+    const pad = 18 * g;
+    const availW = canvas.w - pad * 2;
+    const availH = canvas.h - pad * 2;
+    const scale = Math.min(availW / target.widthM, availH / target.tallM);
+    const cx = canvas.x + canvas.w / 2;
+    const cy = canvas.y + canvas.h / 2;
+    const hw = (target.widthM / 2) * scale;
+    const hh = (target.tallM / 2) * scale;
+
+    // Soft grid for reading offsets.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(91,111,90,0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3 * g, 4 * g]);
+    ctx.beginPath();
+    ctx.moveTo(cx - hw - 8 * g, cy);
+    ctx.lineTo(cx + hw + 8 * g, cy);
+    ctx.moveTo(cx, cy - hh - 8 * g);
+    ctx.lineTo(cx, cy + hh + 8 * g);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Plate fill.
+    ctx.fillStyle = 'rgba(154,163,156,0.22)';
+    ctx.strokeStyle = C.steel;
+    ctx.lineWidth = 2 * g;
+    this.traceTargetShape(ctx, target, cx, cy, hw, hh);
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner rings for gongs (helps read “centre”).
+    if (target.shape === 'gong' || target.shape === 'head') {
+      ctx.strokeStyle = 'rgba(154,163,156,0.35)';
+      ctx.lineWidth = 1;
+      for (const f of [0.33, 0.66]) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, hw * f, hh * f, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // Centre mark.
+    ctx.strokeStyle = C.amberDim;
+    ctx.lineWidth = 1;
+    const tick = 6 * g;
+    ctx.beginPath();
+    ctx.moveTo(cx - tick, cy);
+    ctx.lineTo(cx + tick, cy);
+    ctx.moveTo(cx, cy - tick);
+    ctx.lineTo(cx, cy + tick);
+    ctx.stroke();
+
+    hits.forEach((shot, i) => {
+      const x = cx + shot.missRight * scale;
+      const y = cy - shot.missUp * scale;
+      const q = shot.quality ?? 0;
+      const colour = q > 0.75 ? C.green : q > 0.4 ? C.amber : C.blue;
+      const r = Math.max(4 * g, 5.5 * g);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = colour;
+      ctx.fill();
+      ctx.strokeStyle = C.bgDeep;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      text(ctx, `${i + 1}`, x, y + 0.5 * g, T.micro * g, C.bgDeep, 'center', 'bold');
+    });
+
+    if (hits.length === 0) {
+      text(
+        ctx,
+        t('result.view_no_hits'),
+        cx,
+        cy,
+        T.small * g,
+        C.textFaint,
+        'center',
+      );
+    }
+
+    // Axis labels (shooter’s view: right / up).
+    text(ctx, t('result.view_right'), canvas.x + canvas.w - 8 * g, cy - 6 * g, T.micro * g, C.textFaint, 'right');
+    text(ctx, t('result.view_up'), cx + 6 * g, canvas.y + 12 * g, T.micro * g, C.textFaint, 'left');
+    ctx.restore();
+  }
+
+  private traceTargetShape(
+    ctx: CanvasRenderingContext2D,
+    target: Target,
+    cx: number,
+    cy: number,
+    hw: number,
+    hh: number,
+  ): void {
+    ctx.beginPath();
+    switch (target.shape) {
+      case 'gong':
+      case 'head':
+        ctx.ellipse(cx, cy, hw, hh, 0, 0, Math.PI * 2);
+        break;
+      case 'diamond':
+        ctx.moveTo(cx, cy - hh);
+        ctx.lineTo(cx + hw, cy);
+        ctx.lineTo(cx, cy + hh);
+        ctx.lineTo(cx - hw, cy);
+        ctx.closePath();
+        break;
+      case 'silhouette': {
+        // Geometric centre is cy; torso below shoulder line, head above.
+        const shoulder = hh * 0.42;
+        const torsoTop = cy - shoulder;
+        const torsoBot = cy + hh;
+        const headTop = cy - hh;
+        const headW = hw * 0.42;
+        // Torso
+        ctx.rect(cx - hw, torsoTop, hw * 2, torsoBot - torsoTop);
+        // Head (same path for fill — add as second rect via move)
+        ctx.rect(cx - headW, headTop, headW * 2, torsoTop - headTop);
+        break;
+      }
     }
   }
 
