@@ -1,3 +1,4 @@
+import { biomeById } from '../core/biome';
 import { catalogName } from '../core/catalogLabels';
 import type { FreeFieldConfig } from '../core/freeField';
 import { t } from '../core/i18n';
@@ -241,8 +242,10 @@ export class BriefScene implements Scene {
     text(ctx, t('brief.the_course'), rightX, right, T.small * g, C.amber);
     right += 20 * g;
     const unknownCount = this.stage.targets.filter((tgt) => !tgt.disclosedRange).length;
+    const biome = biomeById(this.stage.biomeId);
     const courseRows: Array<[string, string, string?]> = [
       [t('brief.targets'), `${this.stage.targets.length}`],
+      [t('brief.scenery'), t(`biome.${biome.id}.name`)],
       [t('brief.rounds'), `${this.stage.rounds}`],
       [
         t('brief.time_limit'),

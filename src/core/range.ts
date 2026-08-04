@@ -52,6 +52,11 @@ export interface Stage {
   brief: string;
   presetId: string;
   /**
+   * Scenery set: open field, forest, desert, or urban fringe. Colours the
+   * ground and plants soft props that lean with the wind.
+   */
+  biomeId?: string;
+  /**
    * How high the firing position sits above the range floor, metres. Shooting
    * off a hillside is what stops the whole range collapsing into one line at
    * the horizon — and it is where a sniper would be anyway.
@@ -205,6 +210,7 @@ export const STAGES: Stage[] = [
     brief:
       'Three large plates at known distances (100, 150, 200 m), calm air, plenty of time. Learn aim, breath, fire, and dialling elevation in mils from the data card before you break the shot.',
     presetId: 'calm',
+    biomeId: 'open',
     firingHeightM: 8,
     seed: 42,
     rounds: 6,
@@ -225,6 +231,7 @@ export const STAGES: Stage[] = [
     brief:
       'Five plates at known distances inside 400 m, no wind to speak of. Confirm the rifle shoots where the card says it does.',
     presetId: 'calm',
+    biomeId: 'open',
     firingHeightM: 10,
     seed: 1041,
     rounds: 7,
@@ -250,6 +257,7 @@ export const STAGES: Stage[] = [
     brief:
       'Unmarked distances out to 650 m. Nobody is going to tell you how far anything is. Mil the plates and do the arithmetic.',
     presetId: 'fair',
+    biomeId: 'forest',
     firingHeightM: 14,
     seed: 20773,
     rounds: 8,
@@ -273,6 +281,7 @@ export const STAGES: Stage[] = [
     brief:
       'Every flag on this range is telling you something different and none of them agree for long. Time your shots, or hold for the worst of it.',
     presetId: 'switch',
+    biomeId: 'open',
     firingHeightM: 15,
     seed: 55501,
     rounds: 10,
@@ -295,6 +304,7 @@ export const STAGES: Stage[] = [
     brief:
       'Plates appear and go away again. Speed is the score here. Dial once for the middle distance and hold the rest.',
     presetId: 'fair',
+    biomeId: 'urban',
     firingHeightM: 14,
     seed: 90210,
     rounds: 12,
@@ -318,6 +328,7 @@ export const STAGES: Stage[] = [
     brief:
       'Two thousand metres above the sea, forty degrees on the deck, and a mirage running hard. Your data card is a work of fiction up here.',
     presetId: 'desert',
+    biomeId: 'desert',
     firingHeightM: 26,
     seed: 31337,
     rounds: 10,
@@ -340,6 +351,7 @@ export const STAGES: Stage[] = [
     brief:
       'They are moving. Lead them by the time of flight and not one inch more, and remember that a mover at 700 m needs most of a metre of it.',
     presetId: 'fair',
+    biomeId: 'forest',
     firingHeightM: 20,
     seed: 74123,
     rounds: 14,
@@ -361,6 +373,7 @@ export const STAGES: Stage[] = [
     brief:
       'Freezing rain, twenty mile an hour gusts and about forty minutes of usable light. Everything about this is unfair and that is the point.',
     presetId: 'storm',
+    biomeId: 'open',
     firingHeightM: 24,
     seed: 60613,
     rounds: 12,
@@ -383,6 +396,7 @@ export const STAGES: Stage[] = [
     brief:
       'One thousand six hundred and nine metres. Bring something that is still supersonic when it arrives, because nothing else is going to be predictable.',
     presetId: 'calm',
+    biomeId: 'desert',
     firingHeightM: 32,
     seed: 16093,
     rounds: 10,

@@ -8,13 +8,14 @@ import { ICAO, airDensity, densityAltitude, speedOfSound } from '../src/core/atm
 import { fire, solve, spinDrift, zeroAngle } from '../src/core/ballistics.ts';
 import { dragCoefficient } from '../src/core/drag.ts';
 import { millerStability, resolveLoadout } from '../src/core/loadout.ts';
+import { BIOMES, biomeById, pickPropKind } from '../src/core/biome.ts';
 import {
   buildFreeFieldStage,
   defaultFreeFieldConfig,
   fullyRandomiseFreeField,
   suggestedRounds,
 } from '../src/core/freeField.ts';
-import { scoreImpact, targetInclination } from '../src/core/range.ts';
+import { STAGES, scoreImpact, targetInclination } from '../src/core/range.ts';
 import { gaussian, makeRng } from '../src/core/rng.ts';
 import { gradeFor, scoreTarget } from '../src/core/scoring.ts';
 import { buildDope, fieldOfView, interpolateDope, reticleScale } from '../src/core/scope.ts';
@@ -581,6 +582,33 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   const shuffled = fullyRandomiseFreeField(cfg);
   check('shuffle keeps plate count', shuffled.targets.length === cfg.targets.length);
   check('shuffle sets a weather preset', shuffled.weatherPresetId !== 'random');
+  check('shuffle sets a scenery biome', shuffled.biomeId !== 'random');
+  check('default free field has open scenery', defaultFreeFieldConfig().biomeId === 'open');
+
+  cfg.biomeId = 'desert';
+  const desertStage = buildFreeFieldStage(cfg);
+  check('free field stage carries desert biome', desertStage.biomeId === 'desert');
+
+  cfg.biomeId = 'random';
+  cfg.seed = 42;
+  const randomBiome = buildFreeFieldStage(cfg);
+  check('random biome resolves to a real id', BIOMES.some((b) => b.id === randomBiome.biomeId));
+}
+
+// --- scenery biomes -----------------------------------------------------
+
+{
+  check('four biomes ship', BIOMES.length === 4);
+  check('biomeById falls back to open', biomeById('nope').id === 'open');
+  check('open has soft grass', BIOMES[0].props.some((p) => p.kind === 'grass' && p.sway));
+  check('urban has buildings', biomeById('urban').props.some((p) => p.kind === 'building'));
+  check('desert horizon is dunes', biomeById('desert').horizon === 'dunes');
+  const kind = pickPropKind(biomeById('forest'), 0.01);
+  check('pickPropKind returns a kind', typeof kind.kind === 'string');
+  check(
+    'every course stage has a biome',
+    STAGES.every((s) => Boolean(s.biomeId)),
+  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

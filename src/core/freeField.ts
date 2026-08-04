@@ -1,3 +1,4 @@
+import { BIOME_IDS, type BiomeId, isBiomeId } from './biome';
 import { degToRad } from './units';
 import {
   type Stage,
@@ -36,6 +37,10 @@ export interface FreeFieldConfig {
    * stage is built (go-hot / randomise).
    */
   weatherPresetId: string;
+  /**
+   * Scenery biome id, or `'random'` to pick open/forest/desert/urban at build.
+   */
+  biomeId: string;
   /** Fixed seed for repeatable conditions; re-rolled by the randomiser. */
   seed: number;
   /** Rounds in the magazine for this string. */
@@ -68,6 +73,7 @@ export function defaultFreeFieldConfig(): FreeFieldConfig {
       defaultFreeFieldTarget(600),
     ],
     weatherPresetId: 'fair',
+    biomeId: 'open',
     seed: (Date.now() ^ 0x9e3779b9) >>> 0,
     rounds: 8,
   };
@@ -111,18 +117,19 @@ export function prevWeatherOption(id: string): string {
   return FREE_FIELD_WEATHER_OPTIONS[at];
 }
 
-/** New seed and, if weather is random, a random preset pick is deferred to build. */
+/** New seed and, if weather/biome is random, pick is deferred to build. */
 export function randomiseFreeField(config: FreeFieldConfig): FreeFieldConfig {
   const rng = makeRng((Date.now() ^ config.seed ^ 0xa5a5a5a5) >>> 0);
   return {
     ...config,
     seed: Math.floor(rng() * 0xffffffff) >>> 0,
     weatherPresetId: config.weatherPresetId === 'random' ? 'random' : config.weatherPresetId,
+    biomeId: config.biomeId === 'random' ? 'random' : config.biomeId,
   };
 }
 
 /**
- * Full shuffle: new seed, random weather preset id fixed for this build, and
+ * Full shuffle: new seed, random weather + biome fixed for this build, and
  * random ranges / shapes for every plate.
  */
 export function fullyRandomiseFreeField(config: FreeFieldConfig): FreeFieldConfig {
@@ -144,9 +151,11 @@ export function fullyRandomiseFreeField(config: FreeFieldConfig): FreeFieldConfi
   // Sort near → far so the string reads left-to-right by distance.
   targets.sort((a, b) => a.rangeM - b.rangeM);
   const preset = PRESETS[Math.floor(rng() * PRESETS.length)];
+  const biome = BIOME_IDS[Math.floor(rng() * BIOME_IDS.length)];
   return {
     targets,
     weatherPresetId: preset.id,
+    biomeId: biome,
     seed: Math.floor(rng() * 0xffffffff) >>> 0,
     rounds: suggestedRounds(n),
   };
@@ -182,10 +191,17 @@ export function buildFreeFieldStage(config: FreeFieldConfig): Stage {
   const targets = config.targets.map((t, i) =>
     buildTarget(t, i, config.targets.length),
   );
+  const rng = makeRng(config.seed);
   const presetId =
     config.weatherPresetId === 'random'
-      ? PRESETS[Math.floor(makeRng(config.seed)() * PRESETS.length)].id
+      ? PRESETS[Math.floor(rng() * PRESETS.length)].id
       : config.weatherPresetId;
+  const biomeId: BiomeId =
+    config.biomeId === 'random'
+      ? BIOME_IDS[Math.floor(rng() * BIOME_IDS.length)]
+      : isBiomeId(config.biomeId)
+        ? config.biomeId
+        : 'open';
 
   const rounds = Math.max(
     config.targets.length,
@@ -196,8 +212,9 @@ export function buildFreeFieldStage(config: FreeFieldConfig): Stage {
     id: FREE_FIELD_ID,
     name: 'Free Field',
     brief:
-      'Your string, your weather, your kit. No time limit — the clock only counts up. Hit every plate; when ranges are concealed you mil them or use a rangefinder.',
+      'Your string, your weather, your scenery, your kit. No time limit — the clock only counts up. Hit every plate; when ranges are concealed you mil them or use a rangefinder.',
     presetId,
+    biomeId,
     firingHeightM: 16,
     seed: config.seed,
     targets,
@@ -218,6 +235,7 @@ export function freeFieldSummary(config: FreeFieldConfig): {
   maxRangeM: number;
   unknown: number;
   weatherId: string;
+  biomeId: string;
 } {
   const maxRangeM = config.targets.reduce((m, t) => Math.max(m, t.rangeM), 0);
   const unknown = config.targets.filter((t) => t.unknownRange).length;
@@ -226,5 +244,6 @@ export function freeFieldSummary(config: FreeFieldConfig): {
     maxRangeM,
     unknown,
     weatherId: config.weatherPresetId,
+    biomeId: config.biomeId,
   };
 }

@@ -1,4 +1,5 @@
 import { catalogName } from '../core/catalogLabels';
+import { nextBiomeOption, prevBiomeOption } from '../core/biome';
 import {
   type FreeFieldConfig,
   type FreeFieldTargetConfig,
@@ -41,6 +42,7 @@ export class FreeFieldScene implements Scene {
 
   constructor(config?: FreeFieldConfig) {
     this.config = config ? structuredClone(config) : defaultFreeFieldConfig();
+    if (!this.config.biomeId) this.config.biomeId = 'open';
   }
 
   update(): void {}
@@ -67,6 +69,16 @@ export class FreeFieldScene implements Scene {
     return t(`weather.${this.config.weatherPresetId}.name`);
   }
 
+  private biomeLabel(): string {
+    if (this.config.biomeId === 'random') return t('free_field.biome_random');
+    return t(`biome.${this.config.biomeId}.name`);
+  }
+
+  /** Ensure older saved/in-memory configs still have a biome field. */
+  private ensureConfig(): void {
+    if (!this.config.biomeId) this.config.biomeId = 'open';
+  }
+
   render(ctx: CanvasRenderingContext2D, app: App): void {
     const { ui, profile } = app;
     const g = app.gauge;
@@ -90,14 +102,17 @@ export class FreeFieldScene implements Scene {
       h: safe.h - 44 * g - footerH - 10 * g,
     };
 
-    // Rough content height: weather block + target count + N target rows + rounds.
+    this.ensureConfig();
+
+    // Rough content height: weather + biome + targets + rounds + kit.
     const targetRowH = 72 * g;
     const contentH =
       120 * g +
+      90 * g +
       50 * g +
       this.config.targets.length * targetRowH +
       56 * g +
-      80 * g;
+      100 * g;
     this.scroll.update(ui.input, view, contentH, 1 / 60);
     const blocked = this.scroll.isDragging(ui.input);
 
@@ -173,7 +188,46 @@ export class FreeFieldScene implements Scene {
     }
     y += 90 * g;
 
-    // Full shuffle of plates + weather
+    // --- scenery biome ---
+    fillPanel(ctx, { x: view.x, y, w: view.w, h: 78 * g }, 8, C.panel, C.edge);
+    text(ctx, t('free_field.biome'), view.x + 12 * g, y + 16 * g, T.small * g, C.amber, 'left', 'bold');
+    text(
+      ctx,
+      this.biomeLabel(),
+      view.x + 12 * g,
+      y + 38 * g,
+      T.body * g,
+      C.text,
+      'left',
+      'bold',
+    );
+    text(
+      ctx,
+      t('free_field.biome_note'),
+      view.x + 12 * g,
+      y + 56 * g,
+      T.micro * g,
+      C.textFaint,
+    );
+    const biomeBtnsY = y + 22 * g;
+    const bPrev: Rect = {
+      x: view.x + view.w - 12 * g - btnW * 2 - 8 * g,
+      y: biomeBtnsY,
+      w: btnW,
+      h: btnH,
+    };
+    const bNext: Rect = { x: bPrev.x + btnW + 8 * g, y: biomeBtnsY, w: btnW, h: btnH };
+    if (!blocked && ui.button(bPrev, '‹', { size: T.head * g })) {
+      audio.tap();
+      this.config.biomeId = prevBiomeOption(this.config.biomeId);
+    }
+    if (!blocked && ui.button(bNext, '›', { size: T.head * g })) {
+      audio.tap();
+      this.config.biomeId = nextBiomeOption(this.config.biomeId);
+    }
+    y += 90 * g;
+
+    // Full shuffle of plates + weather + scenery
     const fullRand: Rect = { x: view.x, y, w: view.w, h: 34 * g };
     if (!blocked && ui.button(fullRand, t('free_field.randomise_all'), { size: T.small * g })) {
       audio.tap();

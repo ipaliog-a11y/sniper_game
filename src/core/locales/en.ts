@@ -21,12 +21,15 @@ export const en: Dict = {
   // --- free field ---
   'free_field.title': 'FREE FIELD',
   'free_field.blurb':
-    'Build your own string. Choose plate count and type, set each distance, hide ranges if you want to mil them, pick weather (or randomise), and fit any kit. No time limit — the clock counts up.',
+    'Build your own string. Choose plate count and type, set each distance, hide ranges if you want to mil them, pick weather and scenery (or randomise), and fit any kit. No time limit — the clock counts up.',
   'free_field.weather': 'WEATHER',
   'free_field.weather_note': 'Preset conditions · random re-rolls seed and gusts',
   'free_field.weather_random': 'Random each go-hot',
+  'free_field.biome': 'SCENERY',
+  'free_field.biome_note': 'Ground, props, horizon · soft props lean with the wind',
+  'free_field.biome_random': 'Random each go-hot',
   'free_field.randomise': 'RE-ROLL',
-  'free_field.randomise_all': 'SHUFFLE PLATES + WEATHER',
+  'free_field.randomise_all': 'SHUFFLE PLATES + WEATHER + SCENERY',
   'free_field.weather_rerolled': 'Weather seed re-rolled',
   'free_field.shuffled': 'String shuffled',
   'free_field.targets': 'PLATES',
@@ -85,7 +88,13 @@ export const en: Dict = {
 
   // --- stages list ---
   'stages.title': 'COURSE OF FIRE',
-  'stages.meta': '{targets} targets · to {range} · {rounds} rounds · {weather}',
+  'stages.meta': '{targets} targets · to {range} · {rounds} rounds · {weather} · {biome}',
+
+  // --- scenery biomes ---
+  'biome.open.name': 'Open Field',
+  'biome.forest.name': 'Forest Edge',
+  'biome.desert.name': 'Desert',
+  'biome.urban.name': 'Urban Fringe',
   'stages.locked': 'locked — shoot {pct}% on the previous stage',
   'stages.not_shot': 'not shot',
   'stages.record': '{pct}%  ·  {pts} pts',
@@ -144,6 +153,7 @@ export const en: Dict = {
   'brief.nothing_fitted': 'nothing fitted',
   'brief.zero': 'ZERO',
   'brief.targets': 'TARGETS',
+  'brief.scenery': 'SCENERY',
   'brief.rounds': 'ROUNDS',
   'brief.time_limit': 'TIME LIMIT',
   'brief.time_count_up': 'no limit · clock counts up',
@@ -492,7 +502,10 @@ export const en: Dict = {
     'Settings toggle: full solutions, no stage time-out, full speed points. Scores and credits still count.',
   'glossary.free_field.term': 'Free Field',
   'glossary.free_field.def':
-    'Sandbox mode from the main menu. Build your own string: plate count and type, distance per plate, known or concealed ranges, weather presets or randomiser, any rifle and gear. No time limit — the clock counts up. Hits are graded but credits and unlocks are not banked.',
+    'Sandbox mode from the main menu. Build your own string: plate count and type, distance per plate, known or concealed ranges, weather, scenery biome, any rifle and gear. No time limit — the clock counts up. Hits are graded but credits and unlocks are not banked.',
+  'glossary.scenery.term': 'Scenery / biome',
+  'glossary.scenery.def':
+    'What the range looks like: open field, forest edge, desert, or urban fringe. Colours the ground and plants props. Soft props (grass, canopy, flags, hanging signs, windsocks) lean and flutter with local wind — direction and strength are readable without a meter.',
   'glossary.rangefinder.term': 'Rangefinder',
   'glossary.rangefinder.def':
     'Gear that gives true distance. Without it you mil the target’s known size and divide (range = size / mils).',

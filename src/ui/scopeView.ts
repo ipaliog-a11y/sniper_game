@@ -1,4 +1,5 @@
 import type { TrajectoryPoint } from '../core/ballistics';
+import { type Biome, type PropKind, biomeById, pickPropKind } from '../core/biome';
 import type { Optic } from '../core/catalog/attachments';
 import {
   type Target,
@@ -97,7 +98,7 @@ const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [
 const css = (c: Rgb, alpha = 1) =>
   `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${alpha})`;
 
-export function lightFor(conditions: Conditions): Light {
+export function lightFor(conditions: Conditions, biome: Biome = biomeById('open')): Light {
   const h = conditions.hour;
   // Full daylight between about seven and five, falling off either side.
   const dusk = clamp(Math.min(h - 4.5, 20 - h) / 2.5, 0, 1);
@@ -105,26 +106,38 @@ export function lightFor(conditions: Conditions): Light {
     conditions.sky === 'overcast' ? 0.7 : conditions.sky === 'rain' ? 0.55 : conditions.sky === 'fog' ? 0.6 : 1;
   const level = clamp(dusk * overcast, 0.12, 1);
   const warm = 1 - dusk;
+  const biomeWarm = biome.palette.skyWarmth;
 
   const dayTop: Rgb =
     conditions.sky === 'clear' ? [74, 124, 166] : conditions.sky === 'high-cloud' ? [104, 134, 158] : [102, 108, 110];
   const dayBottom: Rgb = conditions.sky === 'clear' ? [176, 202, 212] : [162, 166, 168];
+  // Desert days go a little amber; forest stays cooler.
+  const dayTopTinted = mixRgb(dayTop, [168, 142, 98], biomeWarm * 0.55);
+  const dayBottomTinted = mixRgb(dayBottom, [210, 186, 140], biomeWarm * 0.4);
   const nightTop: Rgb = [22, 28, 40];
   const nightBottom: Rgb = [78, 68, 60];
 
-  // Dry ranges are straw, wet ones are green, and everything greys out at dusk.
+  // Biome ground, pushed greyer at dusk / low light.
   const dry = clamp(1 - conditions.atmosphere.humidity, 0, 1);
-  const grass: Rgb = mixRgb([78, 96, 58], [138, 128, 82], dry);
+  const near = mixRgb(biome.palette.groundNear, mixRgb(biome.palette.groundNear, [148, 132, 96], dry * 0.35), 0.25);
+  const far = mixRgb(biome.palette.groundFar, mixRgb(biome.palette.groundFar, [150, 140, 110], dry * 0.3), 0.2);
 
   return {
-    skyTop: css(mixRgb(nightTop, dayTop, dusk)),
-    skyBottom: css(mixRgb(nightBottom, dayBottom, dusk)),
-    groundNear: mixRgb([20, 24, 20], grass, level),
-    groundFar: mixRgb([26, 32, 32], mixRgb(grass, [148, 152, 138], 0.45), level),
-    haze: [150 + 40 * warm, 158 + 20 * warm, 152 + 10 * warm],
+    skyTop: css(mixRgb(nightTop, dayTopTinted, dusk)),
+    skyBottom: css(mixRgb(nightBottom, dayBottomTinted, dusk)),
+    groundNear: mixRgb([20, 24, 20], near, level),
+    groundFar: mixRgb([26, 32, 32], mixRgb(far, lightHazeHint(biome), 0.2), level),
+    haze: [
+      150 + 40 * warm + 24 * biomeWarm,
+      158 + 20 * warm - 10 * biomeWarm,
+      152 + 10 * warm - 28 * biomeWarm,
+    ],
     level,
   };
 }
+
+const lightHazeHint = (biome: Biome): Rgb =>
+  mixRgb(biome.palette.groundFar, biome.palette.ridge, 0.4);
 
 // --- the world ----------------------------------------------------------
 
@@ -215,6 +228,7 @@ function drawScatter(
   conditions: Conditions,
   firingHeightM: number,
   light: Light,
+  biome: Biome,
 ): void {
   const { near, far } = visibleGroundRange(view, firingHeightM);
   if (far <= near) return;
@@ -223,20 +237,21 @@ function drawScatter(
   const dry = clamp(1 - conditions.atmosphere.humidity, 0, 1);
   const lightMix = 0.35 + 0.65 * light.level;
 
-  const dark = mixRgb([38, 46, 30], [92, 84, 54], dry);
-  const pale = mixRgb([104, 118, 74], [168, 156, 108], dry);
-  const scrub = mixRgb([44, 58, 34], [78, 70, 44], dry);
+  const dark = mixRgb(biome.palette.dark, mixRgb(biome.palette.dark, [92, 84, 54], dry), 0.35);
+  const pale = mixRgb(biome.palette.pale, mixRgb(biome.palette.pale, [168, 156, 108], dry), 0.3);
+  const scrub = biome.palette.scrub;
 
   const place = (d: number, azOffset: number): { x: number; y: number } =>
     view.project(view.aimAz + azOffset, Math.atan2(-firingHeightM, d));
 
   // Broad patches: very low alpha, several metres across, purely to break up a
   // flat wash of colour.
-  const patchRings = 16;
+  const patchRings = Math.round(16 * biome.density.patch);
   for (let ring = 0; ring < patchRings; ring++) {
-    const d = near * Math.pow(far / near, ring / (patchRings - 1));
+    const d = near * Math.pow(far / near, ring / Math.max(1, patchRings - 1));
     const scale = view.pxPerRad / d;
-    for (let i = 0; i < 10; i++) {
+    const perRing = Math.round(10 * biome.density.patch);
+    for (let i = 0; i < perRing; i++) {
       const r1 = hash(ring * 977, i, seed ^ 0x2f);
       const r2 = hash(i * 613, ring, seed ^ 0xb7);
       const p = place(d * (1 + (r2 - 0.5) * 0.18), (r1 - 0.5) * halfSpan * 2.1);
@@ -252,16 +267,17 @@ function drawScatter(
 
   // Fine speckle. Small enough that at any usable magnification it reads as
   // texture rather than as things.
-  const rings = 40;
+  const rings = Math.round(40 * biome.density.speck);
   for (let ring = 0; ring < rings; ring++) {
-    const d = near * Math.pow(far / near, ring / (rings - 1));
+    const d = near * Math.pow(far / near, ring / Math.max(1, rings - 1));
     if (d > MAX_DRAW_RANGE) break;
     const scale = view.pxPerRad / d;
     const t = clamp(Math.log(d / 8) / Math.log(MAX_DRAW_RANGE / 8), 0, 1);
     const fade = clamp((1 - t) * 0.7 + 0.05, 0.05, 0.55) * lightMix;
     const ringKey = (ring * 2654435761) >>> 0;
+    const perRing = Math.round(70 * biome.density.speck);
 
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < perRing; i++) {
       const r1 = hash(ringKey, i, seed);
       const r2 = hash(i, ringKey, seed ^ 0x51);
       const r3 = hash(i * 31, ring * 17, seed ^ 0x9e);
@@ -326,30 +342,51 @@ function drawBerm(
 }
 
 /**
- * A treeline out past the backstop, sitting on the ground plane a long way off.
- * It gives the horizon somewhere to be when the shooter looks up.
+ * Horizon silhouette past the berm — treeline, dunes, or an urban skyline
+ * depending on biome. Always sits on a real distance so it foreshortens.
  */
-function drawTreeline(
+function drawHorizon(
   ctx: CanvasRenderingContext2D,
   view: View,
   conditions: Conditions,
   firingHeightM: number,
   light: Light,
+  biome: Biome,
 ): void {
-  const d = 3400;
+  const d = biome.horizon === 'skyline' ? 2800 : biome.horizon === 'dunes' ? 3200 : 3400;
   const halfSpan = view.fov * 1.5 + 0.3;
   const base = Math.atan2(-firingHeightM, d);
-  const colour = mixRgb(mixRgb([34, 44, 34], [66, 78, 58], light.level), light.haze, 0.62);
+  const colour = mixRgb(
+    mixRgb(biome.palette.ridge, biome.palette.scrub, 0.35),
+    light.haze,
+    biome.horizon === 'skyline' ? 0.48 : 0.62,
+  );
   ctx.beginPath();
   let started = false;
-  const step = halfSpan / 60;
+  const step = halfSpan / 70;
   for (let az = view.aimAz - halfSpan; az <= view.aimAz + halfSpan; az += step) {
-    const n =
-      Math.sin(az * 210 + conditions.seed * 0.01) * 0.4 +
-      Math.sin(az * 613) * 0.35 +
-      Math.sin(az * 97 + 1.7) * 0.25;
-    const treeM = 12 + n * 7;
-    const p = view.project(az, Math.atan2(treeM - firingHeightM, d));
+    let heightM: number;
+    if (biome.horizon === 'skyline') {
+      // Blocky city fringe: stepped roofs rather than organic canopy.
+      const cell = Math.floor((az + conditions.seed * 0.001) * 38);
+      const block = hash(cell, 3, conditions.seed ^ 0x51);
+      const tower = hash(cell, 9, conditions.seed ^ 0xa7) > 0.82;
+      heightM = 8 + block * 18 + (tower ? 14 + block * 20 : 0);
+    } else if (biome.horizon === 'dunes') {
+      const n =
+        Math.sin(az * 48 + conditions.seed * 0.01) * 0.55 +
+        Math.sin(az * 17 + 0.4) * 0.3 +
+        Math.sin(az * 5) * 0.15;
+      heightM = 4 + n * 9;
+    } else {
+      const n =
+        Math.sin(az * 210 + conditions.seed * 0.01) * 0.4 +
+        Math.sin(az * 613) * 0.35 +
+        Math.sin(az * 97 + 1.7) * 0.25;
+      const dense = biome.id === 'forest' ? 1.35 : 1;
+      heightM = (12 + n * 7) * dense;
+    }
+    const p = view.project(az, Math.atan2(heightM - firingHeightM, d));
     if (!started) {
       ctx.moveTo(p.x, p.y);
       started = true;
@@ -364,6 +401,23 @@ function drawTreeline(
   ctx.closePath();
   ctx.fillStyle = css(colour);
   ctx.fill();
+
+  // Urban skyline: faint window glints on a few blocks.
+  if (biome.horizon === 'skyline' && light.level > 0.35) {
+    ctx.globalAlpha = 0.12 * light.level;
+    ctx.fillStyle = 'rgb(220,210,160)';
+    for (let i = 0; i < 18; i++) {
+      const r1 = hash(i, 40, conditions.seed ^ 0xcc);
+      const r2 = hash(i, 41, conditions.seed ^ 0xdd);
+      if (r2 < 0.55) continue;
+      const az = view.aimAz + (r1 - 0.5) * halfSpan * 1.8;
+      const winH = 10 + r2 * 22;
+      const p = view.project(az, Math.atan2(winH - firingHeightM, d));
+      const s = Math.max(1, (view.pxPerRad / d) * 1.2);
+      ctx.fillRect(p.x - s * 0.4, p.y - s * 0.2, s * 0.8, s * 0.5);
+    }
+    ctx.globalAlpha = 1;
+  }
 }
 
 /** Ridge lines at effectively infinite distance, so they only move with azimuth. */
@@ -372,10 +426,13 @@ function drawRidges(
   view: View,
   conditions: Conditions,
   light: Light,
+  biome: Biome,
 ): void {
-  for (let layer = 0; layer < 3; layer++) {
+  // Urban ranges use a flatter backdrop; desert ridges stay warm and low.
+  const layers = biome.horizon === 'skyline' ? 2 : 3;
+  for (let layer = 0; layer < layers; layer++) {
     const base = -0.0015 - layer * 0.0008;
-    const amp = 0.03 - layer * 0.008;
+    const amp = (biome.horizon === 'dunes' ? 0.022 : 0.03) - layer * 0.008;
     const step = 0.02;
     ctx.beginPath();
     let started = false;
@@ -399,9 +456,10 @@ function drawRidges(
     ctx.lineTo(closeLeft.x, closeLeft.y);
     ctx.closePath();
     const shade = 0.16 + layer * 0.1;
-    ctx.fillStyle = `rgba(${Math.round(58 + 40 * light.level)},${Math.round(
-      70 + 36 * light.level,
-    )},${Math.round(72 + 30 * light.level)},${0.85 - shade})`;
+    const ridge = mixRgb(biome.palette.ridge, light.haze, 0.25 + layer * 0.1);
+    ctx.fillStyle = `rgba(${Math.round(ridge[0] * (0.55 + 0.45 * light.level))},${Math.round(
+      ridge[1] * (0.55 + 0.45 * light.level),
+    )},${Math.round(ridge[2] * (0.55 + 0.45 * light.level))},${0.85 - shade})`;
     ctx.fill();
   }
 }
@@ -535,6 +593,327 @@ function drawFlags(
       }
     }
   });
+}
+
+// --- scenery props (biome + wind sway) ----------------------------------
+
+/**
+ * Cross-view wind lean at a distance. Positive means the prop tips right on
+ * screen. Gusts and zone volatility make soft props fidget rather than freeze.
+ */
+function windSwayAt(
+  conditions: Conditions,
+  distanceM: number,
+  time: number,
+  phase: number,
+  windiness: number,
+): { lean: number; flutter: number; speed: number } {
+  // Nearest zone at or before this distance, else the first.
+  let zone = conditions.zones[0];
+  for (const z of conditions.zones) {
+    if (z.distanceM <= distanceM * 1.05) zone = z;
+  }
+  const wind = zoneWindAt(zone, time);
+  // fromAngle is where wind comes FROM; props stream the other way.
+  const downwind = wind.fromAngle + Math.PI;
+  const cross = Math.sin(downwind);
+  const base = clamp(wind.speed / 7.5, 0, 1.35) * windiness;
+  const gust =
+    0.55 +
+    0.45 *
+      Math.sin(time * (0.9 + zone.volatility * 1.4) + phase) *
+      (0.4 + zone.volatility);
+  const lean = cross * base * gust;
+  const flutter =
+    Math.sin(time * (2.4 + zone.volatility * 3) + phase * 1.7) *
+    base *
+    zone.volatility *
+    0.35;
+  return { lean, flutter, speed: wind.speed };
+}
+
+/**
+ * Larger scenery objects — trees, poles, grass clumps, urban clutter — placed
+ * at real ranges. Soft kinds lean and flutter with local wind so density and
+ * direction read without a meter.
+ */
+function drawSceneryProps(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  conditions: Conditions,
+  firingHeightM: number,
+  light: Light,
+  biome: Biome,
+  time: number,
+): void {
+  const { near, far } = visibleGroundRange(view, firingHeightM);
+  if (far <= near) return;
+  const seed = conditions.seed ^ 0xc0ffee;
+  const halfSpan = view.fov * 0.9 + 0.05;
+  const rings = Math.round(22 * biome.density.prop);
+  const perRingBase = Math.round(5 * biome.density.prop);
+
+  for (let ring = 0; ring < rings; ring++) {
+    const t = ring / Math.max(1, rings - 1);
+    // Bias a little toward mid-range where props read as objects, not texture.
+    const d = near * Math.pow(Math.min(far, 2200) / near, Math.pow(t, 0.85));
+    if (d < 40 || d > 2400) continue;
+    const scale = view.pxPerRad / d;
+    if (scale < 0.35) continue;
+    const fade = clamp(1 - t * 0.75, 0.18, 0.9) * (0.4 + 0.6 * light.level);
+    // More trees in forest at longer rings.
+    const treeBoost = biome.density.tree > 1 && d > 180 ? 1.25 : 1;
+    const perRing = Math.round(perRingBase * treeBoost * (0.7 + (1 - t) * 0.6));
+
+    for (let i = 0; i < perRing; i++) {
+      const r1 = hash(ring * 911, i * 17, seed);
+      const r2 = hash(i * 53, ring * 29, seed ^ 0x33);
+      const r3 = hash(i, ring, seed ^ 0x99);
+      // Keep a clear fire lane near aimAz so plates are not buried in props.
+      const lane = 0.012 + 0.01 * (1 - t);
+      let azOff = (r1 - 0.5) * halfSpan * 2.05;
+      if (Math.abs(azOff) < lane) azOff += Math.sign(azOff || 1) * lane * 1.4;
+      const dist = d * (1 + (r2 - 0.5) * 0.12);
+      const groundEl = Math.atan2(-firingHeightM, dist);
+      const base = view.project(view.aimAz + azOff, groundEl);
+      if (Math.hypot(base.x - view.cx, base.y - view.cy) > view.radius * 1.05) continue;
+
+      const picked = pickPropKind(biome, r3);
+      // Extra trees when density asks for them.
+      const kind: PropKind =
+        biome.density.tree > 1.2 && r3 > 0.72 && picked.kind !== 'tree' && r2 > 0.55
+          ? 'tree'
+          : picked.kind;
+      const sway = picked.sway || kind === 'tree' || kind === 'grass' || kind === 'weed';
+      const phase = r1 * Math.PI * 2;
+      const wind = windSwayAt(conditions, dist, time, phase, biome.windiness);
+      const lean = sway ? wind.lean + wind.flutter : 0;
+      const s = view.pxPerRad / dist;
+
+      ctx.globalAlpha = fade;
+      drawProp(ctx, kind, base.x, base.y, s, lean, wind.speed, light, biome, r1, r2);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawProp(
+  ctx: CanvasRenderingContext2D,
+  kind: PropKind,
+  x: number,
+  y: number,
+  scale: number,
+  lean: number,
+  windSpeed: number,
+  light: Light,
+  biome: Biome,
+  r1: number,
+  r2: number,
+): void {
+  const leanPx = lean * scale * 1.8;
+  switch (kind) {
+    case 'grass':
+    case 'weed': {
+      const h = (kind === 'weed' ? 0.55 : 0.4) * (0.7 + r1 * 0.6);
+      const blades = kind === 'weed' ? 5 : 7;
+      ctx.strokeStyle = css(mixRgb(biome.palette.scrub, biome.palette.pale, r2 * 0.35), 0.85);
+      ctx.lineWidth = Math.max(0.6, scale * 0.03);
+      ctx.lineCap = 'round';
+      for (let b = 0; b < blades; b++) {
+        const ox = (b - (blades - 1) / 2) * scale * 0.08;
+        const tipLean = leanPx * (0.7 + r2 * 0.5) * (0.6 + b * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(x + ox, y);
+        ctx.quadraticCurveTo(
+          x + ox + tipLean * 0.45,
+          y - h * scale * 0.55,
+          x + ox + tipLean,
+          y - h * scale,
+        );
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'bush': {
+      const h = 0.7 + r1 * 0.55;
+      const w = 0.85 + r2 * 0.5;
+      ctx.fillStyle = css(mixRgb(biome.palette.scrub, biome.palette.dark, 0.25));
+      ctx.beginPath();
+      ctx.ellipse(x + leanPx * 0.35, y - h * scale * 0.45, w * scale * 0.55, h * scale * 0.5, lean * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = css(mixRgb(biome.palette.scrub, biome.palette.pale, 0.2), 0.7);
+      ctx.beginPath();
+      ctx.ellipse(x + leanPx * 0.5, y - h * scale * 0.65, w * scale * 0.35, h * scale * 0.32, lean * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'tree': {
+      const trunkH = 2.2 + r1 * 2.8;
+      const canopyR = 1.1 + r2 * 1.4;
+      // Trunk stays put; canopy drifts with the wind.
+      ctx.strokeStyle = css(mixRgb([52, 40, 28], biome.palette.dark, 0.4));
+      ctx.lineWidth = Math.max(1, scale * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + leanPx * 0.15, y - trunkH * scale);
+      ctx.stroke();
+      const cx = x + leanPx * 0.55;
+      const cy = y - trunkH * scale * 0.92;
+      ctx.fillStyle = css(mixRgb(biome.palette.scrub, [30, 48, 32], 0.25));
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, canopyR * scale * 0.7, canopyR * scale * 0.85, lean * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = css(mixRgb(biome.palette.scrub, biome.palette.pale, 0.15), 0.55);
+      ctx.beginPath();
+      ctx.ellipse(cx + leanPx * 0.12, cy - canopyR * scale * 0.2, canopyR * scale * 0.4, canopyR * scale * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'cactus': {
+      const h = 1.1 + r1 * 1.4;
+      ctx.fillStyle = css(mixRgb([62, 96, 58], biome.palette.scrub, 0.4));
+      ctx.fillRect(x - scale * 0.08, y - h * scale, scale * 0.16, h * scale);
+      // Arms
+      if (r2 > 0.35) {
+        ctx.fillRect(x, y - h * scale * 0.65, scale * 0.35, scale * 0.1);
+        ctx.fillRect(x + scale * 0.28, y - h * scale * 0.9, scale * 0.1, scale * 0.35);
+      }
+      if (r2 > 0.65) {
+        ctx.fillRect(x - scale * 0.4, y - h * scale * 0.5, scale * 0.32, scale * 0.1);
+      }
+      break;
+    }
+    case 'rock':
+    case 'rubble': {
+      const w = (kind === 'rubble' ? 0.7 : 0.9) + r1 * 1.1;
+      const h = 0.35 + r2 * 0.55;
+      ctx.fillStyle = css(mixRgb(biome.palette.dark, biome.palette.pale, 0.35));
+      ctx.beginPath();
+      ctx.ellipse(x, y - h * scale * 0.35, w * scale * 0.55, h * scale * 0.45, r1 * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      if (kind === 'rubble') {
+        ctx.fillStyle = css(biome.palette.dark, 0.7);
+        ctx.fillRect(x - scale * 0.25, y - scale * 0.35, scale * 0.5, scale * 0.2);
+      }
+      break;
+    }
+    case 'fence': {
+      const h = 1.15;
+      ctx.strokeStyle = css(mixRgb([70, 62, 48], biome.palette.dark, 0.3), 0.85);
+      ctx.lineWidth = Math.max(0.8, scale * 0.06);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - h * scale);
+      ctx.stroke();
+      // Wire rails — slight bow in wind
+      ctx.lineWidth = Math.max(0.5, scale * 0.03);
+      for (const frac of [0.35, 0.65]) {
+        const yy = y - h * scale * frac;
+        ctx.beginPath();
+        ctx.moveTo(x - scale * 0.55, yy);
+        ctx.quadraticCurveTo(x + leanPx * 0.2, yy + Math.abs(lean) * scale * 0.08, x + scale * 0.55, yy);
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'flag': {
+      const pole = 2.4 + r1 * 0.8;
+      ctx.strokeStyle = css([40, 42, 38], 0.85);
+      ctx.lineWidth = Math.max(0.8, scale * 0.05);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - pole * scale);
+      ctx.stroke();
+      const droop = clamp(1 - windSpeed / 6.7, 0, 1) * (Math.PI / 2) * 0.85;
+      const len = 1.1 * scale;
+      const dirX = Math.sign(lean || 1) * Math.cos(droop) * (0.35 + Math.abs(lean) * 0.65);
+      const dirY = Math.sin(droop);
+      ctx.beginPath();
+      ctx.moveTo(x, y - pole * scale);
+      ctx.lineTo(x + dirX * len, y - pole * scale + dirY * len);
+      ctx.lineTo(x + dirX * len * 0.55, y - pole * scale + dirY * len * 0.55 + len * 0.4);
+      ctx.closePath();
+      ctx.fillStyle = r2 > 0.5 ? '#c9532f' : '#d8a531';
+      ctx.fill();
+      break;
+    }
+    case 'windsock': {
+      const pole = 2.8;
+      ctx.strokeStyle = css([50, 52, 48], 0.9);
+      ctx.lineWidth = Math.max(0.8, scale * 0.06);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - pole * scale);
+      ctx.stroke();
+      const fill = clamp(windSpeed / 8, 0.1, 1);
+      const len = (1.3 + fill * 0.6) * scale;
+      const dir = Math.sign(lean || 1);
+      ctx.beginPath();
+      ctx.moveTo(x, y - pole * scale);
+      ctx.lineTo(x + dir * len, y - pole * scale + (1 - fill) * scale * 0.35);
+      ctx.lineTo(x + dir * len * 0.9, y - pole * scale + scale * 0.35);
+      ctx.closePath();
+      ctx.fillStyle = fill > 0.55 ? '#e07830' : '#c8a040';
+      ctx.fill();
+      break;
+    }
+    case 'sign': {
+      const pole = 2.0;
+      ctx.strokeStyle = css([60, 60, 58], 0.9);
+      ctx.lineWidth = Math.max(0.8, scale * 0.06);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - pole * scale);
+      ctx.stroke();
+      // Hanging board sways
+      const bx = x + leanPx * 0.4;
+      const by = y - pole * scale * 0.85;
+      ctx.fillStyle = css(mixRgb([120, 90, 50], biome.palette.pale, 0.2));
+      ctx.save();
+      ctx.translate(bx, by);
+      ctx.rotate(lean * 0.25);
+      ctx.fillRect(-scale * 0.45, 0, scale * 0.9, scale * 0.55);
+      ctx.restore();
+      break;
+    }
+    case 'lamp': {
+      const pole = 4.2 + r1 * 1.2;
+      ctx.strokeStyle = css([48, 48, 52], 0.9);
+      ctx.lineWidth = Math.max(1, scale * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - pole * scale);
+      ctx.stroke();
+      ctx.fillStyle = css([180, 170, 120], 0.35 + 0.4 * light.level);
+      ctx.beginPath();
+      ctx.arc(x, y - pole * scale, Math.max(1.2, scale * 0.18), 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'building': {
+      const w = 3.5 + r1 * 5;
+      const h = 2.5 + r2 * 6;
+      ctx.fillStyle = css(mixRgb(biome.palette.dark, biome.palette.ridge, 0.4));
+      ctx.fillRect(x - (w * scale) / 2, y - h * scale, w * scale, h * scale);
+      // Roof lip
+      ctx.fillStyle = css(mixRgb(biome.palette.dark, [40, 40, 42], 0.3));
+      ctx.fillRect(x - (w * scale) / 2 - scale * 0.1, y - h * scale - scale * 0.15, w * scale + scale * 0.2, scale * 0.2);
+      // Windows
+      if (scale > 2) {
+        ctx.fillStyle = css([40, 48, 58], 0.7);
+        const cols = 2 + Math.floor(r1 * 2);
+        const rows = 1 + Math.floor(r2 * 3);
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            const wx = x - (w * scale) / 2 + ((col + 0.5) / cols) * w * scale;
+            const wy = y - h * scale + ((row + 0.4) / (rows + 0.5)) * h * scale;
+            ctx.fillRect(wx - scale * 0.12, wy - scale * 0.15, scale * 0.24, scale * 0.3);
+          }
+        }
+      }
+      break;
+    }
+  }
 }
 
 // --- targets ------------------------------------------------------------
@@ -805,7 +1184,8 @@ export interface ScopeRender {
 export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): TargetDraw[] {
   const { session, view, time } = r;
   const conditions = session.conditions;
-  const light = lightFor(conditions);
+  const biome = biomeById(session.stage.biomeId);
+  const light = lightFor(conditions, biome);
   const firingHeightM = session.stage.firingHeightM;
 
   ctx.save();
@@ -820,11 +1200,12 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
   ctx.fillStyle = gradient;
   ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
 
-  drawRidges(ctx, view, conditions, light);
+  drawRidges(ctx, view, conditions, light, biome);
   drawGround(ctx, view, conditions, firingHeightM, light);
-  drawTreeline(ctx, view, conditions, firingHeightM, light);
+  drawHorizon(ctx, view, conditions, firingHeightM, light, biome);
   drawBerm(ctx, view, session, firingHeightM, light);
-  drawScatter(ctx, view, conditions, firingHeightM, light);
+  drawScatter(ctx, view, conditions, firingHeightM, light, biome);
+  drawSceneryProps(ctx, view, conditions, firingHeightM, light, biome, time);
   drawFlags(ctx, view, conditions, firingHeightM, time, light);
 
   const drawn: TargetDraw[] = [];

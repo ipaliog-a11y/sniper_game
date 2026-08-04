@@ -1,3 +1,4 @@
+import { biomeById } from '../core/biome';
 import { t } from '../core/i18n';
 import { STAGES, stageMaxRange } from '../core/range';
 import { gradeColour } from '../core/scoring';
@@ -68,6 +69,7 @@ export class StageSelectScene implements Scene {
       text(ctx, stageName, r.x + pad, r.y + 20 * g, T.body * g, open ? C.text : C.textFaint, 'left', 'bold');
 
       const preset = presetById(stage.presetId);
+      const biome = biomeById(stage.biomeId);
       const maxRange = stageMaxRange(stage);
       const rangeStr = imperial
         ? `${Math.round(mToYard(maxRange))} yd`
@@ -77,6 +79,7 @@ export class StageSelectScene implements Scene {
         range: rangeStr,
         rounds: stage.rounds,
         weather: t(`weather.${preset.id}.name`),
+        biome: t(`biome.${biome.id}.name`),
       });
       text(ctx, meta, r.x + pad, r.y + 38 * g, T.micro * g, C.textFaint);
 
