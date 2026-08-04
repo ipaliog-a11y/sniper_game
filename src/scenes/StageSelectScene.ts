@@ -22,6 +22,8 @@ export class StageSelectScene implements Scene {
   update(): void {}
 
   private unlocked(app: App, index: number): boolean {
+    // Debug free-shop also opens the full course so kit can be tested on any stage.
+    if (app.profile.settings.debugFreeShop) return true;
     if (index === 0) return true;
     const previous = STAGES[index - 1];
     const record = app.profile.records[previous.id];
