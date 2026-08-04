@@ -19,7 +19,7 @@ import {
 import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
 import { buildDope } from '../core/scope';
-import { buy, owns } from '../core/store';
+import { buy, owns, refreshAchievements } from '../core/store';
 import { mToYard, msToFps } from '../core/units';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
@@ -434,6 +434,14 @@ export class ArmouryScene implements Scene {
               audio.chime(true);
               app.toast(t('armoury.bought', { name: entry.name }), 'good');
               this.equip(app, entry.id);
+              const medals = refreshAchievements(app.profile);
+              if (medals.length) {
+                app.save();
+                app.toast(
+                  t('career.unlocked_toast', { name: t(`achieve.${medals[0]}.name`) }),
+                  'good',
+                );
+              }
             }
           }
         } else if (!entry.usable) {

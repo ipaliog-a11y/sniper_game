@@ -1,3 +1,11 @@
+import {
+  type Career,
+  type RunSnapshot,
+  appendCareerRun,
+  emptyCareer,
+  ensureCareer,
+  unlockAchievements,
+} from './career';
 import { DEFAULT_LOADOUT, type LoadoutSelection } from './loadout';
 import { type Lang, isLang } from './i18n';
 import type { Grade } from './scoring';
@@ -17,6 +25,11 @@ export interface StageRecord {
   bestTimeS: number;
   attempts: number;
   cleared: boolean;
+  /** Best first-round hit % on this stage (course only). */
+  bestFrhPercent?: number;
+  /** Best (lowest) mean radial miss, mils, when the stage was cleared. */
+  bestMeanRadialMil?: number;
+  lastPlayedAt?: number;
 }
 
 /** How the shoot scene is driven: finger-friendly buttons, or mouse bindings. */
@@ -79,6 +92,13 @@ export interface Profile {
   loadout: LoadoutSelection;
   records: Record<string, StageRecord>;
   settings: Settings;
+  /** Lifetime stats, run history, and achievement unlocks. */
+  career: Career;
+}
+
+export interface BankRunResult {
+  record: StageRecord | null;
+  newAchievements: string[];
 }
 
 export const STARTING_CREDITS = 1200;
@@ -102,6 +122,7 @@ export function defaultProfile(): Profile {
     loadout: { ...DEFAULT_LOADOUT, gearIds: [] },
     records: {},
     settings: { ...DEFAULT_SETTINGS, controlMode: defaultControlMode() },
+    career: emptyCareer(),
   };
 }
 
@@ -134,7 +155,7 @@ export function loadProfile(): Profile {
     if (!raw) return defaultProfile();
     const parsed = JSON.parse(raw) as Partial<Profile>;
     const base = defaultProfile();
-    return {
+    const profile: Profile = {
       credits: typeof parsed.credits === 'number' ? parsed.credits : base.credits,
       owned: Array.isArray(parsed.owned)
         ? Array.from(new Set([...STARTER_KIT, ...parsed.owned]))
@@ -152,10 +173,28 @@ export function loadProfile(): Profile {
           : base.settings.controlMode,
         debugFreeShop: Boolean(parsed.settings?.debugFreeShop),
       },
+      career: migrateCareer(parsed.career),
     };
+    ensureCareer(profile);
+    return profile;
   } catch {
     return defaultProfile();
   }
+}
+
+function migrateCareer(raw: unknown): Career {
+  if (!raw || typeof raw !== 'object') return emptyCareer();
+  const c = raw as Partial<Career>;
+  const base = emptyCareer();
+  return {
+    totals: { ...base.totals, ...(c.totals ?? {}) },
+    history: Array.isArray(c.history) ? c.history.slice(0, 40) : [],
+    unlocked: Array.isArray(c.unlocked) ? c.unlocked.filter((id) => typeof id === 'string') : [],
+    unlockedAt:
+      c.unlockedAt && typeof c.unlockedAt === 'object'
+        ? (c.unlockedAt as Record<string, number>)
+        : {},
+  };
 }
 
 export function saveProfile(profile: Profile): void {
@@ -186,6 +225,7 @@ export function recordStage(
   grade: Grade,
   timeS: number,
   cleared: boolean,
+  extras: { frhPercent?: number; meanRadialMil?: number } = {},
 ): StageRecord {
   const prev = profile.records[stageId];
   const next: StageRecord = {
@@ -193,10 +233,55 @@ export function recordStage(
     bestPoints: Math.max(prev?.bestPoints ?? 0, points),
     bestGrade: (prev && prev.bestFraction >= fraction ? prev.bestGrade : grade) as Grade,
     bestTimeS:
-      prev && prev.cleared && cleared ? Math.min(prev.bestTimeS, timeS) : cleared ? timeS : (prev?.bestTimeS ?? 0),
+      prev && prev.cleared && cleared
+        ? Math.min(prev.bestTimeS, timeS)
+        : cleared
+          ? timeS
+          : (prev?.bestTimeS ?? 0),
     attempts: (prev?.attempts ?? 0) + 1,
     cleared: (prev?.cleared ?? false) || cleared,
+    lastPlayedAt: Date.now(),
   };
+  if (typeof extras.frhPercent === 'number') {
+    next.bestFrhPercent = Math.max(prev?.bestFrhPercent ?? 0, extras.frhPercent);
+  } else if (prev?.bestFrhPercent != null) {
+    next.bestFrhPercent = prev.bestFrhPercent;
+  }
+  if (typeof extras.meanRadialMil === 'number' && cleared && extras.meanRadialMil > 0) {
+    const prior = prev?.bestMeanRadialMil;
+    next.bestMeanRadialMil =
+      prior != null && prior > 0 ? Math.min(prior, extras.meanRadialMil) : extras.meanRadialMil;
+  } else if (prev?.bestMeanRadialMil != null) {
+    next.bestMeanRadialMil = prev.bestMeanRadialMil;
+  }
   profile.records[stageId] = next;
   return next;
+}
+
+/**
+ * Bank a finished string: career totals/history, course bests when applicable,
+ * and newly unlocked achievements. Caller still awards credits for course runs.
+ */
+export function bankRun(profile: Profile, run: RunSnapshot): BankRunResult {
+  const entry = appendCareerRun(profile, run);
+  let record: StageRecord | null = null;
+  if (!run.freeField) {
+    record = recordStage(
+      profile,
+      run.stageId,
+      run.fraction,
+      run.points,
+      run.grade,
+      run.timeS,
+      run.cleared,
+      { frhPercent: run.frhPercent, meanRadialMil: run.meanRadialMil },
+    );
+  }
+  const newAchievements = unlockAchievements(profile, entry);
+  return { record, newAchievements };
+}
+
+/** Re-check kit and long-term achievements without a new run (e.g. after a buy). */
+export function refreshAchievements(profile: Profile): string[] {
+  return unlockAchievements(profile);
 }

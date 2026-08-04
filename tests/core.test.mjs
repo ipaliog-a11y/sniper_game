@@ -15,11 +15,19 @@ import {
   fullyRandomiseFreeField,
   suggestedRounds,
 } from '../src/core/freeField.ts';
+import {
+  ACHIEVEMENTS,
+  careerSummary,
+  emptyCareer,
+  ensureCareer,
+  unlockAchievements,
+} from '../src/core/career.ts';
 import { STAGES, scoreImpact, targetInclination } from '../src/core/range.ts';
 import { gaussian, makeRng } from '../src/core/rng.ts';
 import { gradeFor, scoreTarget } from '../src/core/scoring.ts';
 import { buildDope, fieldOfView, interpolateDope, reticleScale } from '../src/core/scope.ts';
 import { createSession, fireRound, targetUnderAim, tick } from '../src/core/session.ts';
+import { bankRun, defaultProfile } from '../src/core/store.ts';
 import {
   MIL,
   MOA,
@@ -593,6 +601,80 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   cfg.seed = 42;
   const randomBiome = buildFreeFieldStage(cfg);
   check('random biome resolves to a real id', BIOMES.some((b) => b.id === randomBiome.biomeId));
+}
+
+// --- career / achievements ----------------------------------------------
+
+{
+  const profile = defaultProfile();
+  ensureCareer(profile);
+  check('fresh career has zero runs', profile.career.totals.runs === 0);
+  check('achievement catalogue is non-empty', ACHIEVEMENTS.length >= 10);
+
+  const { newAchievements, record } = bankRun(profile, {
+    stageId: 'zero',
+    fraction: 0.55,
+    points: 400,
+    grade: 'Marksman',
+    timeS: 90,
+    cleared: true,
+    frhPercent: 80,
+    meanRadialMil: 0.4,
+    hits: 5,
+    targets: 5,
+    shots: 6,
+    practice: false,
+    freeField: false,
+    reward: 500,
+  });
+  check('course run updates stage record', record != null && record.cleared === true);
+  check('course run counts as course', profile.career.totals.courseRuns === 1);
+  check('history logs the run', profile.career.history.length === 1);
+  check('shots accumulate', profile.career.totals.shots === 6);
+  check('credits earned tracked', profile.career.totals.creditsEarned === 500);
+  check('first string medal unlocks', newAchievements.includes('first_string'));
+  check('first clear medal unlocks', profile.career.unlocked.includes('first_clear'));
+  check('tight group medal unlocks', profile.career.unlocked.includes('tight_group'));
+  check('marksman ribbon unlocks', profile.career.unlocked.includes('grade_marksman'));
+
+  // Free Field does not overwrite course bests.
+  const bestBefore = profile.records.zero.bestFraction;
+  bankRun(profile, {
+    stageId: 'free-field',
+    fraction: 0.99,
+    points: 999,
+    grade: 'Distinguished',
+    timeS: 40,
+    cleared: true,
+    frhPercent: 100,
+    meanRadialMil: 0.1,
+    hits: 3,
+    targets: 3,
+    shots: 3,
+    practice: true,
+    freeField: true,
+    reward: 0,
+  });
+  check('free field does not clobber course best', profile.records.zero.bestFraction === bestBefore);
+  check('free field run counted', profile.career.totals.freeFieldRuns === 1);
+  check('free field medal unlocks', profile.career.unlocked.includes('free_field_run'));
+
+  const sum = careerSummary(profile);
+  check('summary stages cleared at least one', sum.stagesCleared >= 1);
+  check('summary tracks free field runs', sum.freeFieldRuns === 1);
+
+  // Kit achievements via refresh path.
+  profile.owned.push('opt-tree', 'gear-lrf', 'gear-kestrel', 'gear-solver');
+  const kitMedals = unlockAchievements(profile);
+  check('tree glass medal', kitMedals.includes('own_tree') || profile.career.unlocked.includes('own_tree'));
+  check(
+    'full sensors medal',
+    kitMedals.includes('full_sensors') || profile.career.unlocked.includes('full_sensors'),
+  );
+
+  // Empty career clone is independent.
+  const bare = emptyCareer();
+  check('empty career has no history', bare.history.length === 0);
 }
 
 // --- scenery biomes -----------------------------------------------------

@@ -4,7 +4,7 @@ import type { StageScore } from '../core/scoring';
 import { gradeColour, nextGradeAbove } from '../core/scoring';
 import type { Session } from '../core/session';
 import type { ShotResult } from '../core/shot';
-import { recordStage } from '../core/store';
+import { bankRun } from '../core/store';
 import { mToYard, msToFps } from '../core/units';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
@@ -39,20 +39,33 @@ export class ResultScene implements Scene {
     if (this.banked) return;
     this.banked = true;
     const stage = this.session.stage;
-    // Free Field is sandbox: grade the string, but do not farm credits or
-    // write course unlock records.
-    if (!this.session.freeField && !isFreeFieldStage(stage.id)) {
-      app.profile.credits += this.score.reward;
-      recordStage(
-        app.profile,
-        stage.id,
-        this.score.fraction,
-        this.score.points,
-        this.score.grade,
-        this.score.elapsedS,
-        this.score.cleared,
-      );
-      app.save();
+    const freeField = this.session.freeField || isFreeFieldStage(stage.id);
+    // Course strings pay credits; Free Field is sandbox money-wise.
+    const reward = freeField ? 0 : this.score.reward;
+    if (!freeField) app.profile.credits += reward;
+    const { newAchievements } = bankRun(app.profile, {
+      stageId: stage.id,
+      fraction: this.score.fraction,
+      points: this.score.points,
+      grade: this.score.grade,
+      timeS: this.score.elapsedS,
+      cleared: this.score.cleared,
+      frhPercent: this.score.frhPercent,
+      meanRadialMil: this.score.meanRadialMil,
+      hits: this.score.hits,
+      targets: this.score.targets,
+      shots: this.score.shots,
+      practice: this.session.practice,
+      freeField,
+      reward,
+    });
+    app.save();
+    // Surface at most two unlock toasts so the result card stays readable.
+    for (const id of newAchievements.slice(0, 2)) {
+      app.toast(t('career.unlocked_toast', { name: t(`achieve.${id}.name`) }), 'good');
+    }
+    if (newAchievements.length > 2) {
+      app.toast(t('career.unlocked_more', { n: newAchievements.length - 2 }), 'good');
     }
     audio.chime(this.score.fraction >= 0.48);
   }
