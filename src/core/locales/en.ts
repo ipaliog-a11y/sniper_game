@@ -6,7 +6,7 @@ export const en: Dict = {
   'menu.subtitle': 'P R E C I S I O N   R I F L E   T R A I N E R',
   'menu.stages_cleared': '{cleared} of {total} stages cleared   ·   {credits} cr',
   'menu.course': 'COURSE OF FIRE',
-  'menu.course_sub': '{count} stages · tutorial through a mile',
+  'menu.course_sub': '{count} stages · tutorial through two miles',
   'menu.free_field': 'FREE FIELD',
   'menu.free_field_sub': 'your plates · weather · any kit · clock counts up',
   'menu.armoury': 'ARMOURY',
@@ -136,6 +136,12 @@ export const en: Dict = {
   'stage.mile.name': '08 — The Mile',
   'stage.mile.brief':
     'One thousand six hundred and nine metres. Bring something that is still supersonic when it arrives, because nothing else is going to be predictable.',
+  'stage.beyond.name': '09 — Beyond the Mile',
+  'stage.beyond.brief':
+    'Past one mile the card alone is not enough. Large steel at 1.8–2.5 km, calm desert air, and flight times measured in seconds. .338 Lapua class or better — .308 is out of its depth.',
+  'stage.two-mile.name': '10 — Two Miles',
+  'stage.two-mile.brief':
+    'Three thousand two hundred and eighteen metres. Drop is measured in storeys, wind in metres of hold, and Coriolis is no longer a footnote. Bring a .50 BMG or a true ELR magnum, deep glass, and a solver that knows latitude.',
 
   // --- weather presets ---
   'weather.calm.name': 'Still Morning',
@@ -476,6 +482,10 @@ export const en: Dict = {
   'achieve.storm_clear.desc': 'Clear the storm stage.',
   'achieve.mile_clear.name': 'Mile steel',
   'achieve.mile_clear.desc': 'Clear the mile stage.',
+  'achieve.beyond_clear.name': 'Past the mile',
+  'achieve.beyond_clear.desc': 'Clear Beyond the Mile (past 1.5 miles).',
+  'achieve.two_mile_clear.name': 'Two-mile steel',
+  'achieve.two_mile_clear.desc': 'Clear the two-mile stage.',
   'achieve.course_complete.name': 'Course complete',
   'achieve.course_complete.desc': 'Clear every graded course stage.',
   'achieve.grade_marksman.name': 'Marksman ribbon',
@@ -583,6 +593,8 @@ export const en: Dict = {
   'panel.at_target': 'AT THE TARGET',
   'panel.spin_drift': 'SPIN DRIFT',
   'panel.spin_right': '{cm} cm right',
+  'panel.coriolis': 'CORIOLIS',
+  'panel.coriolis_value': '{h} H / {v} V MIL · lat {lat}°',
   'panel.lead': 'LEAD',
   'panel.dial_it': 'DIAL IT',
   'panel.not_enough_elev': 'NOT ENOUGH ELEVATION',
@@ -662,7 +674,7 @@ export const en: Dict = {
     'How “thick” the air acts for ballistics, combining height, temperature, pressure, and humidity. Thin air means less drag and less drop.',
   'glossary.coriolis.term': 'Coriolis',
   'glossary.coriolis.def':
-    'Earth rotation effect. In the northern hemisphere shots walk slightly right over long range; east/west fire also shifts elevation a little.',
+    'Earth rotation effect. In the northern hemisphere shots walk slightly right over long range; east/west fire also shifts elevation a little. The ballistic solver includes it and shows H/V mils when fitted; the weather meter supplies latitude. The printed data card does not (standard air, zero lat).',
   'glossary.spin_drift.term': 'Spin drift',
   'glossary.spin_drift.def':
     'Lateral walk from the bullet’s spin (right for a right-hand twist). Grows with time of flight; often a few centimetres at long range.',

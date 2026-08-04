@@ -35,6 +35,7 @@ function serviceWorker(): Plugin {
         'opt-sfp',
         'opt-tree',
         'opt-elite',
+        'opt-horizon',
         'muz-none',
         'muz-brake',
         'muz-can',

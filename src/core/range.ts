@@ -411,6 +411,49 @@ export const STAGES: Stage[] = [
       gong('x3', 1609, 6, 1.2, { label: 'MILE' }),
     ],
   },
+  {
+    id: 'beyond',
+    name: '09 — Beyond the Mile',
+    brief:
+      'Past one mile the card alone is not enough. Large steel at 1.8–2.5 km, calm desert air, and flight times measured in seconds. .338 Lapua class or better — .308 is out of its depth.',
+    presetId: 'calm',
+    biomeId: 'desert',
+    firingHeightM: 38,
+    seed: 24751,
+    rounds: 10,
+    timeLimitS: 540,
+    parPerTargetS: 90,
+    ordered: true,
+    reward: 9000,
+    unlockScore: 0.55,
+    targets: [
+      gong('b1', 1800, -5, 1.2, { label: '1.1 MI' }),
+      gong('b2', 2100, 1, 1.35, { label: '1.3 MI' }),
+      // ~Harrison-class distance: still a .338 problem if the load is heavy.
+      gong('b3', 2475, 6, 1.5, { label: '1.5 MI' }),
+    ],
+  },
+  {
+    id: 'two-mile',
+    name: '10 — Two Miles',
+    brief:
+      'Three thousand two hundred and eighteen metres. Drop is measured in storeys, wind in metres of hold, and Coriolis is no longer a footnote. Bring a .50 BMG or a true ELR magnum, deep glass, and a solver that knows latitude.',
+    presetId: 'desert',
+    biomeId: 'desert',
+    firingHeightM: 48,
+    seed: 32186,
+    rounds: 9,
+    timeLimitS: 720,
+    parPerTargetS: 120,
+    ordered: true,
+    reward: 14000,
+    unlockScore: 0.52,
+    targets: [
+      gong('e1', 2400, -4, 1.4, { label: '1.5 MI' }),
+      gong('e2', 2800, 2, 1.6, { label: '1.7 MI' }),
+      gong('e3', 3218, 7, 1.8, { label: '2 MI' }),
+    ],
+  },
 ];
 
 export const stageById = (id: string) => STAGES.find((s) => s.id === id);

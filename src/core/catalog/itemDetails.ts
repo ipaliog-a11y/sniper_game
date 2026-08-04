@@ -220,6 +220,18 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
       'Narrow FOV at high power — find the target at 7–12×, then zoom for the shot.',
     ],
   },
+  'opt-horizon': {
+    kind: 'optic',
+    role: 'Competition ELR FFP · 8–80×56 · MIL',
+    image: 'gear/opt-horizon.jpg',
+    detail:
+      'The Horizon 8–80×56 is purpose-built for extreme long range: forty-eight mils of elevation so two-mile dope stays in the turrets, eighty power so a 1.5 m plate fills the glass, and a first-focal-plane tree reticle that stays true while you zoom. It is heavy and expensive. Field of view at 80× is a tunnel — find the target at 10–15×, then dial magnification for the hold. Without a canted rail mindset (or this travel), magnum drop past 2500 m runs out of glass.',
+    notes: [
+      '48 MIL elevation covers .50 BMG two-mile cards without running out of turret.',
+      '80× is for mirage and group analysis, not for searching — start low.',
+      'Pairs with the Hadron AM50 / Vanguard LR338 and a ballistic solver that knows latitude.',
+    ],
+  },
 
   // --- muzzle devices ---
   'muz-none': {

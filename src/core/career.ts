@@ -209,6 +209,16 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     check: (p) => Boolean(p.records.mile?.cleared),
   },
   {
+    id: 'beyond_clear',
+    tier: 'gold',
+    check: (p) => Boolean(p.records.beyond?.cleared),
+  },
+  {
+    id: 'two_mile_clear',
+    tier: 'gold',
+    check: (p) => Boolean(p.records['two-mile']?.cleared),
+  },
+  {
     id: 'course_complete',
     tier: 'gold',
     check: (p) => gradedStages().every((s) => p.records[s.id]?.cleared),
@@ -297,7 +307,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'own_tree',
     tier: 'silver',
-    check: (p) => p.owned.includes('opt-tree') || p.owned.includes('opt-elite'),
+    check: (p) =>
+      p.owned.includes('opt-tree') ||
+      p.owned.includes('opt-elite') ||
+      p.owned.includes('opt-horizon'),
   },
   {
     id: 'full_sensors',

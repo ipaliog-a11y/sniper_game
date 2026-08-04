@@ -409,6 +409,25 @@ export const CARTRIDGES: Cartridge[] = [
     cost: 2400,
     blurb: 'Supersonic past 1500 m. This is what a mile shot is made of.',
   },
+  {
+    id: '338-300h',
+    name: '300 gr Hybrid ELR',
+    grade: 'Match',
+    chambering: '338lm',
+    grains: 300,
+    diameterIn: 0.338,
+    lengthIn: 1.82,
+    dragModel: 'G7',
+    bc: 0.412,
+    velocityFps: 2680,
+    referenceBarrelIn: 27,
+    velocitySd: 8,
+    dispersionMoa: 0.26,
+    tempSensitivity: 1.0,
+    cost: 3200,
+    blurb:
+      'Ultra-low-drag hybrid for past-the-mile work. Stays supersonic deeper than the SMK; wind is quieter; brass is not.',
+  },
 
   // --- .50 BMG ---
   {
@@ -428,6 +447,25 @@ export const CARTRIDGES: Cartridge[] = [
     tempSensitivity: 1.7,
     cost: 3600,
     blurb: 'Carries supersonic beyond two kilometres. Ruins shoulders.',
+  },
+  {
+    id: '50-800',
+    name: '800 gr ELR Match',
+    grade: 'Match',
+    chambering: '50bmg',
+    grains: 800,
+    diameterIn: 0.51,
+    lengthIn: 2.5,
+    dragModel: 'G7',
+    bc: 0.58,
+    velocityFps: 2750,
+    referenceBarrelIn: 29,
+    velocitySd: 12,
+    dispersionMoa: 0.38,
+    tempSensitivity: 1.5,
+    cost: 4800,
+    blurb:
+      'Purpose-built two-mile pill. High BC, long TOF, still predictable through the transonic if you call the wind.',
   },
   {
     id: '50-ap',

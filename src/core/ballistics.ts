@@ -172,7 +172,8 @@ export function fire(
 ): Impact {
   const dt = options.dt ?? 0.001;
   const sampleEvery = options.sampleEvery ?? 0;
-  const maxTof = options.maxTof ?? 12;
+  // ELR .50 / .338 arcs need ~10–16 s of flight; keep headroom past two miles.
+  const maxTof = options.maxTof ?? 20;
 
   const rho = airDensity(env.atmosphere);
   const sonic = speedOfSound(env.atmosphere);

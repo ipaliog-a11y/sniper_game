@@ -7,6 +7,7 @@ import {
   type Session,
   dialMils,
   trueSolution,
+  trueSolutionNoCoriolis,
 } from '../core/session';
 import { type Target, targetCentreHeight, targetInclination } from '../core/range';
 import {
@@ -508,7 +509,7 @@ export function turretPanel(
   text(ctx, dist(session.scope.parallaxM, settings.imperial), r.x + r.w, y, T.body * g, C.text, 'right');
   y += 18 * g;
   const parSlider: Rect = { x: r.x, y, w: r.w, h: 20 * g };
-  const nextPar = ui.slider('par', parSlider, session.scope.parallaxM, 50, 2000);
+  const nextPar = ui.slider('par', parSlider, session.scope.parallaxM, 50, 3600);
   if (Math.abs(nextPar - session.scope.parallaxM) > 0.5) {
     session.scope.parallaxM = nextPar;
     changed = true;
@@ -656,6 +657,25 @@ export function solutionPanel(
     r.w,
     t('panel.spin_drift'),
     t('panel.spin_right', { cm: (solution.spinDrift * 100).toFixed(1) }),
+  );
+  y += 22 * g;
+
+  // Isolate Earth-rate Coriolis by re-solving with latitude = 0.
+  const noCoriolis = trueSolutionNoCoriolis(session, target);
+  const corHMil = radToMil(solution.windage - noCoriolis.windage);
+  const corVMil = radToMil(solution.elevation - noCoriolis.elevation);
+  const latDeg = (session.conditions.latitude * 180) / Math.PI;
+  ui.field(
+    r.x,
+    y,
+    r.w,
+    t('panel.coriolis'),
+    t('panel.coriolis_value', {
+      h: `${corHMil >= 0 ? '+' : ''}${corHMil.toFixed(2)}`,
+      v: `${corVMil >= 0 ? '+' : ''}${corVMil.toFixed(2)}`,
+      lat: latDeg.toFixed(0),
+    }),
+    Math.hypot(corHMil, corVMil) > 0.05 ? C.amber : C.text,
   );
   y += 30 * g;
 

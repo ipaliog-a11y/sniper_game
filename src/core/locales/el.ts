@@ -6,7 +6,7 @@ export const el: Dict = {
   'menu.subtitle': 'Π Ρ Ο Π Ο Ν Η Τ Η Σ   Α Κ Ρ Ι Β Ε Ι Α Σ',
   'menu.stages_cleared': '{cleared} από {total} στάδια   ·   {credits} cr',
   'menu.course': 'ΣΕΙΡΑ ΒΟΛΗΣ',
-  'menu.course_sub': '{count} στάδια · εκπαίδευση έως ένα μίλι',
+  'menu.course_sub': '{count} στάδια · εκπαίδευση έως δύο μίλια',
   'menu.free_field': 'ΕΛΕΥΘΕΡΟ ΠΕΔΙΟ',
   'menu.free_field_sub': 'οι πλάκες σου · καιρός · οποιοδήποτε κιτ · ρολόι μετρά πάνω',
   'menu.armoury': 'ΟΠΛΟΣΤΑΣΙΟ',
@@ -137,6 +137,12 @@ export const el: Dict = {
   'stage.mile.name': '08 — Το Μίλι',
   'stage.mile.brief':
     'Χίλια εξακόσια εννέα μέτρα. Φέρε κάτι που παραμένει υπερηχητικό όταν φτάνει, γιατί αλλιώς τίποτα δεν είναι προβλέψιμο.',
+  'stage.beyond.name': '09 — Πέρα από το Μίλι',
+  'stage.beyond.brief':
+    'Πέρα από το ένα μίλι η κάρτα μόνη της δεν φτάνει. Μεγάλος χάλυβας στα 1,8–2,5 km, ήρεμος αέρας ερήμου και χρόνοι πτήσης σε δευτερόλεπτα. .338 Lapua ή καλύτερο — το .308 είναι εκτός βάθους.',
+  'stage.two-mile.name': '10 — Δύο Μίλια',
+  'stage.two-mile.brief':
+    'Τρεις χιλιάδες διακόσια δεκαοκτώ μέτρα. Η πτώση μετράται σε ορόφους, ο άνεμος σε μέτρα κράτησης, και το Coriolis δεν είναι υποσημείωση. Φέρε .50 BMG ή πραγματικό ELR μάγκνουμ, βαθύ γυαλί και solver που ξέρει γεωγραφικό πλάτος.',
 
   // --- weather presets ---
   'weather.calm.name': 'Ήσυχο Πρωινό',
@@ -475,6 +481,10 @@ export const el: Dict = {
   'achieve.storm_clear.desc': 'Καθάρισε το στάδιο θύελλας.',
   'achieve.mile_clear.name': 'Χάλυβας στο μίλι',
   'achieve.mile_clear.desc': 'Καθάρισε το στάδιο του μιλίου.',
+  'achieve.beyond_clear.name': 'Πέρα από το μίλι',
+  'achieve.beyond_clear.desc': 'Καθάρισε το στάδιο Beyond the Mile (πέρα από 1,5 μίλια).',
+  'achieve.two_mile_clear.name': 'Χάλυβας στα δύο μίλια',
+  'achieve.two_mile_clear.desc': 'Καθάρισε το στάδιο των δύο μιλίων.',
   'achieve.course_complete.name': 'Πλήρης σειρά',
   'achieve.course_complete.desc': 'Καθάρισε όλα τα βαθμολογούμενα στάδια.',
   'achieve.grade_marksman.name': 'Κορδέλα σκοπευτή',
@@ -585,6 +595,8 @@ export const el: Dict = {
   'panel.at_target': 'ΣΤΟΝ ΣΤΟΧΟ',
   'panel.spin_drift': 'ΣΠΙΝ ΝΤΡΙΦΤ',
   'panel.spin_right': '{cm} cm δεξιά',
+  'panel.coriolis': 'CORIOLIS',
+  'panel.coriolis_value': '{h} H / {v} V MIL · lat {lat}°',
   'panel.lead': 'ΠΡΟΗΓΗΣΗ',
   'panel.dial_it': 'ΡΥΘΜΙΣΕ',
   'panel.not_enough_elev': 'ΑΝΕΠΑΡΚΕΣ ΥΨΟΣ',
@@ -987,7 +999,7 @@ export const el: Dict = {
     'Πόσο «πυκνός» φαίνεται ο αέρας για βαλλιστική (ύψος, θερμοκρασία, πίεση, υγρασία). Λεπτός αέρας = λιγότερο drag.',
   'glossary.coriolis.term': 'Coriolis',
   'glossary.coriolis.def':
-    'Επίδραση περιστροφής Γης. Στο βόρειο ημισφαίριο οι βολές πάνε ελαφρά δεξιά σε μεγάλο βεληνεκές.',
+    'Επίδραση περιστροφής Γης. Στο βόρειο ημισφαίριο οι βολές πάνε ελαφρά δεξιά σε μεγάλο βεληνεκές. Ο ballistic solver το περιλαμβάνει και δείχνει H/V mil· ο μετρητής καιρού δίνει γεωγραφικό πλάτος. Η τυπωμένη κάρτα δεδομένων όχι.',
   'glossary.spin_drift.term': 'Spin drift',
   'glossary.spin_drift.def':
     'Πλευρική μετατόπιση από την περιστροφή της σφαίρας. Μεγαλώνει με τον χρόνο πτήσης.',
