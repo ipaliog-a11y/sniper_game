@@ -241,6 +241,7 @@ export const el: Dict = {
   'armoury.details_title': 'ΛΕΠΤΟΜΕΡΕΙΕΣ',
   'armoury.image_soon': 'Η εικόνα έρχεται σύντομα',
   'armoury.image_hint': 'Θέση για φωτογραφία — το artwork θα προστεθεί αργότερα',
+  'armoury.image_loading': 'Φόρτωση…',
   'armoury.field_notes': 'ΣΗΜΕΙΩΣΕΙΣ ΠΕΔΙΟΥ',
   'armoury.spec_sheet': 'ΦΥΛΛΟ ΠΡΟΔΙΑΓΡΑΦΩΝ',
 

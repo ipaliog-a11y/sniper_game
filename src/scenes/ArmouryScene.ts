@@ -23,7 +23,8 @@ import { buy, owns } from '../core/store';
 import { mToYard, msToFps } from '../core/units';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
-import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
+import { type Rect, fillPanel, paragraph, roundRect, rule, text } from '../ui/gfx';
+import { drawImageContained, getGearImage } from '../ui/gearImages';
 import { C, Scroll, T } from '../ui/ui';
 import { MenuScene } from './MenuScene';
 
@@ -498,8 +499,8 @@ export class ArmouryScene implements Scene {
   }
 
   /**
-   * Full-screen detail overlay for a rifle, optic, or muzzle. Image slot is a
-   * placeholder until artwork is added under public/gear/.
+   * Full-screen detail overlay for a rifle, optic, or muzzle.
+   * Catalogue art loads from public/gear/ via meta.image when present.
    */
   private drawDetailWindow(ctx: CanvasRenderingContext2D, app: App, entries: Entry[]): void {
     const { ui } = app;
@@ -613,44 +614,54 @@ export class ArmouryScene implements Scene {
 
     let y = body.y - this.detailScroll.offset;
 
-    // Image placeholder (artwork later: public/gear/{id}.png via meta.image).
+    // Product art (public/gear/…) or a reserved photo-slot placeholder.
     const img: Rect = { x: body.x, y, w: body.w, h: imgH };
     fillPanel(ctx, img, 8, C.bgDeep, C.edgeSoft);
-    // Corner marks so the empty frame reads as a photo slot.
-    ctx.strokeStyle = C.edge;
-    ctx.lineWidth = 1;
-    const m = 10 * g;
-    for (const [ox, oy, sx, sy] of [
-      [img.x + m, img.y + m, 1, 1],
-      [img.x + img.w - m, img.y + m, -1, 1],
-      [img.x + m, img.y + img.h - m, 1, -1],
-      [img.x + img.w - m, img.y + img.h - m, -1, -1],
-    ] as const) {
-      ctx.beginPath();
-      ctx.moveTo(ox, oy + sy * 16 * g);
-      ctx.lineTo(ox, oy);
-      ctx.lineTo(ox + sx * 16 * g, oy);
-      ctx.stroke();
+    const art = getGearImage(meta.image);
+    if (art) {
+      ctx.save();
+      roundRect(ctx, img, 8);
+      ctx.clip();
+      drawImageContained(ctx, art, img);
+      ctx.restore();
+    } else {
+      ctx.strokeStyle = C.edge;
+      ctx.lineWidth = 1;
+      const m = 10 * g;
+      for (const [ox, oy, sx, sy] of [
+        [img.x + m, img.y + m, 1, 1],
+        [img.x + img.w - m, img.y + m, -1, 1],
+        [img.x + m, img.y + img.h - m, 1, -1],
+        [img.x + img.w - m, img.y + img.h - m, -1, -1],
+      ] as const) {
+        ctx.beginPath();
+        ctx.moveTo(ox, oy + sy * 16 * g);
+        ctx.lineTo(ox, oy);
+        ctx.lineTo(ox + sx * 16 * g, oy);
+        ctx.stroke();
+      }
+      text(
+        ctx,
+        meta.image ? t('armoury.image_loading') : t('armoury.image_soon'),
+        img.x + img.w / 2,
+        img.y + img.h / 2 - 8 * g,
+        T.body * g,
+        C.textDim,
+        'center',
+        'bold',
+      );
+      if (!meta.image) {
+        text(
+          ctx,
+          t('armoury.image_hint'),
+          img.x + img.w / 2,
+          img.y + img.h / 2 + 12 * g,
+          T.micro * g,
+          C.textFaint,
+          'center',
+        );
+      }
     }
-    text(
-      ctx,
-      t('armoury.image_soon'),
-      img.x + img.w / 2,
-      img.y + img.h / 2 - 8 * g,
-      T.body * g,
-      C.textDim,
-      'center',
-      'bold',
-    );
-    text(
-      ctx,
-      t('armoury.image_hint'),
-      img.x + img.w / 2,
-      img.y + img.h / 2 + 12 * g,
-      T.micro * g,
-      C.textFaint,
-      'center',
-    );
     y += imgH + 14 * g;
 
     text(ctx, t('armoury.spec_sheet'), body.x, y + 6 * g, T.micro * g, C.textFaint);

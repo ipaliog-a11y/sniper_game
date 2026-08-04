@@ -240,6 +240,7 @@ export const en: Dict = {
   'armoury.details_title': 'ITEM DETAILS',
   'armoury.image_soon': 'Image coming soon',
   'armoury.image_hint': 'Photo slot reserved — artwork will land here later',
+  'armoury.image_loading': 'Loading…',
   'armoury.field_notes': 'FIELD NOTES',
   'armoury.spec_sheet': 'SPEC SHEET',
 

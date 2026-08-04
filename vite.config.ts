@@ -18,6 +18,23 @@ function serviceWorker(): Plugin {
         .map((name) => `./${name}`);
       // The shell and anything shipped from public/ rather than the bundle.
       // index.html is emitted by a later plugin, so it is never in `bundle`.
+      const gear = [
+        'ranger24',
+        'mk14',
+        'prs26',
+        'aw300',
+        'lr338',
+        'am50',
+        'opt-duplex',
+        'opt-mildot',
+        'opt-sfp',
+        'opt-tree',
+        'opt-elite',
+        'muz-none',
+        'muz-brake',
+        'muz-can',
+        'muz-tuner',
+      ].map((id) => `./gear/${id}.jpg`);
       const extras = [
         './',
         './index.html',
@@ -26,6 +43,7 @@ function serviceWorker(): Plugin {
         './icon-512.png',
         './icon-maskable-512.png',
         './apple-touch-icon.png',
+        ...gear,
       ];
       const precache = [...new Set([...extras, ...assets])];
       // The cache name changes whenever the build does, which is what evicts
