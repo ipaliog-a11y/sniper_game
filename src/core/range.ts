@@ -198,16 +198,18 @@ export const STAGES: Stage[] = [
     seed: 1041,
     rounds: 7,
     timeLimitS: 180,
-    parPerTargetS: 22,
+    parPerTargetS: 28,
     ordered: false,
     reward: 900,
     unlockScore: 0,
     targets: [
-      gong('z1', 150, -6, 0.3, { label: '150' }),
-      gong('z2', 220, -2.4, 0.3, { label: '220' }),
-      gong('z3', 300, 1.2, 0.3, { label: '300' }),
-      gong('z4', 360, 4.5, 0.25, { label: '360' }),
-      gong('z5', 400, 7.5, 0.2, { label: '400' }),
+      // Slightly generous plates for the zeroing stage — the lesson is the
+      // card and the dope, not micro-gongs at 400 m on day one.
+      gong('z1', 150, -6, 0.35, { label: '150' }),
+      gong('z2', 220, -2.4, 0.35, { label: '220' }),
+      gong('z3', 300, 1.2, 0.35, { label: '300' }),
+      gong('z4', 360, 4.5, 0.32, { label: '360' }),
+      gong('z5', 400, 7.5, 0.28, { label: '400' }),
     ],
   },
   {
@@ -223,7 +225,8 @@ export const STAGES: Stage[] = [
     parPerTargetS: 28,
     ordered: false,
     reward: 1400,
-    unlockScore: 0.5,
+    // Match Qualified: clear most of stage 1 carefully and you move on.
+    unlockScore: 0.28,
     targets: [
       silhouette('r1', 385, -8),
       gong('r2', 470, -3, 0.4),
@@ -245,7 +248,7 @@ export const STAGES: Stage[] = [
     parPerTargetS: 30,
     ordered: false,
     reward: 2200,
-    unlockScore: 0.55,
+    unlockScore: 0.38,
     targets: [
       gong('w1', 500, -9, 0.4),
       silhouette('w2', 640, -3.5),
@@ -267,7 +270,7 @@ export const STAGES: Stage[] = [
     parPerTargetS: 9,
     ordered: true,
     reward: 2600,
-    unlockScore: 0.55,
+    unlockScore: 0.42,
     targets: [
       gong('s1', 320, -10, 0.4, { appearsAtS: 0, exposureS: 12 }),
       gong('s2', 410, -5, 0.4, { appearsAtS: 10, exposureS: 12 }),
@@ -290,7 +293,7 @@ export const STAGES: Stage[] = [
     parPerTargetS: 32,
     ordered: false,
     reward: 3200,
-    unlockScore: 0.6,
+    unlockScore: 0.48,
     targets: [
       silhouette('a1', 720, -11, { heightM: 40 }),
       gong('a2', 850, -5, 0.5, { heightM: 55 }),
@@ -312,7 +315,7 @@ export const STAGES: Stage[] = [
     parPerTargetS: 20,
     ordered: false,
     reward: 3600,
-    unlockScore: 0.6,
+    unlockScore: 0.52,
     targets: [
       silhouette('m1', 340, -9, { moverSpeed: 1.4, moverSpanM: 6 }),
       silhouette('m2', 470, -2, { moverSpeed: 1.8, moverSpanM: 8 }),
@@ -333,7 +336,7 @@ export const STAGES: Stage[] = [
     parPerTargetS: 35,
     ordered: false,
     reward: 4400,
-    unlockScore: 0.6,
+    unlockScore: 0.55,
     targets: [
       silhouette('t1', 560, -12, { heightM: -20 }),
       gong('t2', 700, -6, 0.5, { heightM: -26 }),
@@ -355,7 +358,7 @@ export const STAGES: Stage[] = [
     parPerTargetS: 60,
     ordered: true,
     reward: 6500,
-    unlockScore: 0.65,
+    unlockScore: 0.58,
     targets: [
       gong('x1', 1100, -6, 0.9, { label: 'A' }),
       gong('x2', 1350, 0, 0.9, { label: 'B' }),

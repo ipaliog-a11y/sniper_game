@@ -45,7 +45,7 @@ export class ResultScene implements Scene {
       this.score.cleared,
     );
     app.save();
-    audio.chime(this.score.fraction >= 0.56);
+    audio.chime(this.score.fraction >= 0.48);
   }
 
   update(dt: number): void {

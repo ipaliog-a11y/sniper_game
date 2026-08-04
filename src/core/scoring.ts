@@ -2,17 +2,17 @@ import type { Stage, Target } from './range';
 import { clamp } from './units';
 
 /**
- * Scoring. A sniper trainer that scored only accuracy would teach you to take
- * four minutes over every shot, and one that scored only speed would teach you
- * to spray. So both count, and the first round on a target counts for more than
- * any correction that follows it — because in the field there is rarely a
- * second one.
+ * Scoring. Hits have to pay first — a careful all-plates run that takes its
+ * time still has to land Qualified and unlock the next stage. First-round and
+ * speed are bonuses on top of that, not a second gate: they separate grades
+ * (Marksman → Distinguished), not whether you "passed". Centre quality is a
+ * modest polish on the hit, not half the score.
  */
 
-export const HIT_BASE = 60;
-export const HIT_CENTRE_BONUS = 40;
-export const FIRST_ROUND_BONUS = 30;
-export const SPEED_BONUS = 40;
+export const HIT_BASE = 100;
+export const HIT_CENTRE_BONUS = 25;
+export const FIRST_ROUND_BONUS = 20;
+export const SPEED_BONUS = 20;
 
 export interface TargetScore {
   targetId: string;
@@ -58,11 +58,11 @@ export type Grade =
   | 'Unqualified';
 
 const GRADE_STEPS: Array<[number, Grade]> = [
-  [0.94, 'Distinguished'],
-  [0.85, 'Expert'],
-  [0.72, 'Sharpshooter'],
-  [0.56, 'Marksman'],
-  [0.35, 'Qualified'],
+  [0.92, 'Distinguished'],
+  [0.80, 'Expert'],
+  [0.65, 'Sharpshooter'],
+  [0.48, 'Marksman'],
+  [0.28, 'Qualified'],
 ];
 
 export function gradeFor(fraction: number): Grade {
@@ -103,12 +103,14 @@ export function scoreTarget(
       maxPoints,
     };
   }
-  const accuracy = target.value * (HIT_BASE + HIT_CENTRE_BONUS * clamp(quality, 0, 1));
-  // Speed marks decay to nothing at twice par, so dawdling costs but never
-  // turns a hit into a zero. Practice mode skips the decay entirely.
+  // Soft curve: edge hits still collect most of the centre bonus. Linear
+  // quality punished rim strikes almost as hard as misses used to.
+  const q = Math.sqrt(clamp(quality, 0, 1));
+  const accuracy = target.value * (HIT_BASE + HIT_CENTRE_BONUS * q);
+  // Full speed through ~0.5× par; fades out by ~2.2× par. Practice pays full.
   const speed = timeless
     ? SPEED_BONUS
-    : SPEED_BONUS * clamp(1 - (timeToHitS - parS * 0.4) / (parS * 1.6), 0, 1);
+    : SPEED_BONUS * clamp(1 - (timeToHitS - parS * 0.5) / (parS * 1.7), 0, 1);
   const first = firstRound ? FIRST_ROUND_BONUS : 0;
   return {
     targetId: target.id,

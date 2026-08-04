@@ -350,9 +350,17 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   check('a miss is worth nothing', missed.points === 0);
   check('nothing can beat the maximum', perfect.points <= perfect.maxPoints);
   check('practice mode pays full speed even when slow', practiceSlow.points === perfect.points);
+  // Hits dominate: a slow edge correction is still most of the target max.
+  check(
+    'a scrappy hit is still the bulk of the target score',
+    scrappy.points >= scrappy.maxPoints * 0.55,
+  );
+  // Slow perfect first-round still clears Qualified-grade territory on its own.
+  check('a slow clean hit pays well past half max', slow.points >= slow.maxPoints * 0.7);
 
   check('grades run in order', gradeFor(0.99) === 'Distinguished' && gradeFor(0.01) === 'Unqualified');
-  check('a clean sweep of the middle grades', gradeFor(0.6) === 'Marksman');
+  check('a clean sweep of the middle grades', gradeFor(0.55) === 'Marksman');
+  check('Qualified sits under Marksman', gradeFor(0.3) === 'Qualified');
 }
 
 // --- weather ------------------------------------------------------------
