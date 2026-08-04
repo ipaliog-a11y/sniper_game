@@ -5,11 +5,11 @@ export const en: Dict = {
   'menu.title': 'COLD BORE',
   'menu.subtitle': 'P R E C I S I O N   R I F L E   T R A I N E R',
   'menu.stages_cleared': '{cleared} of {total} stages cleared   ·   {credits} cr',
-  'menu.tutorial': 'TUTORIAL',
-  'menu.tutorial_sub': 'three plates, calm air — learn aim, breath, fire',
   'menu.course': 'COURSE OF FIRE',
-  'menu.course_sub': '{count} stages, 150 m to a mile',
+  'menu.course_sub': '{count} stages · tutorial through a mile',
   'menu.armoury': 'ARMOURY',
+  'menu.glossary': 'GLOSSARY',
+  'menu.glossary_sub': 'mils, DOPE, windage, grades — plain language',
   'menu.settings': 'SETTINGS',
   'menu.settings_imperial': 'yards, inches, Fahrenheit',
   'menu.settings_metric': 'metres, centimetres, Celsius',
@@ -42,6 +42,15 @@ export const en: Dict = {
   'settings.controls_touch_note': 'Drag to aim · pinch zoom · HOLD and FIRE on the bar',
   'settings.controls_mouse_note':
     'Drag aim · wheel zoom · right-hold breath · left-click or Space to fire',
+  'settings.glossary': 'OPEN GLOSSARY',
+  'settings.debug_section': 'DEBUG (TEMPORARY)',
+  'settings.free_shop': 'SET ALL ARMOURY PRICES TO 0 CR',
+  'settings.free_shop_confirm': 'ARE YOU SURE? TAP AGAIN TO ENABLE FREE SHOP',
+  'settings.free_shop_off': 'FREE SHOP ON — TAP TO TURN OFF',
+  'settings.free_shop_note':
+    'Temporary debug. Every armoury item shows and costs 0 credits so you can try kit without grinding. Does not erase progress. Turn off anytime. Remove this before a public release.',
+  'settings.free_shop_enabled': 'Armoury prices are 0 cr',
+  'settings.free_shop_disabled': 'Armoury prices restored',
   'settings.reset': 'RESET PROGRESS',
   'settings.reset_confirm': 'TAP AGAIN TO ERASE EVERYTHING',
   'settings.reset_note': 'kit, credits and every score card',
@@ -190,7 +199,7 @@ export const en: Dict = {
   'shoot.record_it': 'RECORD IT',
   'shoot.recorded': 'Recorded {range}',
   'shoot.reticle_first': 'Put the reticle on the target first',
-  'shoot.find': 'FIND',
+  'shoot.find': 'FIND NEXT',
   'shoot.tool.wind': 'WIND',
   'shoot.tool.card': 'CARD',
   'shoot.tool.dial': 'DIAL',
@@ -247,7 +256,7 @@ export const en: Dict = {
   'result.unlock_final': 'End of the course',
   'result.unlock_final_detail': 'No further stage to unlock — chase a higher grade.',
   'result.tutorial_done': 'Tutorial complete',
-  'result.tutorial_next': 'Open Course of Fire when you are ready for the real string.',
+  'result.tutorial_next': 'Cold Bore and the rest of the course are open — next up: {name}.',
   'result.next_grade': 'Next: {grade} at {pct}% · {pts} pts to go',
   'result.top_grade': 'Top grade',
   'result.score_how': 'HOW THIS SCORE WAS BUILT',
@@ -302,6 +311,7 @@ export const en: Dict = {
   // --- panels: turrets ---
   'panel.turrets': 'TURRETS',
   'panel.clicks': '{n} clicks',
+  'panel.zero_btn': '0',
   'panel.elevation_travel': 'ELEVATION  ·  {mils} MIL of travel',
   'panel.windage': 'WINDAGE',
   'panel.about_range': 'that is about {range} on the card',
@@ -332,4 +342,107 @@ export const en: Dict = {
   'panel.not_enough_elev': 'NOT ENOUGH ELEVATION',
   'panel.out_of_travel':
     'The scope has run out of travel. Hold the correction on the reticle instead, or fit glass with more of it.',
+
+  // --- glossary ---
+  'glossary.title': 'GLOSSARY',
+  'glossary.intro': 'Terms you will meet on the range and in this trainer.',
+  'glossary.mil.term': 'Mil (milliradian)',
+  'glossary.mil.def':
+    'Angular unit. One mil is about 10 cm at 100 m (or 1 m at 1000 m). Reticles, holds, and turret dials in this game use mils.',
+  'glossary.moa.term': 'MOA (minute of angle)',
+  'glossary.moa.def':
+    'Another angular unit: roughly 1 inch at 100 yards. Some real scopes click in MOA; this game mostly talks in mils.',
+  'glossary.dope.term': 'DOPE / data card',
+  'glossary.dope.def':
+    'Data On Previous Engagements — the elevation and wind numbers for your load at each range. Built for standard air; you correct for the day.',
+  'glossary.zero.term': 'Zero',
+  'glossary.zero.def':
+    'The range where the bullet crosses the sight line when turrets are at mechanical zero. Dialling is always relative to that zero.',
+  'glossary.cold_bore.term': 'Cold bore',
+  'glossary.cold_bore.def':
+    'The first shot from a cold barrel. Many rifles throw that round a little high or low compared with a warm group.',
+  'glossary.elevation.term': 'Elevation',
+  'glossary.elevation.def':
+    'Up/down turret (or hold) to correct for bullet drop. Positive elevation is “up” on the dial.',
+  'glossary.windage.term': 'Windage',
+  'glossary.windage.def':
+    'Left/right turret (or hold) to correct for wind, spin drift, and other lateral effects.',
+  'glossary.click.term': 'Click',
+  'glossary.click.def':
+    'One step of a turret. Each click is a fixed angular step (e.g. 0.1 mil). The “0” button returns that turret to mechanical zero.',
+  'glossary.turret.term': 'Turret',
+  'glossary.turret.def':
+    'The dials on the scope that move the reticle in elevation and windage. Dial before the shot when you can; hold when you cannot.',
+  'glossary.hold.term': 'Hold / holdover',
+  'glossary.hold.def':
+    'Aiming off the centre of the target using the reticle instead of dialling. Used for wind, movers, or when the scope is out of travel.',
+  'glossary.breath.term': 'Breath hold',
+  'glossary.breath.def':
+    'Stopping breathing to quiet the reticle for a few seconds. Hold too long and the wobble gets worse. Mouse: right-hold; touch: HOLD.',
+  'glossary.cant.term': 'Cant',
+  'glossary.cant.def':
+    'Rifle rolled left or right. A canted rifle throws the shot sideways even if the reticle is on target. An anti-cant level shows roll.',
+  'glossary.bc.term': 'BC (ballistic coefficient)',
+  'glossary.bc.def':
+    'How well the bullet slips through the air. Higher BC means less drop and less wind drift at the same speed, for a given drag model.',
+  'glossary.g1_g7.term': 'G1 / G7 drag models',
+  'glossary.g1_g7.def':
+    'Reference projectile shapes used when quoting BC. Modern boat-tail match bullets usually match G7 better than the old G1 standard.',
+  'glossary.transonic.term': 'Transonic',
+  'glossary.transonic.def':
+    'Near the speed of sound (about Mach 1.2 down to subsonic). Groups often open up here; the data card marks where the load goes transonic.',
+  'glossary.density_altitude.term': 'Density altitude',
+  'glossary.density_altitude.def':
+    'How “thick” the air acts for ballistics, combining height, temperature, pressure, and humidity. Thin air means less drag and less drop.',
+  'glossary.coriolis.term': 'Coriolis',
+  'glossary.coriolis.def':
+    'Earth rotation effect. In the northern hemisphere shots walk slightly right over long range; east/west fire also shifts elevation a little.',
+  'glossary.spin_drift.term': 'Spin drift',
+  'glossary.spin_drift.def':
+    'Lateral walk from the bullet’s spin (right for a right-hand twist). Grows with time of flight; often a few centimetres at long range.',
+  'glossary.ffp_sfp.term': 'FFP / SFP',
+  'glossary.ffp_sfp.def':
+    'First vs second focal plane. FFP reticles stay true at every magnification. SFP only subtends true mils at one power (usually max).',
+  'glossary.first_round.term': 'First-round hit',
+  'glossary.first_round.def':
+    'The first shot you send at a plate connects. Worth a score bonus — in the field you rarely get a free correction shot.',
+  'glossary.speed_bonus.term': 'Speed bonus',
+  'glossary.speed_bonus.def':
+    'Extra points for hitting near par time. Hits still pay most of the score; speed and first-round only polish the grade. Full bonus in practice mode.',
+  'glossary.frh.term': 'FRH %',
+  'glossary.frh.def':
+    'First-round hit percentage — fraction of plates hit with the first shot on each. Highlighted on the result card on purpose.',
+  'glossary.par.term': 'Par time',
+  'glossary.par.def':
+    'Target engagement time the stage treats as “full speed”. Slower than about 0.5×–2× par fades the speed bonus; practice mode always pays full.',
+  'glossary.qualified.term': 'Qualified / grades',
+  'glossary.qualified.def':
+    'Score grades from Unqualified up through Qualified, Marksman, Sharpshooter, Expert, Distinguished. Based on points as a fraction of stage max.',
+  'glossary.unlock.term': 'Unlock score',
+  'glossary.unlock.def':
+    'Minimum fraction on the previous stage to open the next one in Course of Fire. Shown on locked cards and on the result screen.',
+  'glossary.practice.term': 'Practice mode',
+  'glossary.practice.def':
+    'Settings toggle: full solutions, no stage time-out, full speed points. Scores and credits still count.',
+  'glossary.rangefinder.term': 'Rangefinder',
+  'glossary.rangefinder.def':
+    'Gear that gives true distance. Without it you mil the target’s known size and divide (range = size / mils).',
+  'glossary.weather_meter.term': 'Weather meter',
+  'glossary.weather_meter.def':
+    'Kestrel-style kit that reports air and wind accurately. Without it the brief gives a rounded field estimate with real error.',
+  'glossary.solver.term': 'Ballistic solver',
+  'glossary.solver.def':
+    'On-board computer that produces a firing solution for the target under the reticle. Without it you read the card and correct by hand.',
+  'glossary.spotter.term': 'Spotting scope / spotter call',
+  'glossary.spotter.def':
+    'Kit that lets you see splash and hear a useful correction. Without it a clean miss can be lost and you get no call.',
+  'glossary.data_card.term': 'Data card (in UI)',
+  'glossary.data_card.def':
+    'The CARD tool and brief tab listing elevation and wind holds by range for your load in standard air.',
+  'glossary.find_next.term': 'Find next',
+  'glossary.find_next.def':
+    'Swings the rifle onto the next plate that is up. Convenience for tiny targets at high power; the clock still runs during the swing.',
+  'glossary.credits.term': 'Credits (cr)',
+  'glossary.credits.def':
+    'In-game currency earned from stage payouts. Spent in the armoury on rifles, ammo, glass, and gear.',
 };

@@ -66,6 +66,11 @@ export interface Settings {
    * wheel for zoom, right-hold for breath, and left-click to fire.
    */
   controlMode: ControlMode;
+  /**
+   * Temporary debug: armoury prices show and charge 0 credits so kit can be
+   * tried without grinding. Not a permanent unlock — turn off anytime.
+   */
+  debugFreeShop: boolean;
 }
 
 export interface Profile {
@@ -86,6 +91,7 @@ export const DEFAULT_SETTINGS: Settings = {
   assist: false,
   language: 'en',
   controlMode: 'touch',
+  debugFreeShop: false,
 };
 
 /** Fresh profile; control mode picks mouse on desktop when the DOM is there. */
@@ -144,6 +150,7 @@ export function loadProfile(): Profile {
         controlMode: isControlMode(parsed.settings?.controlMode)
           ? parsed.settings.controlMode
           : base.settings.controlMode,
+        debugFreeShop: Boolean(parsed.settings?.debugFreeShop),
       },
     };
   } catch {

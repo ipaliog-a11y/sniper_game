@@ -296,7 +296,9 @@ export class ArmouryScene implements Scene {
       if (y > view.y + view.h || y + cardH < view.y) return;
       const r: Rect = { x: view.x, y, w: view.w, h: cardH };
       const held = owns(profile, entry.id);
-      const affordable = profile.credits >= entry.cost;
+      // Temporary debug: free shop prices when settings.debugFreeShop is on.
+      const price = profile.settings.debugFreeShop ? 0 : entry.cost;
+      const affordable = profile.credits >= price;
 
       fillPanel(
         ctx,
@@ -332,13 +334,13 @@ export class ArmouryScene implements Scene {
         );
       } else if (!held) {
         if (
-          ui.button(action, t('common.cr', { n: entry.cost.toLocaleString() }), {
+          ui.button(action, t('common.cr', { n: price.toLocaleString() }), {
             size: T.small * g,
             disabled: !affordable,
             accent: affordable,
           })
         ) {
-          if (buy(profile, entry.id, entry.cost)) {
+          if (buy(profile, entry.id, price)) {
             audio.chime(true);
             app.toast(t('armoury.bought', { name: entry.name }), 'good');
             this.equip(app, entry.id);

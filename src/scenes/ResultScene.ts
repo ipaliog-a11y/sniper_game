@@ -10,7 +10,6 @@ import { audio } from '../ui/audio';
 import { type Rect, bar, fillPanel, rule, text } from '../ui/gfx';
 import { C, Scroll, T } from '../ui/ui';
 import { BriefScene } from './BriefScene';
-import { MenuScene } from './MenuScene';
 import { StageSelectScene } from './StageSelectScene';
 
 /**
@@ -60,8 +59,6 @@ export class ResultScene implements Scene {
     const safe = app.safe;
     const score = this.score;
     const imperial = app.profile.settings.imperial;
-    const tutorial = isTutorialStage(this.session.stage.id);
-
     ui.fitText(
       t(`stage.${this.session.stage.id}.name`),
       safe.x,
@@ -208,14 +205,9 @@ export class ResultScene implements Scene {
       audio.tap();
       app.set(new BriefScene(this.session.stage));
     }
-    if (
-      ui.button(next, tutorial ? t('result.menu') : t('result.course'), {
-        accent: true,
-        size: T.body * g,
-      })
-    ) {
+    if (ui.button(next, t('result.course'), { accent: true, size: T.body * g })) {
       audio.tap();
-      app.set(tutorial ? new MenuScene() : new StageSelectScene());
+      app.set(new StageSelectScene());
     }
   }
 
@@ -241,10 +233,17 @@ export class ResultScene implements Scene {
 
     let line = y + 14 * g;
 
-    if (isTutorialStage(stage.id)) {
+    if (isTutorialStage(stage.id) && next) {
       text(ctx, t('result.tutorial_done'), x + 12 * g, line, T.small * g, C.amber, 'left', 'bold');
       line += 15 * g;
-      text(ctx, t('result.tutorial_next'), x + 12 * g, line, T.micro * g, C.textDim);
+      text(
+        ctx,
+        t('result.tutorial_next', { name: t(`stage.${next.id}.name`) }),
+        x + 12 * g,
+        line,
+        T.micro * g,
+        C.textDim,
+      );
     } else if (next) {
       const needPct = Math.round(next.unlockScore * 100);
       const havePct = Math.round(score.fraction * 100);

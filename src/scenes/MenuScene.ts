@@ -1,13 +1,13 @@
 import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
-import { STAGES, TUTORIAL_STAGE } from '../core/range';
+import { STAGES } from '../core/range';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
 import { C, T } from '../ui/theme';
 import { ArmouryScene } from './ArmouryScene';
-import { BriefScene } from './BriefScene';
+import { GlossaryScene } from './GlossaryScene';
 import { SettingsScene } from './SettingsScene';
 import { StageSelectScene } from './StageSelectScene';
 
@@ -63,12 +63,14 @@ export class MenuScene implements Scene {
       'center',
     );
 
-    const cleared = STAGES.filter((s) => profile.records[s.id]?.cleared).length;
+    // Progress counts graded stages only — tutorial is practice, not a clear.
+    const graded = STAGES.filter((s) => s.id !== 'tutorial');
+    const cleared = graded.filter((s) => profile.records[s.id]?.cleared).length;
     text(
       ctx,
       t('menu.stages_cleared', {
         cleared,
-        total: STAGES.length,
+        total: graded.length,
         credits: profile.credits.toLocaleString(),
       }),
       app.width / 2,
@@ -80,7 +82,7 @@ export class MenuScene implements Scene {
 
     const w = Math.min(safe.w, 340 * g);
     const x = app.width / 2 - w / 2;
-    let y = app.height * 0.48;
+    let y = app.height * 0.5;
     const h = 44 * g;
     const gap = 9 * g;
 
@@ -93,11 +95,6 @@ export class MenuScene implements Scene {
       return clicked;
     };
 
-    if (item(t('menu.tutorial'), t('menu.tutorial_sub'))) {
-      audio.unlock();
-      audio.tap();
-      app.set(new BriefScene(TUTORIAL_STAGE));
-    }
     if (item(t('menu.course'), t('menu.course_sub', { count: STAGES.length }), true)) {
       audio.unlock();
       audio.tap();
@@ -112,6 +109,11 @@ export class MenuScene implements Scene {
       audio.unlock();
       audio.tap();
       app.set(new ArmouryScene());
+    }
+    if (item(t('menu.glossary'), t('menu.glossary_sub'))) {
+      audio.unlock();
+      audio.tap();
+      app.set(new GlossaryScene());
     }
     if (
       item(

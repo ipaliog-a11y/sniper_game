@@ -399,16 +399,20 @@ export function turretPanel(
       C.textFaint,
     );
 
-    const bx = r.x + r.w - btn * 4 - 18 * g;
-    const buttons: Array<[string, number]> = [
+    // −− − 0 + ++  — centre button returns the turret to mechanical zero.
+    const glyphs: Array<[string, number | 'zero']> = [
       ['−−', -10],
       ['−', -1],
+      [t('panel.zero_btn'), 'zero'],
       ['+', 1],
       ['++', 10],
     ];
-    buttons.forEach(([glyph, delta], i) => {
-      const rect: Rect = { x: bx + i * (btn + 6 * g), y: y + 4 * g, w: btn, h: btn };
-      const next = clamp(clicks + delta, minClicks, maxClicks);
+    const gap = 5 * g;
+    const totalW = glyphs.length * btn + (glyphs.length - 1) * gap;
+    const bx = r.x + r.w - totalW;
+    glyphs.forEach(([glyph, delta], i) => {
+      const rect: Rect = { x: bx + i * (btn + gap), y: y + 4 * g, w: btn, h: btn };
+      const next = delta === 'zero' ? 0 : clamp(clicks + delta, minClicks, maxClicks);
       const disabled = next === clicks;
       if (ui.stepper(`${id}${i}`, rect, glyph, disabled)) {
         apply(next);

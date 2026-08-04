@@ -3,13 +3,16 @@ import { defaultProfile, nextControlMode } from '../core/store';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import { type Rect, paragraph, rule, text } from '../ui/gfx';
-import { C, T } from '../ui/ui';
+import { C, Scroll, T } from '../ui/ui';
+import { GlossaryScene } from './GlossaryScene';
 import { MenuScene } from './MenuScene';
 
-/** Preferences, plus the two escape hatches: practice mode and a hard reset. */
+/** Preferences, practice mode, debug free-shop, glossary link, hard reset. */
 export class SettingsScene implements Scene {
   readonly name = 'settings';
   private confirmWipe = false;
+  private confirmFreeShop = false;
+  private scroll = new Scroll('settings');
 
   update(): void {}
 
@@ -28,9 +31,18 @@ export class SettingsScene implements Scene {
     }
     rule(ctx, safe.x, safe.y + 34 * g, safe.w);
 
-    let y = safe.y + 50 * g;
-    const w = Math.min(safe.w, 420 * g);
+    const view: Rect = { x: safe.x, y: safe.y + 44 * g, w: safe.w, h: safe.h - 44 * g };
+    // Content height is fixed enough for the scroll region on short phones.
+    this.scroll.update(ui.input, view, 720 * g, 1 / 60);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(view.x, view.y, view.w, view.h);
+    ctx.clip();
+
+    const w = Math.min(view.w, 420 * g);
     const rowH = 42 * g;
+    let y = view.y + 6 * g - this.scroll.offset;
 
     const row = (label: string, on: boolean, onToggle: () => void, note?: string): void => {
       if (ui.toggle({ x: safe.x, y, w, h: rowH - 8 * g }, label, on)) {
@@ -45,7 +57,6 @@ export class SettingsScene implements Scene {
       y += rowH;
     };
 
-    // Language sits at the top so players find it before anything else.
     text(ctx, t('settings.language'), safe.x, y + 2 * g, T.micro * g, C.textFaint);
     const langBtn: Rect = { x: safe.x + w - 140 * g, y, w: 140 * g, h: 32 * g };
     if (ui.button(langBtn, LANG_LABELS[s.language], { size: T.small * g, accent: true })) {
@@ -58,7 +69,6 @@ export class SettingsScene implements Scene {
     text(ctx, t('settings.language_note'), safe.x, y, T.micro * g, C.textFaint);
     y += 22 * g;
 
-    // Controls: touch (toolbar) vs mouse (wheel / RMB / LMB).
     text(ctx, t('settings.controls'), safe.x, y + 2 * g, T.micro * g, C.textFaint);
     const modeBtn: Rect = { x: safe.x + w - 140 * g, y, w: 140 * g, h: 32 * g };
     if (
@@ -111,10 +121,60 @@ export class SettingsScene implements Scene {
     y += 40 * g;
 
     rule(ctx, safe.x, y, w);
-    y += 18 * g;
-
+    y += 14 * g;
     paragraph(ctx, t('settings.aim_note'), safe.x, y, w, T.small * g, C.textDim);
+    y += 44 * g;
+
+    const gloss: Rect = { x: safe.x, y, w, h: 40 * g };
+    if (ui.button(gloss, t('settings.glossary'), { size: T.small * g })) {
+      audio.tap();
+      app.save();
+      app.set(new GlossaryScene('settings'));
+    }
+    y += 50 * g;
+
+    // --- temporary debug: free armoury ---
+    rule(ctx, safe.x, y, w);
+    y += 14 * g;
+    text(ctx, t('settings.debug_section'), safe.x, y, T.micro * g, C.amber);
+    y += 16 * g;
+
+    const freeLabel = s.debugFreeShop
+      ? t('settings.free_shop_off')
+      : this.confirmFreeShop
+        ? t('settings.free_shop_confirm')
+        : t('settings.free_shop');
+    const freeBtn: Rect = { x: safe.x, y, w, h: 40 * g };
+    if (
+      ui.button(freeBtn, freeLabel, {
+        size: T.small * g,
+        danger: this.confirmFreeShop || s.debugFreeShop,
+        accent: this.confirmFreeShop || s.debugFreeShop,
+      })
+    ) {
+      if (s.debugFreeShop) {
+        s.debugFreeShop = false;
+        this.confirmFreeShop = false;
+        app.save();
+        app.toast(t('settings.free_shop_disabled'), 'info');
+        audio.click();
+      } else if (this.confirmFreeShop) {
+        s.debugFreeShop = true;
+        this.confirmFreeShop = false;
+        app.save();
+        app.toast(t('settings.free_shop_enabled'), 'good');
+        audio.chime(true);
+      } else {
+        this.confirmFreeShop = true;
+        audio.tap();
+      }
+    }
     y += 46 * g;
+    paragraph(ctx, t('settings.free_shop_note'), safe.x, y, w, T.small * g, C.textDim);
+    y += 48 * g;
+
+    rule(ctx, safe.x, y, w);
+    y += 14 * g;
 
     const wipe: Rect = { x: safe.x, y, w, h: 40 * g };
     if (
@@ -130,11 +190,14 @@ export class SettingsScene implements Scene {
         app.save();
         app.toast(t('settings.erased'), 'bad');
         this.confirmWipe = false;
+        this.confirmFreeShop = false;
       } else {
         this.confirmWipe = true;
       }
     }
     y += 50 * g;
     text(ctx, t('settings.reset_note'), safe.x, y, T.micro * g, C.textFaint);
+
+    ctx.restore();
   }
 }

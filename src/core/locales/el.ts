@@ -5,11 +5,11 @@ export const el: Dict = {
   'menu.title': 'COLD BORE',
   'menu.subtitle': 'Π Ρ Ο Π Ο Ν Η Τ Η Σ   Α Κ Ρ Ι Β Ε Ι Α Σ',
   'menu.stages_cleared': '{cleared} από {total} στάδια   ·   {credits} cr',
-  'menu.tutorial': 'ΕΚΠΑΙΔΕΥΣΗ',
-  'menu.tutorial_sub': 'τρεις πλάκες, ήρεμος αέρας — σκόπευση, ανάσα, βολή',
   'menu.course': 'ΣΕΙΡΑ ΒΟΛΗΣ',
-  'menu.course_sub': '{count} στάδια, από 150 m έως ένα μίλι',
+  'menu.course_sub': '{count} στάδια · εκπαίδευση έως ένα μίλι',
   'menu.armoury': 'ΟΠΛΟΣΤΑΣΙΟ',
+  'menu.glossary': 'ΓΛΩΣΣΑΡΙ',
+  'menu.glossary_sub': 'mil, DOPE, παρεκκλίσεις, βαθμοί — με απλά λόγια',
   'menu.settings': 'ΡΥΘΜΙΣΕΙΣ',
   'menu.settings_imperial': 'γιάρδες, ίντσες, Φαρενάιτ',
   'menu.settings_metric': 'μέτρα, εκατοστά, Κελσίου',
@@ -43,6 +43,15 @@ export const el: Dict = {
   'settings.controls_touch_note': 'Σύρε για σκόπευση · τσίμπημα ζουμ · ΚΡΑΤΑ και ΒΟΛΗ στη μπάρα',
   'settings.controls_mouse_note':
     'Σύρε σκόπευση · τροχός ζουμ · δεξί = ανάσα · αριστερό ή Space = βολή',
+  'settings.glossary': 'ΑΝΟΙΓΜΑ ΓΛΩΣΣΑΡΙΟΥ',
+  'settings.debug_section': 'DEBUG (ΠΡΟΣΩΡΙΝΟ)',
+  'settings.free_shop': 'ΟΛΑ ΤΑ ΕΙΔΗ ΟΠΛΟΣΤΑΣΙΟΥ ΣΕ 0 CR',
+  'settings.free_shop_confirm': 'ΣΙΓΟΥΡΑ; ΠΑΤΑ ΞΑΝΑ ΓΙΑ ΔΩΡΕΑΝ ΟΠΛΟΣΤΑΣΙΟ',
+  'settings.free_shop_off': 'ΔΩΡΕΑΝ ΟΠΛΟΣΤΑΣΙΟ ΕΝΕΡΓΟ — ΠΑΤΑ ΓΙΑ ΑΠΕΝΕΡΓΟΠΟΙΗΣΗ',
+  'settings.free_shop_note':
+    'Προσωρινό debug. Κάθε είδος εμφανίζεται και κοστίζει 0 credits για να δοκιμάσεις εξοπλισμό χωρίς να μαζεύεις χρήματα. Δεν σβήνει πρόοδο. Απενεργοποίησέ το όποτε θες. Αφαίρεσέ το πριν δημόσια κυκλοφορία.',
+  'settings.free_shop_enabled': 'Τιμές οπλοστασίου: 0 cr',
+  'settings.free_shop_disabled': 'Οι τιμές επανήλθαν',
   'settings.reset': 'ΕΠΑΝΑΦΟΡΑ ΠΡΟΟΔΟΥ',
   'settings.reset_confirm': 'ΠΑΤΑ ΞΑΝΑ ΓΙΑ ΟΛΙΚΗ ΔΙΑΓΡΑΦΗ',
   'settings.reset_note': 'εξοπλισμός, credits και κάθε σκορ',
@@ -191,7 +200,7 @@ export const el: Dict = {
   'shoot.record_it': 'ΚΑΤΑΓΡΑΦΗ',
   'shoot.recorded': 'Καταγράφηκε {range}',
   'shoot.reticle_first': 'Βάλε πρώτα τα σταυρωνικά στον στόχο',
-  'shoot.find': 'ΕΥΡΕΣΗ',
+  'shoot.find': 'ΕΠΟΜΕΝΟΣ',
   'shoot.tool.wind': 'ΑΝΕΜΟΣ',
   'shoot.tool.card': 'ΚΑΡΤΑ',
   'shoot.tool.dial': 'ΠΥΡΓ.',
@@ -248,7 +257,7 @@ export const el: Dict = {
   'result.unlock_final': 'Τέλος σειράς',
   'result.unlock_final_detail': 'Δεν υπάρχει επόμενο στάδιο — κυνηγήσε υψηλότερο βαθμό.',
   'result.tutorial_done': 'Η εκπαίδευση ολοκληρώθηκε',
-  'result.tutorial_next': 'Άνοιξε τη Σειρά Βολής όταν είσαι έτοιμος για την πραγματική άσκηση.',
+  'result.tutorial_next': 'Το Cold Bore και η υπόλοιπη σειρά είναι ανοιχτά — επόμενο: {name}.',
   'result.next_grade': 'Επόμενο: {grade} στο {pct}% · {pts} πόντοι ακόμα',
   'result.top_grade': 'Κορυφαίος βαθμός',
   'result.score_how': 'ΠΩΣ ΧΤΙΣΤΗΚΕ ΤΟ ΣΚΟΡ',
@@ -305,6 +314,7 @@ export const el: Dict = {
   // --- panels: turrets ---
   'panel.turrets': 'ΠΥΡΓΙΣΚΟΙ',
   'panel.clicks': '{n} κλικ',
+  'panel.zero_btn': '0',
   'panel.elevation_travel': 'ΥΨΟΣ  ·  {mils} MIL διαδρομή',
   'panel.windage': 'ΠΑΡΕΚΚΛΙΣΗ',
   'panel.about_range': 'αυτό είναι περίπου {range} στην κάρτα',
@@ -445,4 +455,107 @@ export const el: Dict = {
   'catalog.gear-chrono.name': 'Χρονογράφος στομίου',
   'catalog.gear-chrono.blurb':
     'Λέει τι κάνει πραγματικά η κάννη σήμερα, όχι τι έγραφε το κουτί.',
+
+  // --- glossary ---
+  'glossary.title': 'ΓΛΩΣΣΑΡΙ',
+  'glossary.intro': 'Όροι που θα συναντήσεις στο πεδίο και σε αυτόν τον προπονητή.',
+  'glossary.mil.term': 'Mil (μιλιραντάν)',
+  'glossary.mil.def':
+    'Γωνιακή μονάδα. Ένα mil ≈ 10 cm στα 100 m (ή 1 m στα 1000 m). Σταυρωνικά, holds και πυργίσκοι εδώ χρησιμοποιούν mils.',
+  'glossary.moa.term': 'MOA (λεπτό γωνίας)',
+  'glossary.moa.def':
+    'Άλλη γωνιακή μονάδα: περίπου 1 ίντσα στα 100 γιάρδες. Μερικά πραγματικά σκοπευτικά κάνουν κλικ σε MOA· εδώ μιλάμε κυρίως σε mils.',
+  'glossary.dope.term': 'DOPE / κάρτα δεδομένων',
+  'glossary.dope.def':
+    'Data On Previous Engagements — αριθμοί ύψους και ανέμου για το φορτίο σου ανά απόσταση. Για τυπικό αέρα· διορθώνεις για τη μέρα.',
+  'glossary.zero.term': 'Μηδενισμός (zero)',
+  'glossary.zero.def':
+    'Η απόσταση όπου η σφαίρα τέμνει τη γραμμή σκόπευσης με τους πυργίσκους στο μηχανικό μηδέν. Κάθε ρύθμιση είναι σχετική με αυτό.',
+  'glossary.cold_bore.term': 'Cold bore',
+  'glossary.cold_bore.def':
+    'Η πρώτη βολή από κρύα κάννη. Πολλά όπλα ρίχνουν εκείνη τη βολή λίγο ψηλότερα ή χαμηλότερα από μια ζεστή ομάδα.',
+  'glossary.elevation.term': 'Ύψος (elevation)',
+  'glossary.elevation.def':
+    'Πάνω/κάτω στον πυργίσκο (ή hold) για πτώση βολίδας. Θετικό ύψος = «πάνω» στη ρύθμιση.',
+  'glossary.windage.term': 'Παρέκκλιση (windage)',
+  'glossary.windage.def':
+    'Αριστερά/δεξιά για άνεμο, spin drift και άλλες πλευρικές επιδράσεις.',
+  'glossary.click.term': 'Κλικ',
+  'glossary.click.def':
+    'Ένα βήμα πυργίσκου. Κάθε κλικ είναι σταθερή γωνία (π.χ. 0,1 mil). Το κουμπί «0» επιστρέφει στον μηχανικό μηδενισμό.',
+  'glossary.turret.term': 'Πυργίσκος',
+  'glossary.turret.def':
+    'Οι ρυθμιστές στο σκοπευτικό για ύψος και παρέκκλιση. Ρύθμισε πριν τη βολή όταν μπορείς· κράτα hold όταν δεν μπορείς.',
+  'glossary.hold.term': 'Hold / holdover',
+  'glossary.hold.def':
+    'Στοχεύεις εκτός κέντρου με τα σταυρωνικά αντί να ρυθμίσεις πυργίσκο. Για άνεμο, κινούμενους, ή όταν τελειώνει η διαδρομή.',
+  'glossary.breath.term': 'Κράτημα αναπνοής',
+  'glossary.breath.def':
+    'Σταματάς την αναπνοή για να ηρεμήσει το σταυρωνικό λίγα δευτερόλεπτα. Πολύ πολύ και χειροτερεύει. Ποντίκι: δεξί· αφή: ΚΡΑΤΑ.',
+  'glossary.cant.term': 'Cant (κλίση)',
+  'glossary.cant.def':
+    'Το όπλο γερμένο αριστερά/δεξιά. Ρίχνει τη βολή πλάγια ακόμα κι αν τα σταυρωνικά είναι πάνω στον στόχο.',
+  'glossary.bc.term': 'BC (βαλλιστικός συντελεστής)',
+  'glossary.bc.def':
+    'Πόσο καλά «γλιστράει» η σφαίρα στον αέρα. Υψηλότερο BC = λιγότερη πτώση και λιγότερος άνεμος, για δεδομένο μοντέλο drag.',
+  'glossary.g1_g7.term': 'Μοντέλα drag G1 / G7',
+  'glossary.g1_g7.def':
+    'Σχήματα αναφοράς όταν δηλώνεται το BC. Σύγχρονες boat-tail σφαίρες συνήθως ταιριάζουν καλύτερα στο G7.',
+  'glossary.transonic.term': 'Διαηχητικό (transonic)',
+  'glossary.transonic.def':
+    'Κοντά στην ταχύτητα του ήχου. Οι ομάδες συχνά ανοίγουν εκεί· η κάρτα δείχνει πού το φορτίο γίνεται διαηχητικό.',
+  'glossary.density_altitude.term': 'Ύψος πυκνότητας',
+  'glossary.density_altitude.def':
+    'Πόσο «πυκνός» φαίνεται ο αέρας για βαλλιστική (ύψος, θερμοκρασία, πίεση, υγρασία). Λεπτός αέρας = λιγότερο drag.',
+  'glossary.coriolis.term': 'Coriolis',
+  'glossary.coriolis.def':
+    'Επίδραση περιστροφής Γης. Στο βόρειο ημισφαίριο οι βολές πάνε ελαφρά δεξιά σε μεγάλο βεληνεκές.',
+  'glossary.spin_drift.term': 'Spin drift',
+  'glossary.spin_drift.def':
+    'Πλευρική μετατόπιση από την περιστροφή της σφαίρας. Μεγαλώνει με τον χρόνο πτήσης.',
+  'glossary.ffp_sfp.term': 'FFP / SFP',
+  'glossary.ffp_sfp.def':
+    'Πρώτο vs δεύτερο εστιακό επίπεδο. FFP: αληθή mil σε κάθε μεγέθυνση. SFP: αληθή mil μόνο σε μία (συνήθως max).',
+  'glossary.first_round.term': 'Ευστοχία πρώτης βολής',
+  'glossary.first_round.def':
+    'Η πρώτη βολή σε πλάκα πετυχαίνει. Δίνει μπόνους — στο πεδίο σπάνια υπάρχει δωρεάν δεύτερη.',
+  'glossary.speed_bonus.term': 'Μπόνους ταχύτητας',
+  'glossary.speed_bonus.def':
+    'Επιπλέον πόντοι για ευστοχία κοντά στον par χρόνο. Τα hits πληρώνουν περισσότερο· η ταχύτητα ανεβάζει βαθμό. Πλήρες μπόνους στην εξάσκηση.',
+  'glossary.frh.term': 'FRH %',
+  'glossary.frh.def':
+    'Ποσοστό εύστοχων πρώτης βολής — τονίζεται στην κάρτα αποτελεσμάτων επίτηδες.',
+  'glossary.par.term': 'Par χρόνος',
+  'glossary.par.def':
+    'Χρόνος εμπλοκής που θεωρείται «πλήρης ταχύτητα». Πιο αργά χάνει το μπόνους· στην εξάσκηση πληρώνεται πάντα πλήρες.',
+  'glossary.qualified.term': 'Επαρκής / βαθμοί',
+  'glossary.qualified.def':
+    'Βαθμοί από Ανεπαρκής έως Εξαίρετος, με βάση το ποσοστό πόντων επί του μεγίστου του σταδίου.',
+  'glossary.unlock.term': 'Όριο ξεκλειδώματος',
+  'glossary.unlock.def':
+    'Ελάχιστο ποσοστό στο προηγούμενο στάδιο για να ανοίξει το επόμενο. Φαίνεται στις κλειδωμένες κάρτες και στο αποτέλεσμα.',
+  'glossary.practice.term': 'Λειτουργία εξάσκησης',
+  'glossary.practice.def':
+    'Στις ρυθμίσεις: πλήρεις λύσεις, χωρίς λήξη χρόνου, πλήρεις πόντοι ταχύτητας. Σκορ και credits μετράνε.',
+  'glossary.rangefinder.term': 'Αποστασιόμετρο',
+  'glossary.rangefinder.def':
+    'Εξοπλισμός που δίνει πραγματική απόσταση. Χωρίς αυτό μετράς mil και διαιρείς (απόσταση = μέγεθος / mils).',
+  'glossary.weather_meter.term': 'Μετεωρόμετρο',
+  'glossary.weather_meter.def':
+    'Συσκευή τύπου Kestrel με ακριβή αέρα/άνεμο. Χωρίς αυτή η ενημέρωση δίνει στρογγυλεμένη εκτίμηση με πραγματικό σφάλμα.',
+  'glossary.solver.term': 'Βαλλιστικός υπολογιστής',
+  'glossary.solver.def':
+    'Υπολογίζει λύση βολής για τον στόχο κάτω από τα σταυρωνικά. Χωρίς αυτόν διαβάζεις την κάρτα και διορθώνεις μόνος σου.',
+  'glossary.spotter.term': 'Σκοπευτικό παρατήρησης / κλήση',
+  'glossary.spotter.def':
+    'Εξοπλισμός για splash και χρήσιμη διόρθωση. Χωρίς αυτόν μια καθαρή άστοχη μπορεί να χαθεί.',
+  'glossary.data_card.term': 'Κάρτα δεδομένων (UI)',
+  'glossary.data_card.def':
+    'Το εργαλείο ΚΑΡΤΑ και η καρτέλα ενημέρωσης με ύψος/άνεμο ανά απόσταση για το φορτίο σου.',
+  'glossary.find_next.term': 'Επόμενος στόχος',
+  'glossary.find_next.def':
+    'Γυρίζει το όπλο στην επόμενη πλάκα που είναι πάνω. Ευκολία σε μικρούς στόχους· το ρολόι τρέχει κατά τη στροφή.',
+  'glossary.credits.term': 'Credits (cr)',
+  'glossary.credits.def':
+    'Νόμισμα από τις αμοιβές σταδίων. Ξοδεύεται στο οπλοστάσιο για όπλα, πυρομαχικά, γυαλί και εξοπλισμό.',
 };

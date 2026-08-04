@@ -65,8 +65,11 @@ What is already in the game and shipping on GitHub Pages.
   (wheel zoom, RMB breath hold, LMB or **Space** to fire — including while
   holding breath)
 - Control mode toggle in settings
-- **Tutorial** on the main menu (standalone string, not on the unlock chain)
+- **Tutorial** as stage 00 in Course of Fire (optional; Cold Bore stays open)
+- **Glossary** (menu + settings) for mils, DOPE, grades, kit terms
 - Result card: unlock feedback, next-grade tip, hit / first-round / speed breakdown
+- Turret panel **0** button between − and + (mechanical zero)
+- Toolbar **Find next**; mouse **Space** to fire
 - Practice / assist modes (practice is **timeless**: full speed points, no
   stage clock-out)
 
