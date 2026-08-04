@@ -173,7 +173,7 @@ export const en: Dict = {
   'coach.complete_toast': 'Dial coach complete — turrets are yours',
   'coach.verify.ok': '✓ Looks good — press NEXT',
   'coach.verify.elev':
-    'Dial elevation until “about range” is near {range} (now ≈ {about})',
+    'Dial + on elevation until “about range” reads {range} (now {about}). Card elev ≈ {elev} mil · you have {dial} mil',
   'coach.verify.wind': 'Press 0 on windage so it reads mechanical zero',
   'coach.shot.intro': 'SCREEN · FIRST SHOTS',
   'coach.shot.mils': 'SCREEN · WHAT IS A MIL',
@@ -186,6 +186,8 @@ export const en: Dict = {
   'coach.shot.turret_preview': '−−  −  0  +  ++   elevation & windage',
   'coach.shot.brief_preview': 'Course brief and kit summary',
   'coach.shot.hold_fire': 'Hold breath · break the shot',
+  // ready-shot HUD example uses practice range
+
   'coach.step.intro.title': 'Welcome to the dial coach',
   'coach.step.intro.body':
     'This walkthrough uses screens that look like the real game. You will learn how to read the data card and set elevation before you go hot. Three plates sit at known ranges: 100, 150 and 200 m. Click NEXT to continue; on practice steps you must dial correctly before NEXT unlocks.',
@@ -198,18 +200,18 @@ export const en: Dict = {
   'coach.step.read_card.title': 'Read the ELEV column',
   'coach.step.read_card.body':
     'Each row is a range. ELEV is the elevation in mils for that distance off a standard card. Tutorial plates at 100 / 150 / 200 m are highlighted when they land on hundred-metre lines. Find the elev number for the plate you will shoot.',
-  'coach.step.pick_row.title': 'Focus the 150 m plate',
+  'coach.step.pick_row.title': 'Focus the 200 m plate',
   'coach.step.pick_row.body':
-    'We will practice on the middle plate (150 m). Note its ELEV (mils) on the card. Later you will dial until the turret panel says the elevation is “about 150 m” on the card — that is how you check you dialled the right way.',
+    'The data card lists every 100 m, so 150 m never appears as “about range”. We practice on the 200 m plate — a real row on the card and a real tutorial target. Note its ELEV (mils). Later you dial until the turret panel says “about 200 m”.',
   'coach.step.open_turrets.title': 'Open the TURRETS tab',
   'coach.step.open_turrets.body':
     'Turrets are the fourth tab. You can also open DIAL while the stage is hot. The screenshot shows the TURRETS tab active — that is where elevation and windage clicks live.',
   'coach.step.turret_layout.title': 'Elevation controls',
   'coach.step.turret_layout.body':
     'Use −− − 0 + ++ on elevation. + adds elevation (up); − takes it off. 0 returns that turret to mechanical zero. The large readout is the dialled value; the line below maps it back to a card range so you can catch a wrong-way turn.',
-  'coach.step.dial_elev.title': 'Your turn — dial for 150 m',
+  'coach.step.dial_elev.title': 'Your turn — dial for 200 m',
   'coach.step.dial_elev.body':
-    'Use the live turret controls below the screenshot. Dial elevation until “about range” is near 150 m. On the starter MOA scope, ignore converting mils by hand — only the about-range line matters. NEXT stays locked until you are close enough.',
+    'Use the live turret controls below the screenshot. Press + on elevation until the line says about 200 m (not 100 m). On the starter MOA scope you may need several clicks — watch “about range”, not the mil/MOA number. NEXT unlocks when about range is 200 m.',
   'coach.step.wind_zero.title': 'Zero windage',
   'coach.step.wind_zero.body':
     'This tutorial stage has no real wind to hold. Press 0 on the windage row so it sits at mechanical zero. NEXT unlocks when windage clicks are 0.',

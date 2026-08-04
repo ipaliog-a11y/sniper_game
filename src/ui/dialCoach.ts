@@ -1,6 +1,6 @@
 import { t } from '../core/i18n';
 import type { Session } from '../core/session';
-import { formatDial } from '../core/scope';
+import { formatDial, interpolateDope } from '../core/scope';
 import { clamp, radToMil } from '../core/units';
 import type { Settings } from '../core/store';
 import { type Rect, fillPanel, paragraph, rule, text } from './gfx';
@@ -39,8 +39,12 @@ export interface DialCoachStep {
   verifyHintKey?: string;
 }
 
-/** Plate range used for the practice dial (middle tutorial plate). */
-export const COACH_PRACTICE_RANGE_M = 150;
+/**
+ * Range used for the practice dial. Must land on a data-card row (card is
+ * every 100 m) — 150 m never appears as “about range”, so the old check could
+ * never pass. 200 m is on the card and is a real tutorial plate.
+ */
+export const COACH_PRACTICE_RANGE_M = 200;
 
 export const DIAL_COACH_STEPS: DialCoachStep[] = [
   {
@@ -133,7 +137,7 @@ export function coachStep(state: DialCoachState): DialCoachStep {
   return DIAL_COACH_STEPS[clamp(state.step, 0, DIAL_COACH_STEPS.length - 1)];
 }
 
-/** Closest dope row range for current elevation dial, metres. */
+/** Closest dope row range for current elevation dial, metres (same as turret panel). */
 export function aboutRangeM(session: Session): number {
   const optic = session.loadout.optic;
   const dialledMil = radToMil(session.scope.elevationClicks * optic.clickRad);
@@ -148,8 +152,28 @@ export function aboutRangeM(session: Session): number {
   return best.rangeM;
 }
 
+export function dialledElevMil(session: Session): number {
+  return radToMil(session.scope.elevationClicks * session.loadout.optic.clickRad);
+}
+
+/** Card elevation for the practice range (interpolated if needed). */
+export function practiceElevMil(session: Session, targetM = COACH_PRACTICE_RANGE_M): number {
+  const row = interpolateDope(session.dope, targetM);
+  return row?.elevationMil ?? 0;
+}
+
+/**
+ * Pass when the turret panel’s “about range” is the practice card row, or when
+ * dialled mils are within ~one click of the card elev for that range.
+ */
 export function elevMatchOk(session: Session, targetM = COACH_PRACTICE_RANGE_M): boolean {
-  return Math.abs(aboutRangeM(session) - targetM) <= 30;
+  if (aboutRangeM(session) === targetM) return true;
+  const optic = session.loadout.optic;
+  const clickMil = Math.abs(radToMil(optic.clickRad));
+  const need = practiceElevMil(session, targetM);
+  const have = dialledElevMil(session);
+  // Allow one full click of error (MOA glass is coarser than 0.1 mil).
+  return Math.abs(have - need) <= Math.max(0.12, clickMil * 1.05);
 }
 
 export function windZeroOk(session: Session): boolean {
@@ -431,7 +455,7 @@ function drawReadyShot(ctx: CanvasRenderingContext2D, r: Rect, g: number): void 
   ctx.stroke();
   // HUD strip.
   text(ctx, t('shoot.elev'), inner.x + inner.w * 0.62, inner.y + 20 * g, T.micro * g, C.textFaint);
-  text(ctx, '≈ 150 m', inner.x + inner.w * 0.62, inner.y + 36 * g, T.body * g, C.amber, 'left', 'bold');
+  text(ctx, '≈ 200 m', inner.x + inner.w * 0.62, inner.y + 36 * g, T.body * g, C.amber, 'left', 'bold');
   text(ctx, t('coach.shot.hold_fire'), inner.x + inner.w * 0.62, inner.y + 60 * g, T.micro * g, C.textDim);
   fillPanel(
     ctx,
@@ -659,6 +683,8 @@ export function drawDialCoach(
     const about = aboutRangeM(session);
     const ok = verified;
     const statusY = panel.y + panel.h - footerH - 18 * g;
+    const elevNeed = practiceElevMil(session).toFixed(1);
+    const elevHave = dialledElevMil(session).toFixed(1);
     text(
       ctx,
       ok
@@ -666,6 +692,8 @@ export function drawDialCoach(
         : t(step.verifyHintKey ?? 'coach.verify.elev', {
             range: distLabel(COACH_PRACTICE_RANGE_M, settings.imperial),
             about: distLabel(about, settings.imperial),
+            elev: elevNeed,
+            dial: elevHave,
           }),
       panel.x + 16 * g,
       statusY,
