@@ -8,7 +8,16 @@ import type { DragModel } from '../drag';
  * instead of one at a time.
  */
 
-export type Chambering = '308win' | '65cm' | '300wm' | '338lm' | '50bmg';
+export type Chambering =
+  | '308win'
+  | '303brit'
+  | '260rem'
+  | '65cm'
+  | '6arc'
+  | '300wm'
+  | '300prc'
+  | '338lm'
+  | '50bmg';
 
 export interface Cartridge {
   id: string;
@@ -117,6 +126,82 @@ export const CARTRIDGES: Cartridge[] = [
     blurb: 'Quiet, and drops like a thrown brick. Inside 200 m only.',
   },
 
+  // --- .303 British ---
+  {
+    id: '303-174',
+    name: '174 gr Mk VII Surplus',
+    grade: 'Surplus',
+    chambering: '303brit',
+    grains: 174,
+    diameterIn: 0.311,
+    lengthIn: 1.28,
+    dragModel: 'G7',
+    bc: 0.188,
+    velocityFps: 2440,
+    referenceBarrelIn: 25,
+    velocitySd: 32,
+    dispersionMoa: 1.1,
+    tempSensitivity: 1.8,
+    cost: 150,
+    blurb: 'Wartime ball. Honest groups if you call the wind and accept the spread.',
+  },
+  {
+    id: '303-180',
+    name: '180 gr HPBT Match',
+    grade: 'Match',
+    chambering: '303brit',
+    grains: 180,
+    diameterIn: 0.311,
+    lengthIn: 1.32,
+    dragModel: 'G7',
+    bc: 0.215,
+    velocityFps: 2460,
+    referenceBarrelIn: 25,
+    velocitySd: 14,
+    dispersionMoa: 0.55,
+    tempSensitivity: 1.3,
+    cost: 550,
+    blurb: 'Modern match in an old case. Still goes soft past 600 m, but the cone is fair.',
+  },
+
+  // --- .260 Remington ---
+  {
+    id: '260-130',
+    name: '130 gr AB Hunting',
+    grade: 'Hunting',
+    chambering: '260rem',
+    grains: 130,
+    diameterIn: 0.264,
+    lengthIn: 1.32,
+    dragModel: 'G7',
+    bc: 0.275,
+    velocityFps: 2850,
+    referenceBarrelIn: 24,
+    velocitySd: 16,
+    dispersionMoa: 0.55,
+    tempSensitivity: 1.2,
+    cost: 400,
+    blurb: 'A mountain load. Flat and light-recoiling inside half a kilometre.',
+  },
+  {
+    id: '260-140',
+    name: '140 gr ELD Match',
+    grade: 'Match',
+    chambering: '260rem',
+    grains: 140,
+    diameterIn: 0.264,
+    lengthIn: 1.42,
+    dragModel: 'G7',
+    bc: 0.305,
+    velocityFps: 2750,
+    referenceBarrelIn: 24,
+    velocitySd: 9,
+    dispersionMoa: 0.32,
+    tempSensitivity: 0.85,
+    cost: 950,
+    blurb: '6.5-class ballistics in a short action. Creedmoor without the marketing.',
+  },
+
   // --- 6.5 Creedmoor ---
   {
     id: '65-130',
@@ -173,6 +258,44 @@ export const CARTRIDGES: Cartridge[] = [
     blurb: 'Slower off the muzzle, still supersonic when the 140 is not.',
   },
 
+  // --- 6mm ARC ---
+  {
+    id: '6arc-108',
+    name: '108 gr ELD Match',
+    grade: 'Match',
+    chambering: '6arc',
+    grains: 108,
+    diameterIn: 0.243,
+    lengthIn: 1.25,
+    dragModel: 'G7',
+    bc: 0.278,
+    velocityFps: 2750,
+    referenceBarrelIn: 20,
+    velocitySd: 10,
+    dispersionMoa: 0.38,
+    tempSensitivity: 0.9,
+    cost: 850,
+    blurb: 'Small case, high BC for the calibre. Mild recoil and a flat middle distance.',
+  },
+  {
+    id: '6arc-103',
+    name: '103 gr ELD-X Hunting',
+    grade: 'Hunting',
+    chambering: '6arc',
+    grains: 103,
+    diameterIn: 0.243,
+    lengthIn: 1.2,
+    dragModel: 'G7',
+    bc: 0.255,
+    velocityFps: 2800,
+    referenceBarrelIn: 20,
+    velocitySd: 14,
+    dispersionMoa: 0.5,
+    tempSensitivity: 1.1,
+    cost: 500,
+    blurb: 'Faster and a little dirtier. Fine to 500 m if you keep the dope honest.',
+  },
+
   // --- .300 Winchester Magnum ---
   {
     id: '300-190',
@@ -209,6 +332,44 @@ export const CARTRIDGES: Cartridge[] = [
     tempSensitivity: 1.2,
     cost: 1600,
     blurb: 'Heavy for calibre, and it barely notices a 10 mph crosswind.',
+  },
+
+  // --- .300 PRC ---
+  {
+    id: '300prc-212',
+    name: '212 gr ELD Match',
+    grade: 'Match',
+    chambering: '300prc',
+    grains: 212,
+    diameterIn: 0.308,
+    lengthIn: 1.58,
+    dragModel: 'G7',
+    bc: 0.346,
+    velocityFps: 2860,
+    referenceBarrelIn: 26,
+    velocitySd: 10,
+    dispersionMoa: 0.3,
+    tempSensitivity: 1.1,
+    cost: 1700,
+    blurb: 'Modern magnum case for heavy .30 bullets. Flat card, efficient powder, expensive brass.',
+  },
+  {
+    id: '300prc-225',
+    name: '225 gr Hybrid Match',
+    grade: 'Match',
+    chambering: '300prc',
+    grains: 225,
+    diameterIn: 0.308,
+    lengthIn: 1.65,
+    dragModel: 'G7',
+    bc: 0.362,
+    velocityFps: 2800,
+    referenceBarrelIn: 26,
+    velocitySd: 9,
+    dispersionMoa: 0.28,
+    tempSensitivity: 1.0,
+    cost: 2100,
+    blurb: 'The long pill. Wind is smaller and the mile is less of a rumour than in .300 WM.',
   },
 
   // --- .338 Lapua Magnum ---

@@ -20,10 +20,15 @@ function serviceWorker(): Plugin {
       // index.html is emitted by a later plugin, so it is never in `bundle`.
       const gear = [
         'ranger24',
+        'fieldman4',
         'mk14',
+        'trailhand260',
         'prs26',
+        'qmarc',
         'aw300',
+        'northlineprc',
         'lr338',
+        'sentineltrg',
         'am50',
         'opt-duplex',
         'opt-mildot',
