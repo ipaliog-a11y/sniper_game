@@ -2,13 +2,17 @@
 
 A precision rifle trainer for the browser. You do not move. You choose a rifle,
 choose what hangs off it, choose what you load it with, read the weather, set
-the turrets, aim with your finger, and break the shot. You are scored on where
-the round lands and on how long you took to send it.
+the turrets, aim, and break the shot. You are scored on where the round lands —
+and, as a bonus, on first-round hits and how quickly you sent them.
 
 The ballistics underneath are real: a point-mass solver with G1/G7 drag, air
 density from temperature, pressure and humidity, wind applied as relative
 airflow, Coriolis, and gyroscopic spin drift. The numbers on the data card are
 numbers you could take to a range.
+
+**Live:** [ipaliog-a11y.github.io/sniper_game](https://ipaliog-a11y.github.io/sniper_game/)
+
+---
 
 ## Running it
 
@@ -24,13 +28,79 @@ npm run build        # typechecks, then emits dist/
 npm run preview
 ```
 
+```bash
+npm test             # the maths, no browser needed
+npm run dope         # print data cards for four loads, to eyeball by hand
+```
+
+---
+
+## Progress so far
+
+What is already in the game and shipping on GitHub Pages.
+
+### Simulation
+- Point-mass ballistics with **G1 / G7** drag tables
+- Atmosphere from temp / pressure / humidity → density altitude
+- Wind as relative airflow (not a sideways fudge), Coriolis, spin drift
+- Data cards and DOPE interpolation that match published retained velocities
+  (~1% on validation loads)
+- Cold-bore / barrel heat, cant, scope glass (SFP vs FFP subtension)
+
+### Course of fire
+- **Eight stages** from 150 m zeroing plates to a mile steel
+- Fixed weather seeds so stages can be practised
+- Static plates, timed exposures, movers, altitude, storm, and mile courses
+- Stage unlocks driven by best score fraction on the previous stage
+
+### Kit & economy
+- Rifles, cartridges, and attachments (scopes, bipods, meters, solvers, …)
+- Credits from stage payouts; gear that actually changes what you can know
+- Loadout constraints (weight / slots) so you cannot carry everything
+
+### UI & controls
+- Full shoot UI: scope glass, reticle, wind flags, bullet trace / TOF
+- Tools: FIND, WIND, CARD, DIAL, SOLVE, MIL
+- **Touch** (drag aim, pinch zoom, HOLD + FIRE buttons) and **mouse**
+  (wheel zoom, RMB breath hold, LMB fire — including fire while holding breath)
+- Control mode toggle in settings
+- Practice / assist modes (practice is **timeless**: full speed points, no
+  stage clock-out)
+
+### Scoring (revised)
+Hits dominate. First-round and speed are bonuses that separate grades, not a
+second gate on “did you pass?”
+
+| Piece | Role |
+| --- | --- |
+| **Hit base** | Bulk of the points for any hit |
+| **Centre quality** | Modest polish (soft curve — rim hits still pay) |
+| **First-round bonus** | Rewards clean engagement |
+| **Speed bonus** | Rewards par-time work; full in practice mode |
+
+Grades: Unqualified → Qualified → Marksman → Sharpshooter → Expert →
+Distinguished. Stage 2 unlocks at roughly **Qualified** on stage 1; later
+unlocks ramp up. Cold Bore plates are sized for learning the card, not
+micro-gongs on day one.
+
+### Localisation
+- English and **Greek** UI (including catalog rifle/accessory blurbs)
+- Locale switch; shipped via GitHub Actions → Pages
+
+### Distribution
+- Vite + TypeScript, zero runtime dependencies
+- PWA (installable, offline-capable once cached)
+- GitHub Actions deploys `dist/` to Pages
+
+---
+
 ## Playing
 
 **Pick a stage.** Eight courses of fire, from confirming a zero at 150 m to a
 plate at a mile. Each has fixed weather generated from a fixed seed, so a stage
 plays the same way every time and can actually be practised.
 
-**Read the brief.** Four tabs before the clock starts:
+**Read the brief.** Tabs before the clock starts:
 
 - **Weather** — temperature, pressure, humidity and density altitude, plus what
   every flag on the range is doing and a thirty-second strip chart of the
@@ -43,10 +113,17 @@ plays the same way every time and can actually be practised.
   The panel tells you what range the current elevation corresponds to, which is
   how you catch a turret you turned the wrong way.
 
-**Go hot.** Drag anywhere on the glass to aim; pinch to change magnification.
+**Go hot.**
+
+| Mode | Aim | Zoom | Breath | Fire |
+| --- | --- | --- | --- | --- |
+| **Touch** | Drag the glass | Pinch | HOLD button | FIRE button |
+| **Mouse** | Move / drag | Wheel | Right mouse button | Left mouse button |
+
 The hold wanders on its own — breathing, pulse, and whatever your support is not
-doing for you. Hold **HOLD** to stop breathing, which quiets it for about eight
-seconds and then makes it considerably worse. **FIRE** breaks the shot.
+doing for you. Holding breath quiets it for about eight seconds and then makes
+it worse. On mouse you can **fire while still holding RMB** (left click edges
+while right is down).
 
 Six tools sit along the bottom while you shoot:
 
@@ -59,7 +136,7 @@ Six tools sit along the bottom while you shoot:
 | **SOLVE** | A firing solution for whatever is under the reticle — if you are carrying the kit to produce one. |
 | **MIL** | Drag across a target to measure it in mils and turn that into a range. |
 
-**FIND** exists because hunting for a 40 cm gong at 25x through a one-degree
+**FIND** exists because hunting for a 40 cm gong at 25× through a one-degree
 field of view is not the skill this is trying to teach. The clock keeps running
 while the rifle swings, so it is convenience rather than a free pass.
 
@@ -86,13 +163,6 @@ rangefinder, a weather meter and a ballistic solver will do all of your thinking
 Second focal plane glass is cheap for the magnification, and its reticle only
 subtends true mils at one setting. Ranging off it at half power gives an answer
 exactly double what it should be.
-
-## Scoring
-
-Each plate is worth a hit, how centred that hit was, whether the *first* round
-sent at it connected, and how quickly. First round hit percentage gets the
-biggest number on the score card on purpose: it is the only statistic on there
-that would matter anywhere outside a range.
 
 ## Installing it on a phone
 
@@ -122,11 +192,6 @@ being reconfigured.
 
 ## Tests
 
-```bash
-npm test             # the maths, no browser needed
-npm run dope         # print data cards for four loads, to eyeball by hand
-```
-
 The load-bearing tests check retained velocity against published trajectory
 data. A 168 gr MatchKing quoted at G1 0.462 and a 140 gr ELD quoted at G7 0.315
 both track the published numbers to within about one per cent out to 700 yards.
@@ -134,3 +199,66 @@ Everything else in the game rests on that.
 
 See [DESIGN.md](DESIGN.md) for how the simulation is put together and what it
 deliberately does not model.
+
+---
+
+## Roadmap
+
+Rough priority order. Nothing here is scheduled; items move as playtesting
+dictates.
+
+### Near term — feel & fairness
+- [ ] Playtest scoring after the hit-first rebalance; tune grades / unlocks if
+      still tight or too soft
+- [ ] Result screen: clearer “what you need for unlock / next grade” breakdown
+- [ ] HUD: show remaining time more calmly in practice (∞) vs ranked
+- [ ] Spotter call / miss correction polish (readability in Greek + English)
+- [ ] Audio levels and optional mute categories (wind vs shot vs UI)
+
+### Content
+- [ ] **Target variety** — larger “steel challenge” plates, reactive targets,
+      partial-value zones (head/torso scoring on silhouettes that matter more)
+- [ ] Extra early stages or a dedicated **tutorial string** (known distance,
+      coach prompts, no unlock pressure)
+- [ ] More rifles / loads / glass in the armoury (still zero-runtime catalog)
+- [ ] Optional stage modifiers (mirage heavy, night/low light, gustier seed)
+
+### Controls & platform
+- [ ] Keyboard assist for desktop (e.g. hold key, fire key, find, dial nudges)
+- [ ] Gamepad / controller mapping for living-room play
+- [ ] Better touch targets and safe-area handling on notched phones
+- [ ] Verify PWA install + offline cache after each Pages deploy
+
+### Progression & meta
+- [ ] Career stats: best FRH%, mean radial, stage history charts
+- [ ] Medals / ribbons for Distinguished clears and clean first-round stages
+- [ ] Soft daily / weekly challenge (fixed seed of the day)
+- [ ] Export / import profile (local JSON) for device swaps
+
+### Simulation depth (only if it teaches something)
+- [ ] Mirage as a readable wind cue, not only atmosphere noise
+- [ ] More honest range estimation feedback when mil-ranging wrong size
+- [ ] Optional “true range” coach after the shot in assist mode
+- [ ] Keep refusing features that break the “numbers mean the same on a range”
+      rule — see DESIGN.md
+
+### Polish & distribution
+- [ ] More complete Greek (and room for a third language)
+- [ ] Performance pass on low-end Android (scope redraw, tracer, weather)
+- [ ] Accessibility: contrast, focus order, reduce-motion option
+- [ ] Short trailer / store-style screenshots for the Pages landing
+
+### Explicitly not on the roadmap (for now)
+- Multiplayer / leaderboards that need a server
+- Photoreal 3D world (2D scope trainer stays the product)
+- Ballistic solver that secretly cheats the player’s kit rules
+
+---
+
+## Contributing notes
+
+- Core maths and geometry live under `src/core/`; UI under `src/ui/` and
+  `src/scenes/`.
+- Prefer fixing the model over papering over it in the view.
+- Run `npm test` and `npm run typecheck` before pushing; Pages builds from
+  `main` via Actions.
