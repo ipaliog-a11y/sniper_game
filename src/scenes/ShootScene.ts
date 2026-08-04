@@ -84,13 +84,6 @@ export class ShootScene implements Scene {
   private confirmExit = false;
   private confirmExitUntil = 0;
 
-  /**
-   * Primary pointers that have already broken a shot this press. Lets you
-   * left-click fire while right-hold is held without double-firing or needing
-   * to release breath first.
-   */
-  private mouseShotIds = new Set<number>();
-
   constructor(session: Session) {
     this.session = session;
   }
@@ -264,41 +257,33 @@ export class ShootScene implements Scene {
   }
 
   /**
-   * Left-click on the glass breaks the shot. Works while right-hold is held
-   * (fire on button-down once per press). Clean left-click releases still fire
-   * when breath is not held. UI widgets consume their own taps first.
+   * Left-click on the glass breaks the shot.
+   *
+   * While right-hold (breath) is down, fire on the left **press** edge — the
+   * mouse reuses one pointerId for every button, so release-based fire alone
+   * is unreliable when both buttons are down. Without breath, fire on a clean
+   * left release so EXIT / toolbar taps still win.
    */
   private handleMouseFire(app: App, glass: Rect): void {
     if (!this.isMouseMode(app)) return;
     if (this.overlay !== 'none') return;
 
     const input = app.input;
-    // Drop ids for pointers that are gone so the next press can fire again.
-    for (const id of [...this.mouseShotIds]) {
-      if (!input.pointers.has(id)) this.mouseShotIds.delete(id);
-    }
-
     const holdingBreath = input.isButtonHeld(2);
 
-    // While right-hold is down, fire on left press so you never have to let go
-    // of breath to break the shot. (Without RMB, press-to-fire would steal
-    // EXIT / toolbar taps that resolve on release.)
-    if (holdingBreath) {
-      for (const p of input.pointers.values()) {
-        if (p.button !== 0) continue;
-        if (this.mouseShotIds.has(p.id)) continue;
-        if (p.claim !== null && p.claim !== 'aim') continue;
-        if (p.dragging || p.travel > 12) continue;
-        if (!this.onGlass(glass, p.startX, p.startY)) continue;
-        if (!this.onGlass(glass, p.x, p.y)) continue;
-        this.mouseShotIds.add(p.id);
+    // RMB held: LMB just went down → fire if the cursor is on the glass.
+    if (holdingBreath && input.buttonJustPressed(0)) {
+      const x = input.hoverX >= 0 ? input.hoverX : glass.x + glass.w / 2;
+      const y = input.hoverY >= 0 ? input.hoverY : glass.y + glass.h / 2;
+      if (this.onGlass(glass, x, y)) {
         this.shoot(app);
-        return;
       }
       return;
     }
 
-    // Normal mouse: primary release that nothing else ate.
+    // Not holding breath: primary release that nothing else ate.
+    if (holdingBreath) return;
+
     for (const r of input.releases) {
       if (r.consumed || r.button !== 0 || r.travel > 12) continue;
       if (!this.onGlass(glass, r.startX, r.startY)) continue;

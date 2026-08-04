@@ -1,8 +1,10 @@
 /**
  * Pointer handling for mouse and touch as one thing. Taps and drags are
  * separated by distance, not by device, so the whole game works the same way
- * under a finger and under a cursor. Mouse button is tracked so shoot scenes
- * can bind right-hold and left-click without treating every button as a finger.
+ * under a finger and under a cursor.
+ *
+ * Mouse is special: the browser reuses one pointerId for every button. We keep
+ * an `e.buttons` bitmask so right-hold + left-click can coexist (breath + fire).
  */
 
 export interface Pointer {
@@ -22,8 +24,8 @@ export interface Pointer {
   /** Claimed by a widget or a scene region, so nothing else steals it. */
   claim: string | null;
   /**
-   * Which button started this pointer. 0 = primary (left / finger), 1 = middle,
-   * 2 = secondary (right). Touch always reports 0.
+   * Which button owns this interaction for aim/tap purposes. 0 = primary
+   * (left / finger). Right-hold alone also lives here until left is pressed.
    */
   button: number;
 }
@@ -42,6 +44,16 @@ export interface Release {
 
 const TAP_SLOP = 12;
 
+/** Map PointerEvent.button → PointerEvent.buttons bit. */
+function buttonMask(button: number): number {
+  if (button === 0) return 1; // left
+  if (button === 1) return 4; // middle
+  if (button === 2) return 2; // right
+  if (button === 3) return 8;
+  if (button === 4) return 16;
+  return 0;
+}
+
 export class Input {
   readonly pointers = new Map<number, Pointer>();
   releases: Release[] = [];
@@ -49,6 +61,13 @@ export class Input {
   /** Last position the cursor was seen at, pressed or not. Off-screen at -1. */
   hoverX = -1;
   hoverY = -1;
+  /**
+   * Current mouse `buttons` bitmask (0 when no mouse buttons, or on pure touch).
+   * This is the only reliable way to know right is still held while left is down.
+   */
+  mouseButtons = 0;
+  /** Mouse/pen button indices that went down since the last endFrame. */
+  private pressedButtons: number[] = [];
   private readonly element: HTMLElement;
   private scale = 1;
 
@@ -58,6 +77,7 @@ export class Input {
     element.addEventListener('pointermove', this.onMove, { passive: false });
     element.addEventListener('pointerup', this.onUp, { passive: false });
     element.addEventListener('pointercancel', this.onUp, { passive: false });
+    element.addEventListener('lostpointercapture', this.onLostCapture);
     element.addEventListener('wheel', this.onWheel, { passive: false });
     element.addEventListener('contextmenu', (e) => e.preventDefault());
   }
@@ -72,31 +92,70 @@ export class Input {
     return { x: (e.clientX - box.left) / this.scale, y: (e.clientY - box.top) / this.scale };
   }
 
+  private isMouse(e: PointerEvent): boolean {
+    return e.pointerType === 'mouse';
+  }
+
   private onDown = (e: PointerEvent): void => {
     e.preventDefault();
     this.element.setPointerCapture?.(e.pointerId);
     const p = this.local(e);
-    this.pointers.set(e.pointerId, {
-      id: e.pointerId,
-      x: p.x,
-      y: p.y,
-      dx: 0,
-      dy: 0,
-      startX: p.x,
-      startY: p.y,
-      startT: performance.now(),
-      travel: 0,
-      dragging: false,
-      claim: null,
-      // Touch and pen report 0; mouse uses the real button index.
-      button: e.pointerType === 'mouse' ? e.button : 0,
-    });
+    const mouse = this.isMouse(e);
+    const button = mouse ? e.button : 0;
+
+    if (mouse) {
+      this.mouseButtons = e.buttons;
+      this.pressedButtons.push(button);
+    }
+
+    const existing = this.pointers.get(e.pointerId);
+
+    // Primary (left / touch): always start a fresh interaction so a click while
+    // right-holding is a clean shot, not a continuation of the right-hold drag.
+    if (button === 0) {
+      this.pointers.set(e.pointerId, {
+        id: e.pointerId,
+        x: p.x,
+        y: p.y,
+        dx: 0,
+        dy: 0,
+        startX: p.x,
+        startY: p.y,
+        startT: performance.now(),
+        travel: 0,
+        dragging: false,
+        claim: null,
+        button: 0,
+      });
+      return;
+    }
+
+    // Non-primary (right-hold): only create a pointer if nothing is tracked yet.
+    // If left is already down, leave the primary pointer alone.
+    if (!existing) {
+      this.pointers.set(e.pointerId, {
+        id: e.pointerId,
+        x: p.x,
+        y: p.y,
+        dx: 0,
+        dy: 0,
+        startX: p.x,
+        startY: p.y,
+        startT: performance.now(),
+        travel: 0,
+        dragging: false,
+        claim: null,
+        button,
+      });
+    }
   };
 
   private onMove = (e: PointerEvent): void => {
     const hover = this.local(e);
     this.hoverX = hover.x;
     this.hoverY = hover.y;
+    if (this.isMouse(e)) this.mouseButtons = e.buttons;
+
     const pointer = this.pointers.get(e.pointerId);
     if (!pointer) return;
     e.preventDefault();
@@ -111,8 +170,60 @@ export class Input {
 
   private onUp = (e: PointerEvent): void => {
     const pointer = this.pointers.get(e.pointerId);
-    if (!pointer) return;
+    if (!pointer) {
+      if (this.isMouse(e)) this.mouseButtons = e.buttons;
+      return;
+    }
     e.preventDefault();
+
+    const mouse = this.isMouse(e);
+    const releasedButton = mouse ? e.button : pointer.button;
+
+    if (mouse) this.mouseButtons = e.buttons;
+
+    // Only attribute a primary tap/release to left; right-up must not look like a tap.
+    const releaseTravel =
+      releasedButton === 0 || !mouse ? pointer.travel : Math.max(pointer.travel, TAP_SLOP + 1);
+
+    this.releases.push({
+      x: pointer.x,
+      y: pointer.y,
+      startX: pointer.startX,
+      startY: pointer.startY,
+      duration: performance.now() - pointer.startT,
+      travel: releaseTravel,
+      claim: releasedButton === 0 ? pointer.claim : null,
+      consumed: false,
+      button: releasedButton,
+    });
+
+    // Mouse: other buttons may still be down (e.buttons !== 0). Keep the pointer
+    // so breath-hold survives a left-click. Touch/pen: always remove.
+    if (mouse && e.buttons !== 0) {
+      // Left came up while right still held — re-tag so aim ignores it.
+      if (releasedButton === 0 && (e.buttons & buttonMask(2)) !== 0) {
+        pointer.button = 2;
+        pointer.dragging = false;
+        pointer.travel = 0;
+        pointer.claim = null;
+        pointer.startX = pointer.x;
+        pointer.startY = pointer.y;
+        pointer.startT = performance.now();
+      }
+      return;
+    }
+
+    this.pointers.delete(e.pointerId);
+    if (mouse) this.mouseButtons = 0;
+  };
+
+  private onLostCapture = (e: PointerEvent): void => {
+    // Capture can drop mid-gesture; treat like a full release of that pointer.
+    if (!this.pointers.has(e.pointerId)) return;
+    if (this.isMouse(e)) {
+      this.mouseButtons = 0;
+    }
+    const pointer = this.pointers.get(e.pointerId)!;
     this.pointers.delete(e.pointerId);
     this.releases.push({
       x: pointer.x,
@@ -141,10 +252,32 @@ export class Input {
     return [...this.pointers.values()].filter((p) => p.claim === claim);
   }
 
+  /** True if this mouse button went down since the last endFrame. */
+  buttonJustPressed(button: number): boolean {
+    return this.pressedButtons.includes(button);
+  }
+
+  /**
+   * True while the given mouse/touch button is held.
+   * For mouse, uses the buttons bitmask so right survives a left-click.
+   */
+  isButtonHeld(button: number): boolean {
+    const mask = buttonMask(button);
+    if (mask !== 0 && (this.mouseButtons & mask) !== 0) return true;
+    // Touch / pen (no mouseButtons): fall back to pointer records.
+    if (this.mouseButtons === 0) {
+      for (const p of this.pointers.values()) {
+        if (p.button === button) return true;
+      }
+    }
+    return false;
+  }
+
   /** Call at the very end of a frame. */
   endFrame(): void {
     this.releases = [];
     this.wheel = 0;
+    this.pressedButtons = [];
     for (const p of this.pointers.values()) {
       p.dx = 0;
       p.dy = 0;
@@ -180,14 +313,6 @@ export class Input {
     for (const p of this.pointers.values()) {
       if (p.button !== 0) continue;
       if (p.startX >= x && p.startX <= x + w && p.startY >= y && p.startY <= y + h) return true;
-    }
-    return false;
-  }
-
-  /** True while any pointer started with this mouse button is still down. */
-  isButtonHeld(button: number): boolean {
-    for (const p of this.pointers.values()) {
-      if (p.button === button) return true;
     }
     return false;
   }
