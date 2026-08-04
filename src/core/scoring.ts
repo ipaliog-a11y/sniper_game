@@ -27,6 +27,12 @@ export interface TargetScore {
   rounds: number;
   points: number;
   maxPoints: number;
+  /** Accuracy portion (hit base + centre quality). */
+  accuracyPoints: number;
+  /** First-round bonus portion. */
+  firstRoundPoints: number;
+  /** Speed bonus portion. */
+  speedPoints: number;
 }
 
 export interface StageScore {
@@ -47,6 +53,10 @@ export interface StageScore {
   reward: number;
   perTarget: TargetScore[];
   cleared: boolean;
+  /** Summed breakdown for the score card. */
+  accuracyPoints: number;
+  firstRoundPoints: number;
+  speedPoints: number;
 }
 
 export type Grade =
@@ -57,7 +67,8 @@ export type Grade =
   | 'Qualified'
   | 'Unqualified';
 
-const GRADE_STEPS: Array<[number, Grade]> = [
+/** High → low thresholds for gradeFor. */
+export const GRADE_STEPS: Array<[number, Grade]> = [
   [0.92, 'Distinguished'],
   [0.80, 'Expert'],
   [0.65, 'Sharpshooter'],
@@ -70,6 +81,26 @@ export function gradeFor(fraction: number): Grade {
     if (fraction >= threshold) return grade;
   }
   return 'Unqualified';
+}
+
+/** Threshold (0..1) for a named grade, or 0 for Unqualified. */
+export function gradeThreshold(grade: Grade): number {
+  for (const [threshold, g] of GRADE_STEPS) {
+    if (g === grade) return threshold;
+  }
+  return 0;
+}
+
+/**
+ * The next grade above the current fraction, if any. Used on the result card
+ * so "what do I need?" is one glance, not a spreadsheet.
+ */
+export function nextGradeAbove(fraction: number): { grade: Grade; threshold: number } | null {
+  const ascending = [...GRADE_STEPS].reverse();
+  for (const [threshold, grade] of ascending) {
+    if (fraction < threshold) return { grade, threshold };
+  }
+  return null;
 }
 
 export const maxPointsForTarget = (target: Target) =>
@@ -101,6 +132,9 @@ export function scoreTarget(
       rounds,
       points: 0,
       maxPoints,
+      accuracyPoints: 0,
+      firstRoundPoints: 0,
+      speedPoints: 0,
     };
   }
   // Soft curve: edge hits still collect most of the centre bonus. Linear
@@ -112,6 +146,9 @@ export function scoreTarget(
     ? SPEED_BONUS
     : SPEED_BONUS * clamp(1 - (timeToHitS - parS * 0.5) / (parS * 1.7), 0, 1);
   const first = firstRound ? FIRST_ROUND_BONUS : 0;
+  const accuracyPoints = Math.round(accuracy);
+  const firstRoundPoints = Math.round(first);
+  const speedPoints = Math.round(speed);
   return {
     targetId: target.id,
     hit: true,
@@ -119,8 +156,11 @@ export function scoreTarget(
     firstRound,
     timeToHitS,
     rounds,
-    points: Math.round(accuracy + speed + first),
+    points: accuracyPoints + speedPoints + firstRoundPoints,
     maxPoints,
+    accuracyPoints,
+    firstRoundPoints,
+    speedPoints,
   };
 }
 
@@ -132,6 +172,9 @@ export function scoreStage(
   meanRadialMil: number,
 ): StageScore {
   const points = perTarget.reduce((s, t) => s + t.points, 0);
+  const accuracyPoints = perTarget.reduce((s, t) => s + t.accuracyPoints, 0);
+  const firstRoundPoints = perTarget.reduce((s, t) => s + t.firstRoundPoints, 0);
+  const speedPoints = perTarget.reduce((s, t) => s + t.speedPoints, 0);
   const maxPoints = stage.targets.reduce((s, t) => s + maxPointsForTarget(t), 0);
   const fraction = maxPoints === 0 ? 0 : clamp(points / maxPoints, 0, 1);
   const hits = perTarget.filter((t) => t.hit).length;
@@ -154,6 +197,9 @@ export function scoreStage(
     reward: Math.round(stage.reward * fraction * (cleared ? 1.25 : 1)),
     perTarget,
     cleared,
+    accuracyPoints,
+    firstRoundPoints,
+    speedPoints,
   };
 }
 

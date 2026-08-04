@@ -257,7 +257,8 @@ export class ShootScene implements Scene {
   }
 
   /**
-   * Left-click on the glass breaks the shot.
+   * Left-click on the glass breaks the shot. Space does the same in mouse mode
+   * for mice that cannot left-click while right-holding breath.
    *
    * While right-hold (breath) is down, fire on the left **press** edge — the
    * mouse reuses one pointerId for every button, so release-based fire alone
@@ -269,6 +270,13 @@ export class ShootScene implements Scene {
     if (this.overlay !== 'none') return;
 
     const input = app.input;
+
+    // Space always fires from the current hold (works while RMB is held).
+    if (input.keyJustPressed('Space')) {
+      this.shoot(app);
+      return;
+    }
+
     const holdingBreath = input.isButtonHeld(2);
 
     // RMB held: LMB just went down → fire if the cursor is on the glass.
@@ -852,17 +860,20 @@ export class ShootScene implements Scene {
       h: rowH,
     };
     const ready = this.cycle <= 0 && session.roundsLeft > 0 && session.phase === 'live';
+    const fireLabel = ready
+      ? this.isMouseMode(app)
+        ? t('shoot.fire_mouse')
+        : t('shoot.fire')
+      : this.cycle > 0
+        ? '· · ·'
+        : t('shoot.empty');
     if (
-      ui.button(
-        trigger,
-        ready ? t('shoot.fire') : this.cycle > 0 ? '· · ·' : t('shoot.empty'),
-        {
-          accent: ready,
-          danger: !ready,
-          disabled: !ready,
-          size: T.head * g,
-        },
-      )
+      ui.button(trigger, fireLabel, {
+        accent: ready,
+        danger: !ready,
+        disabled: !ready,
+        size: T.head * g,
+      })
     ) {
       this.shoot(app);
     }

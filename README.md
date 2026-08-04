@@ -62,8 +62,11 @@ What is already in the game and shipping on GitHub Pages.
 - Full shoot UI: scope glass, reticle, wind flags, bullet trace / TOF
 - Tools: FIND, WIND, CARD, DIAL, SOLVE, MIL
 - **Touch** (drag aim, pinch zoom, HOLD + FIRE buttons) and **mouse**
-  (wheel zoom, RMB breath hold, LMB fire — including fire while holding breath)
+  (wheel zoom, RMB breath hold, LMB or **Space** to fire — including while
+  holding breath)
 - Control mode toggle in settings
+- **Tutorial** on the main menu (standalone string, not on the unlock chain)
+- Result card: unlock feedback, next-grade tip, hit / first-round / speed breakdown
 - Practice / assist modes (practice is **timeless**: full speed points, no
   stage clock-out)
 
@@ -208,9 +211,11 @@ Rough priority order. Nothing here is scheduled; items move as playtesting
 dictates.
 
 ### Near term — feel & fairness
+- [x] Result screen: unlock gate, next grade, and score breakdown (hit / 1st / speed)
+- [x] Tutorial string from the main menu (three calm plates, no unlock pressure)
+- [x] Mouse: Spacebar fires (works while right-holding breath)
 - [ ] Playtest scoring after the hit-first rebalance; tune grades / unlocks if
       still tight or too soft
-- [ ] Result screen: clearer “what you need for unlock / next grade” breakdown
 - [ ] HUD: show remaining time more calmly in practice (∞) vs ranked
 - [ ] Spotter call / miss correction polish (readability in Greek + English)
 - [ ] Audio levels and optional mute categories (wind vs shot vs UI)
@@ -218,13 +223,13 @@ dictates.
 ### Content
 - [ ] **Target variety** — larger “steel challenge” plates, reactive targets,
       partial-value zones (head/torso scoring on silhouettes that matter more)
-- [ ] Extra early stages or a dedicated **tutorial string** (known distance,
-      coach prompts, no unlock pressure)
+- [ ] Extra coach prompts mid-tutorial (optional step callouts)
 - [ ] More rifles / loads / glass in the armoury (still zero-runtime catalog)
 - [ ] Optional stage modifiers (mirage heavy, night/low light, gustier seed)
 
 ### Controls & platform
-- [ ] Keyboard assist for desktop (e.g. hold key, fire key, find, dial nudges)
+- [x] Spacebar fire in mouse mode (alongside left-click)
+- [ ] Keyboard assist for desktop (e.g. hold key, find, dial nudges)
 - [ ] Gamepad / controller mapping for living-room play
 - [ ] Better touch targets and safe-area handling on notched phones
 - [ ] Verify PWA install + offline cache after each Pages deploy

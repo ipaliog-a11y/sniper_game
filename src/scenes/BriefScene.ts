@@ -1,6 +1,6 @@
 import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
-import type { Stage } from '../core/range';
+import { type Stage, isTutorialStage } from '../core/range';
 import { type Session, createSession } from '../core/session';
 import { msToFps, mToYard } from '../core/units';
 import { type App, type Scene } from '../ui/app';
@@ -8,6 +8,7 @@ import { audio } from '../ui/audio';
 import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
 import { dopePanel, turretPanel, weatherPanel } from '../ui/panels';
 import { C, Scroll, T } from '../ui/ui';
+import { MenuScene } from './MenuScene';
 import { ShootScene } from './ShootScene';
 import { StageSelectScene } from './StageSelectScene';
 
@@ -68,7 +69,7 @@ export class BriefScene implements Scene {
     if (ui.button(back, t('common.back'), { size: T.small * g })) {
       audio.tap();
       audio.stopWind();
-      app.set(new StageSelectScene());
+      app.set(isTutorialStage(this.stage.id) ? new MenuScene() : new StageSelectScene());
     }
 
     const tabs = TAB_KEYS.map((k) => t(k));

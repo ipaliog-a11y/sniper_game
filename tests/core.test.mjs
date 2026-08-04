@@ -361,6 +361,8 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   check('grades run in order', gradeFor(0.99) === 'Distinguished' && gradeFor(0.01) === 'Unqualified');
   check('a clean sweep of the middle grades', gradeFor(0.55) === 'Marksman');
   check('Qualified sits under Marksman', gradeFor(0.3) === 'Qualified');
+  check('hit points dominate a clean target score', perfect.accuracyPoints >= perfect.firstRoundPoints + perfect.speedPoints);
+  check('score breakdown sums to total', perfect.points === perfect.accuracyPoints + perfect.firstRoundPoints + perfect.speedPoints);
 }
 
 // --- weather ------------------------------------------------------------

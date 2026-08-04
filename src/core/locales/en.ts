@@ -5,6 +5,8 @@ export const en: Dict = {
   'menu.title': 'COLD BORE',
   'menu.subtitle': 'P R E C I S I O N   R I F L E   T R A I N E R',
   'menu.stages_cleared': '{cleared} of {total} stages cleared   ·   {credits} cr',
+  'menu.tutorial': 'TUTORIAL',
+  'menu.tutorial_sub': 'three plates, calm air — learn aim, breath, fire',
   'menu.course': 'COURSE OF FIRE',
   'menu.course_sub': '{count} stages, 150 m to a mile',
   'menu.armoury': 'ARMOURY',
@@ -38,7 +40,8 @@ export const en: Dict = {
   'settings.controls_touch': 'Touch',
   'settings.controls_mouse': 'Mouse',
   'settings.controls_touch_note': 'Drag to aim · pinch zoom · HOLD and FIRE on the bar',
-  'settings.controls_mouse_note': 'Drag aim · wheel zoom · right-hold breath · left-click fire',
+  'settings.controls_mouse_note':
+    'Drag aim · wheel zoom · right-hold breath · left-click or Space to fire',
   'settings.reset': 'RESET PROGRESS',
   'settings.reset_confirm': 'TAP AGAIN TO ERASE EVERYTHING',
   'settings.reset_note': 'kit, credits and every score card',
@@ -52,6 +55,9 @@ export const en: Dict = {
   'stages.record': '{pct}%  ·  {pts} pts',
 
   // --- stage names & briefs ---
+  'stage.tutorial.name': '00 — First Shots',
+  'stage.tutorial.brief':
+    'Three large plates at known distances, calm air, plenty of time. Learn aim, breath, and fire. Hits pay most of the score; first-round and speed are bonuses on top. Mouse: right-hold breath, left-click or Space to fire. Touch: HOLD and FIRE on the bar.',
   'stage.zero.name': '01 — Cold Bore',
   'stage.zero.brief':
     'Five plates at known distances inside 400 m, no wind to speak of. Confirm the rifle shoots where the card says it does.',
@@ -192,6 +198,7 @@ export const en: Dict = {
   'shoot.tool.mil': 'MIL',
   'shoot.hold': 'HOLD',
   'shoot.fire': 'FIRE',
+  'shoot.fire_mouse': 'FIRE / SPACE',
   'shoot.empty': 'EMPTY',
   'shoot.out_of_air': 'Out of air — breathe',
   'shoot.out_of_ammo': 'Out of ammunition',
@@ -232,6 +239,22 @@ export const en: Dict = {
   'result.never': 'never engaged',
   'result.again': 'SHOOT IT AGAIN',
   'result.course': 'COURSE OF FIRE',
+  'result.menu': 'MAIN MENU',
+  'result.unlock_yes': 'Unlocked {name}',
+  'result.unlock_yes_detail': 'You cleared the {pct}% gate on this stage.',
+  'result.unlock_no': 'Still locked: {name}',
+  'result.unlock_no_detail': 'Need {need}% · you have {have}% · {pts} pts short',
+  'result.unlock_final': 'End of the course',
+  'result.unlock_final_detail': 'No further stage to unlock — chase a higher grade.',
+  'result.tutorial_done': 'Tutorial complete',
+  'result.tutorial_next': 'Open Course of Fire when you are ready for the real string.',
+  'result.next_grade': 'Next: {grade} at {pct}% · {pts} pts to go',
+  'result.top_grade': 'Top grade',
+  'result.score_how': 'HOW THIS SCORE WAS BUILT',
+  'result.part_hit': 'HIT',
+  'result.part_first': '1ST RND',
+  'result.part_speed': 'SPEED',
+  'result.score_legend': 'Hits pay most · first-round & speed are bonuses',
 
   // --- grades ---
   'grade.Distinguished': 'Distinguished',

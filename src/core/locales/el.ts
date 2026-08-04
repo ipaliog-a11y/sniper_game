@@ -5,6 +5,8 @@ export const el: Dict = {
   'menu.title': 'COLD BORE',
   'menu.subtitle': 'Π Ρ Ο Π Ο Ν Η Τ Η Σ   Α Κ Ρ Ι Β Ε Ι Α Σ',
   'menu.stages_cleared': '{cleared} από {total} στάδια   ·   {credits} cr',
+  'menu.tutorial': 'ΕΚΠΑΙΔΕΥΣΗ',
+  'menu.tutorial_sub': 'τρεις πλάκες, ήρεμος αέρας — σκόπευση, ανάσα, βολή',
   'menu.course': 'ΣΕΙΡΑ ΒΟΛΗΣ',
   'menu.course_sub': '{count} στάδια, από 150 m έως ένα μίλι',
   'menu.armoury': 'ΟΠΛΟΣΤΑΣΙΟ',
@@ -39,7 +41,8 @@ export const el: Dict = {
   'settings.controls_touch': 'Αφή',
   'settings.controls_mouse': 'Ποντίκι',
   'settings.controls_touch_note': 'Σύρε για σκόπευση · τσίμπημα ζουμ · ΚΡΑΤΑ και ΒΟΛΗ στη μπάρα',
-  'settings.controls_mouse_note': 'Σύρε σκόπευση · τροχός ζουμ · δεξί = ανάσα · αριστερό = βολή',
+  'settings.controls_mouse_note':
+    'Σύρε σκόπευση · τροχός ζουμ · δεξί = ανάσα · αριστερό ή Space = βολή',
   'settings.reset': 'ΕΠΑΝΑΦΟΡΑ ΠΡΟΟΔΟΥ',
   'settings.reset_confirm': 'ΠΑΤΑ ΞΑΝΑ ΓΙΑ ΟΛΙΚΗ ΔΙΑΓΡΑΦΗ',
   'settings.reset_note': 'εξοπλισμός, credits και κάθε σκορ',
@@ -53,6 +56,9 @@ export const el: Dict = {
   'stages.record': '{pct}%  ·  {pts} πόντοι',
 
   // --- stage names & briefs ---
+  'stage.tutorial.name': '00 — Πρώτες Βολές',
+  'stage.tutorial.brief':
+    'Τρεις μεγάλες πλάκες σε γνωστές αποστάσεις, ήρεμος αέρας, αρκετός χρόνος. Μάθε σκόπευση, ανάσα και βολή. Τα εύστοχα δίνουν τους περισσότερους πόντους· πρώτη βολή και ταχύτητα είναι μπόνους. Ποντίκι: δεξί = ανάσα, αριστερό ή Space = βολή. Αφή: ΚΡΑΤΑ και ΒΟΛΗ στη μπάρα.',
   'stage.zero.name': '01 — Cold Bore',
   'stage.zero.brief':
     'Πέντε πλάκες σε γνωστές αποστάσεις εντός 400 m, χωρίς ουσιαστικό άνεμο. Επιβεβαίωσε ότι το όπλο χτυπάει εκεί που λέει η κάρτα.',
@@ -193,6 +199,7 @@ export const el: Dict = {
   'shoot.tool.mil': 'MIL',
   'shoot.hold': 'ΚΡΑΤΑ',
   'shoot.fire': 'ΒΟΛΗ',
+  'shoot.fire_mouse': 'ΒΟΛΗ / SPACE',
   'shoot.empty': 'ΑΔΕΙΟ',
   'shoot.out_of_air': 'Τέλος αέρα — ανάπνευσε',
   'shoot.out_of_ammo': 'Τέλος πυρομαχικών',
@@ -233,6 +240,22 @@ export const el: Dict = {
   'result.never': 'ποτέ δεν στοχεύτηκε',
   'result.again': 'ΞΑΝΑ ΒΟΛΗ',
   'result.course': 'ΣΕΙΡΑ ΒΟΛΗΣ',
+  'result.menu': 'ΚΥΡΙΟ ΜΕΝΟΥ',
+  'result.unlock_yes': 'Ξεκλείδωσε: {name}',
+  'result.unlock_yes_detail': 'Πέρασες το όριο {pct}% σε αυτό το στάδιο.',
+  'result.unlock_no': 'Ακόμα κλειδωμένο: {name}',
+  'result.unlock_no_detail': 'Χρειάζεσαι {need}% · έχεις {have}% · λείπουν {pts} πόντοι',
+  'result.unlock_final': 'Τέλος σειράς',
+  'result.unlock_final_detail': 'Δεν υπάρχει επόμενο στάδιο — κυνηγήσε υψηλότερο βαθμό.',
+  'result.tutorial_done': 'Η εκπαίδευση ολοκληρώθηκε',
+  'result.tutorial_next': 'Άνοιξε τη Σειρά Βολής όταν είσαι έτοιμος για την πραγματική άσκηση.',
+  'result.next_grade': 'Επόμενο: {grade} στο {pct}% · {pts} πόντοι ακόμα',
+  'result.top_grade': 'Κορυφαίος βαθμός',
+  'result.score_how': 'ΠΩΣ ΧΤΙΣΤΗΚΕ ΤΟ ΣΚΟΡ',
+  'result.part_hit': 'ΕΥΣΤΟΧΟ',
+  'result.part_first': '1η ΒΟΛΗ',
+  'result.part_speed': 'ΤΑΧΥΤΗΤΑ',
+  'result.score_legend': 'Τα εύστοχα πληρώνουν περισσότερο · 1η βολή & ταχύτητα είναι μπόνους',
 
   // --- grades ---
   'grade.Distinguished': 'Εξαίρετος',

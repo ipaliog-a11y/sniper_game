@@ -68,6 +68,9 @@ export class Input {
   mouseButtons = 0;
   /** Mouse/pen button indices that went down since the last endFrame. */
   private pressedButtons: number[] = [];
+  /** Keyboard keys that went down since the last endFrame (KeyboardEvent.code). */
+  private pressedKeys: string[] = [];
+  private readonly keysHeld = new Set<string>();
   private readonly element: HTMLElement;
   private scale = 1;
 
@@ -80,6 +83,9 @@ export class Input {
     element.addEventListener('lostpointercapture', this.onLostCapture);
     element.addEventListener('wheel', this.onWheel, { passive: false });
     element.addEventListener('contextmenu', (e) => e.preventDefault());
+    window.addEventListener('keydown', this.onKeyDown, { passive: false });
+    window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('blur', this.onBlur);
   }
 
   /** CSS pixels to layout units, so widget rects and pointers share a space. */
@@ -243,6 +249,34 @@ export class Input {
     this.wheel += e.deltaY;
   };
 
+  private onKeyDown = (e: KeyboardEvent): void => {
+    // Space is a fire binding in mouse mode — never scroll the page with it.
+    if (e.code === 'Space') e.preventDefault();
+    if (e.repeat) return;
+    if (!this.keysHeld.has(e.code)) {
+      this.keysHeld.add(e.code);
+      this.pressedKeys.push(e.code);
+    }
+  };
+
+  private onKeyUp = (e: KeyboardEvent): void => {
+    this.keysHeld.delete(e.code);
+  };
+
+  private onBlur = (): void => {
+    this.keysHeld.clear();
+  };
+
+  /** True if this key code went down since the last endFrame. */
+  keyJustPressed(code: string): boolean {
+    return this.pressedKeys.includes(code);
+  }
+
+  /** True while the key is held. */
+  isKeyHeld(code: string): boolean {
+    return this.keysHeld.has(code);
+  }
+
   /** Pointers not already grabbed by a widget. */
   free(): Pointer[] {
     return [...this.pointers.values()].filter((p) => p.claim === null);
@@ -278,6 +312,7 @@ export class Input {
     this.releases = [];
     this.wheel = 0;
     this.pressedButtons = [];
+    this.pressedKeys = [];
     for (const p of this.pointers.values()) {
       p.dx = 0;
       p.dy = 0;

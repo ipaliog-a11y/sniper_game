@@ -1,12 +1,13 @@
 import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
-import { STAGES } from '../core/range';
+import { STAGES, TUTORIAL_STAGE } from '../core/range';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
 import { C, T } from '../ui/theme';
 import { ArmouryScene } from './ArmouryScene';
+import { BriefScene } from './BriefScene';
 import { SettingsScene } from './SettingsScene';
 import { StageSelectScene } from './StageSelectScene';
 
@@ -79,9 +80,9 @@ export class MenuScene implements Scene {
 
     const w = Math.min(safe.w, 340 * g);
     const x = app.width / 2 - w / 2;
-    let y = app.height * 0.56;
-    const h = 48 * g;
-    const gap = 12 * g;
+    let y = app.height * 0.48;
+    const h = 44 * g;
+    const gap = 9 * g;
 
     const item = (label: string, sub: string, accent = false): boolean => {
       const r: Rect = { x, y, w, h };
@@ -92,6 +93,11 @@ export class MenuScene implements Scene {
       return clicked;
     };
 
+    if (item(t('menu.tutorial'), t('menu.tutorial_sub'))) {
+      audio.unlock();
+      audio.tap();
+      app.set(new BriefScene(TUTORIAL_STAGE));
+    }
     if (item(t('menu.course'), t('menu.course_sub', { count: STAGES.length }), true)) {
       audio.unlock();
       audio.tap();
@@ -118,7 +124,7 @@ export class MenuScene implements Scene {
       app.set(new SettingsScene());
     }
 
-    const footer: Rect = { x, y: app.height - safe.y - 76 * g, w, h: 62 * g };
+    const footer: Rect = { x, y: app.height - safe.y - 70 * g, w, h: 56 * g };
     if (footer.y > y) {
       fillPanel(ctx, footer, 6, 'rgba(21,29,25,0.6)', C.edgeSoft);
       rule(ctx, footer.x + 12 * g, footer.y + 20 * g, footer.w - 24 * g);

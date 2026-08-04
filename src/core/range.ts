@@ -183,6 +183,31 @@ const head = (id: string, rangeM: number, azDeg: number, extra: Partial<Target> 
 });
 
 /**
+ * Standalone tutorial string. Not part of the course unlock chain — opened
+ * from the main menu so a new shooter can learn the glass without pressure.
+ */
+export const TUTORIAL_STAGE: Stage = {
+  id: 'tutorial',
+  name: '00 — First Shots',
+  brief:
+    'Three large plates at known distances, calm air, plenty of time. Learn aim, breath, and fire. Hits pay most of the score; first-round and speed are bonuses on top.',
+  presetId: 'calm',
+  firingHeightM: 8,
+  seed: 42,
+  rounds: 6,
+  timeLimitS: 360,
+  parPerTargetS: 45,
+  ordered: false,
+  reward: 250,
+  unlockScore: 0,
+  targets: [
+    gong('tut1', 100, -5, 0.45, { label: '100' }),
+    gong('tut2', 150, 0, 0.42, { label: '150' }),
+    gong('tut3', 200, 5, 0.4, { label: '200' }),
+  ],
+};
+
+/**
  * The course of fire. It steps from "confirm your zero" through ranging,
  * reading a real wind, and finally shooting past the point where the bullet
  * stops being supersonic and starts being a suggestion.
@@ -367,7 +392,18 @@ export const STAGES: Stage[] = [
   },
 ];
 
-export const stageById = (id: string) => STAGES.find((s) => s.id === id);
+export const stageById = (id: string) =>
+  id === TUTORIAL_STAGE.id ? TUTORIAL_STAGE : STAGES.find((s) => s.id === id);
+
+/** Next stage in the graded course, if any. Tutorial is not on this ladder. */
+export function nextCourseStage(stageId: string): Stage | null {
+  const i = STAGES.findIndex((s) => s.id === stageId);
+  if (i < 0 || i >= STAGES.length - 1) return null;
+  return STAGES[i + 1];
+}
+
+/** True for the menu tutorial, which is scored but never gates unlocks. */
+export const isTutorialStage = (stageId: string) => stageId === TUTORIAL_STAGE.id;
 
 export const stageMaxRange = (stage: Stage) =>
   stage.targets.reduce((m, t) => Math.max(m, t.rangeM), 0);

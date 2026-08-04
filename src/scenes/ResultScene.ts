@@ -1,6 +1,7 @@
 import { t } from '../core/i18n';
+import { isTutorialStage, nextCourseStage } from '../core/range';
 import type { StageScore } from '../core/scoring';
-import { gradeColour } from '../core/scoring';
+import { gradeColour, nextGradeAbove } from '../core/scoring';
 import type { Session } from '../core/session';
 import { recordStage } from '../core/store';
 import { mToYard } from '../core/units';
@@ -9,12 +10,13 @@ import { audio } from '../ui/audio';
 import { type Rect, bar, fillPanel, rule, text } from '../ui/gfx';
 import { C, Scroll, T } from '../ui/ui';
 import { BriefScene } from './BriefScene';
+import { MenuScene } from './MenuScene';
 import { StageSelectScene } from './StageSelectScene';
 
 /**
- * The score card. First round hit percentage is given the largest number on the
- * page on purpose: it is the only statistic on here that would matter anywhere
- * outside a range.
+ * The score card. Shows the grade, a plain breakdown of where the points came
+ * from, and — for course stages — whether the next stage unlocked and what
+ * the next grade still needs.
  */
 export class ResultScene implements Scene {
   readonly name = 'result';
@@ -58,6 +60,7 @@ export class ResultScene implements Scene {
     const safe = app.safe;
     const score = this.score;
     const imperial = app.profile.settings.imperial;
+    const tutorial = isTutorialStage(this.session.stage.id);
 
     ui.fitText(
       t(`stage.${this.session.stage.id}.name`),
@@ -81,11 +84,19 @@ export class ResultScene implements Scene {
     );
     rule(ctx, safe.x, safe.y + 32 * g, safe.w);
 
-    // Headline: points, percentage, and the number that actually matters.
-    let y = safe.y + 52 * g;
+    // Headline: points, percentage, and first-round hits.
+    let y = safe.y + 50 * g;
     const shown = Math.round(score.points * this.reveal);
     text(ctx, `${shown}`, safe.x, y + 10 * g, T.huge * g, C.text, 'left', 'bold');
     text(ctx, `/ ${score.maxPoints}`, safe.x + 96 * g, y + 18 * g, T.body * g, C.textFaint);
+    text(
+      ctx,
+      `${Math.round(score.fraction * 100 * this.reveal)}%`,
+      safe.x + 96 * g,
+      y + 36 * g,
+      T.small * g,
+      gradeColour(score.grade),
+    );
 
     text(ctx, t('result.frh'), safe.x + safe.w, y - 4 * g, T.micro * g, C.textFaint, 'right');
     text(
@@ -98,11 +109,17 @@ export class ResultScene implements Scene {
       'right',
       'bold',
     );
-    y += 44 * g;
+    y += 48 * g;
 
     const meter: Rect = { x: safe.x, y, w: safe.w, h: 8 * g };
     bar(ctx, meter, score.fraction * this.reveal, gradeColour(score.grade));
-    y += 22 * g;
+    y += 18 * g;
+
+    // --- unlock + grade ladder ----------------------------------------
+    y = this.drawProgressFeedback(ctx, app, safe.x, y, safe.w) + 8 * g;
+
+    // --- score breakdown ----------------------------------------------
+    y = this.drawScoreExplain(ctx, app, safe.x, y, safe.w) + 8 * g;
 
     const summary: Array<[string, string]> = [
       [t('result.plates'), `${score.hits} / ${score.targets}`],
@@ -114,14 +131,26 @@ export class ResultScene implements Scene {
     const colW = safe.w / summary.length;
     summary.forEach(([label, value], i) => {
       text(ctx, label, safe.x + i * colW, y, T.micro * g, C.textFaint);
-      ui.fitText(value, safe.x + i * colW, y + 16 * g, colW - 8 * g, T.body * g, i === 4 ? C.amber : C.text);
+      ui.fitText(
+        value,
+        safe.x + i * colW,
+        y + 16 * g,
+        colW - 8 * g,
+        T.body * g,
+        i === 4 ? C.amber : C.text,
+      );
     });
     y += 34 * g;
     rule(ctx, safe.x, y, safe.w);
-    y += 10 * g;
+    y += 8 * g;
 
     const footerH = 48 * g;
-    const view: Rect = { x: safe.x, y, w: safe.w, h: safe.h - (y - safe.y) - footerH - 10 * g };
+    const view: Rect = {
+      x: safe.x,
+      y,
+      w: safe.w,
+      h: safe.h - (y - safe.y) - footerH - 10 * g,
+    };
     const rowH = 46 * g;
     this.scroll.update(ui.input, view, score.perTarget.length * rowH + 6 * g, 1 / 60);
 
@@ -179,9 +208,163 @@ export class ResultScene implements Scene {
       audio.tap();
       app.set(new BriefScene(this.session.stage));
     }
-    if (ui.button(next, t('result.course'), { accent: true, size: T.body * g })) {
+    if (
+      ui.button(next, tutorial ? t('result.menu') : t('result.course'), {
+        accent: true,
+        size: T.body * g,
+      })
+    ) {
       audio.tap();
-      app.set(new StageSelectScene());
+      app.set(tutorial ? new MenuScene() : new StageSelectScene());
     }
+  }
+
+  /**
+   * Unlock status for the next course stage, and how far to the next grade.
+   * Tutorial has no unlock ladder — only the grade tip.
+   */
+  private drawProgressFeedback(
+    ctx: CanvasRenderingContext2D,
+    app: App,
+    x: number,
+    y: number,
+    w: number,
+  ): number {
+    const g = app.gauge;
+    const score = this.score;
+    const stage = this.session.stage;
+    const next = nextCourseStage(stage.id);
+    const nextGrade = nextGradeAbove(score.fraction);
+    const panelH = 54 * g;
+    const r: Rect = { x, y, w, h: panelH };
+    fillPanel(ctx, r, 6, 'rgba(21,29,25,0.75)', C.edgeSoft);
+
+    let line = y + 14 * g;
+
+    if (isTutorialStage(stage.id)) {
+      text(ctx, t('result.tutorial_done'), x + 12 * g, line, T.small * g, C.amber, 'left', 'bold');
+      line += 15 * g;
+      text(ctx, t('result.tutorial_next'), x + 12 * g, line, T.micro * g, C.textDim);
+    } else if (next) {
+      const needPct = Math.round(next.unlockScore * 100);
+      const havePct = Math.round(score.fraction * 100);
+      const needPts = Math.ceil(next.unlockScore * score.maxPoints);
+      const unlocked = score.fraction >= next.unlockScore;
+      const nextName = t(`stage.${next.id}.name`);
+      if (unlocked) {
+        text(
+          ctx,
+          t('result.unlock_yes', { name: nextName }),
+          x + 12 * g,
+          line,
+          T.small * g,
+          C.green,
+          'left',
+          'bold',
+        );
+        line += 15 * g;
+        text(
+          ctx,
+          t('result.unlock_yes_detail', { pct: needPct }),
+          x + 12 * g,
+          line,
+          T.micro * g,
+          C.textDim,
+        );
+      } else {
+        const short = Math.max(0, needPts - score.points);
+        text(
+          ctx,
+          t('result.unlock_no', { name: nextName }),
+          x + 12 * g,
+          line,
+          T.small * g,
+          C.amber,
+          'left',
+          'bold',
+        );
+        line += 15 * g;
+        text(
+          ctx,
+          t('result.unlock_no_detail', {
+            need: needPct,
+            have: havePct,
+            pts: short,
+          }),
+          x + 12 * g,
+          line,
+          T.micro * g,
+          C.textDim,
+        );
+      }
+    } else {
+      text(ctx, t('result.unlock_final'), x + 12 * g, line, T.small * g, C.amber, 'left', 'bold');
+      line += 15 * g;
+      text(ctx, t('result.unlock_final_detail'), x + 12 * g, line, T.micro * g, C.textDim);
+    }
+
+    line = y + panelH - 12 * g;
+    if (nextGrade) {
+      const needPts = Math.ceil(nextGrade.threshold * score.maxPoints) - score.points;
+      text(
+        ctx,
+        t('result.next_grade', {
+          grade: t(`grade.${nextGrade.grade}`),
+          pct: Math.round(nextGrade.threshold * 100),
+          pts: Math.max(0, needPts),
+        }),
+        x + 12 * g,
+        line,
+        T.micro * g,
+        C.textFaint,
+      );
+    } else {
+      text(ctx, t('result.top_grade'), x + 12 * g, line, T.micro * g, C.amber);
+    }
+
+    return y + panelH;
+  }
+
+  /** Where the points came from — hits first, then bonuses. */
+  private drawScoreExplain(
+    ctx: CanvasRenderingContext2D,
+    app: App,
+    x: number,
+    y: number,
+    w: number,
+  ): number {
+    const g = app.gauge;
+    const score = this.score;
+    const r: Rect = { x, y, w, h: 50 * g };
+    fillPanel(ctx, r, 6, 'rgba(21,29,25,0.55)', C.edgeSoft);
+
+    text(ctx, t('result.score_how'), x + 12 * g, y + 12 * g, T.micro * g, C.textFaint);
+
+    const parts: Array<[string, number, string]> = [
+      [t('result.part_hit'), score.accuracyPoints, C.text],
+      [t('result.part_first'), score.firstRoundPoints, C.green],
+      [t('result.part_speed'), score.speedPoints, C.amber],
+    ];
+    const col = (w - 24 * g) / parts.length;
+    parts.forEach(([label, pts, colour], i) => {
+      const cx = x + 12 * g + i * col;
+      text(ctx, label, cx, y + 26 * g, T.micro * g, C.textFaint);
+      text(ctx, `${pts}`, cx, y + 40 * g, T.small * g, colour, 'left', 'bold');
+    });
+
+    // Tiny legend on the right when wide enough.
+    if (w > 360 * g) {
+      text(
+        ctx,
+        t('result.score_legend'),
+        x + w - 12 * g,
+        y + 12 * g,
+        T.micro * g,
+        C.textFaint,
+        'right',
+      );
+    }
+
+    return y + 50 * g;
   }
 }
