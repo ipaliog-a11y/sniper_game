@@ -7,6 +7,8 @@ export const en: Dict = {
   'menu.stages_cleared': '{cleared} of {total} stages cleared   ·   {credits} cr',
   'menu.course': 'COURSE OF FIRE',
   'menu.course_sub': '{count} stages · tutorial through a mile',
+  'menu.free_field': 'FREE FIELD',
+  'menu.free_field_sub': 'your plates · weather · any kit · clock counts up',
   'menu.armoury': 'ARMOURY',
   'menu.glossary': 'GLOSSARY',
   'menu.glossary_sub': 'mils, DOPE, windage, grades — plain language',
@@ -15,6 +17,31 @@ export const en: Dict = {
   'menu.settings_metric': 'metres, centimetres, Celsius',
   'menu.how_it_works': 'HOW IT WORKS',
   'menu.footer': 'Drag to aim, hold your breath, break the shot. Everything else is arithmetic.',
+
+  // --- free field ---
+  'free_field.title': 'FREE FIELD',
+  'free_field.blurb':
+    'Build your own string. Choose plate count and type, set each distance, hide ranges if you want to mil them, pick weather (or randomise), and fit any kit. No time limit — the clock counts up.',
+  'free_field.weather': 'WEATHER',
+  'free_field.weather_note': 'Preset conditions · random re-rolls seed and gusts',
+  'free_field.weather_random': 'Random each go-hot',
+  'free_field.randomise': 'RE-ROLL',
+  'free_field.randomise_all': 'SHUFFLE PLATES + WEATHER',
+  'free_field.weather_rerolled': 'Weather seed re-rolled',
+  'free_field.shuffled': 'String shuffled',
+  'free_field.targets': 'PLATES',
+  'free_field.target_n': 'PLATE {n}',
+  'free_field.range_hidden': 'range concealed',
+  'free_field.unknown_on': 'UNKNOWN',
+  'free_field.unknown_off': 'KNOWN',
+  'free_field.all_unknown': 'CONCEAL ALL RANGES',
+  'free_field.rounds': 'ROUNDS',
+  'free_field.kit': 'ON THE RIFLE',
+  'free_field.kit_btn': 'KIT (ANY)',
+  'free_field.go': 'BRIEF & GO',
+  'stage.free-field.name': 'Free Field',
+  'stage.free-field.brief':
+    'Your string, your weather, your kit. No time limit — the clock only counts up. Hit every plate; when ranges are concealed you mil them or use a rangefinder.',
 
   // --- common ---
   'common.menu': 'MENU',
@@ -119,7 +146,14 @@ export const en: Dict = {
   'brief.targets': 'TARGETS',
   'brief.rounds': 'ROUNDS',
   'brief.time_limit': 'TIME LIMIT',
+  'brief.time_count_up': 'no limit · clock counts up',
+  'brief.time_practice': 'no limit (practice)',
   'brief.par': 'PAR PER TARGET',
+  'brief.par_free': 'not scored for speed',
+  'brief.ranges': 'RANGES',
+  'brief.ranges_known': 'all known',
+  'brief.ranges_unknown': 'all concealed',
+  'brief.ranges_mixed': '{n} concealed',
   'brief.ranging': 'RANGING',
   'brief.ranging_lrf': 'rangefinder fitted',
   'brief.ranging_mil': 'mil the targets yourself',
@@ -142,6 +176,8 @@ export const en: Dict = {
 
   // --- armoury ---
   'armoury.title': 'ARMOURY',
+  'armoury.title_free': 'FREE FIELD KIT',
+  'armoury.free_kit_badge': 'ANY KIT',
   'armoury.tab.rifle': 'RIFLE',
   'armoury.tab.ammo': 'AMMO',
   'armoury.tab.optic': 'GLASS',
@@ -262,6 +298,10 @@ export const en: Dict = {
   'result.never': 'never engaged',
   'result.again': 'SHOOT IT AGAIN',
   'result.course': 'COURSE OF FIRE',
+  'result.free_field_setup': 'FREE FIELD SETUP',
+  'result.free_field_done': 'Free Field complete',
+  'result.free_field_done_detail': 'Sandbox run — no credits banked, no course unlocks.',
+  'result.payout_free': '—',
   'result.menu': 'MAIN MENU',
   'result.view_target': 'VIEW',
   'result.view_title': '{shape} · {range}',
@@ -450,6 +490,9 @@ export const en: Dict = {
   'glossary.practice.term': 'Practice mode',
   'glossary.practice.def':
     'Settings toggle: full solutions, no stage time-out, full speed points. Scores and credits still count.',
+  'glossary.free_field.term': 'Free Field',
+  'glossary.free_field.def':
+    'Sandbox mode from the main menu. Build your own string: plate count and type, distance per plate, known or concealed ranges, weather presets or randomiser, any rifle and gear. No time limit — the clock counts up. Hits are graded but credits and unlocks are not banked.',
   'glossary.rangefinder.term': 'Rangefinder',
   'glossary.rangefinder.def':
     'Gear that gives true distance. Without it you mil the target’s known size and divide (range = size / mils).',

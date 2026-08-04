@@ -8,6 +8,12 @@ import { ICAO, airDensity, densityAltitude, speedOfSound } from '../src/core/atm
 import { fire, solve, spinDrift, zeroAngle } from '../src/core/ballistics.ts';
 import { dragCoefficient } from '../src/core/drag.ts';
 import { millerStability, resolveLoadout } from '../src/core/loadout.ts';
+import {
+  buildFreeFieldStage,
+  defaultFreeFieldConfig,
+  fullyRandomiseFreeField,
+  suggestedRounds,
+} from '../src/core/freeField.ts';
 import { scoreImpact, targetInclination } from '../src/core/range.ts';
 import { gaussian, makeRng } from '../src/core/rng.ts';
 import { gradeFor, scoreTarget } from '../src/core/scoring.ts';
@@ -524,6 +530,58 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
 }
 
 // --- report -------------------------------------------------------------
+
+// --- free field ---------------------------------------------------------
+
+{
+  const cfg = defaultFreeFieldConfig();
+  check('default free field has plates', cfg.targets.length >= 1);
+  const stage = buildFreeFieldStage(cfg);
+  check('free field stage id', stage.id === 'free-field');
+  check('free field is timeless', !Number.isFinite(stage.timeLimitS) || stage.timeLimitS > 1e9);
+  check('free field pays no credits', stage.reward === 0);
+  check('free field freeField flag', stage.freeField === true);
+  check('free field plate count matches config', stage.targets.length === cfg.targets.length);
+  check('suggested rounds covers plates', suggestedRounds(3) >= 3);
+
+  // Known vs unknown disclosure
+  cfg.targets[0].unknownRange = false;
+  cfg.targets[1].unknownRange = true;
+  const mixed = buildFreeFieldStage(cfg);
+  check('known plate discloses range', mixed.targets[0].disclosedRange === true);
+  check('unknown plate hides range', mixed.targets[1].disclosedRange === false);
+  check('known plate has range label', Boolean(mixed.targets[0].label));
+  check('unknown plate has no label', !mixed.targets[1].label);
+
+  const session = createSession(
+    mixed,
+    {
+      rifleId: 'ranger24',
+      cartridgeId: '308-m80',
+      opticId: 'opt-duplex',
+      muzzleId: 'muz-none',
+      supportId: 'sup-none',
+      gearIds: [],
+      zeroRangeM: 100,
+    },
+    false,
+    true,
+  );
+  check('free field session flag', session.freeField === true);
+  check('free field is timeless practice', session.practice === true);
+  check('disclosed plate is pre-known', session.known[mixed.targets[0].id] === mixed.targets[0].rangeM);
+  check('concealed plate is not pre-known', session.known[mixed.targets[1].id] === undefined);
+
+  session.phase = 'live';
+  const before = session.clockS;
+  tick(session, 5);
+  check('free field clock advances', session.clockS === before + 5);
+  check('free field never times out', session.phase === 'live');
+
+  const shuffled = fullyRandomiseFreeField(cfg);
+  check('shuffle keeps plate count', shuffled.targets.length === cfg.targets.length);
+  check('shuffle sets a weather preset', shuffled.weatherPresetId !== 'random');
+}
 
 console.log(`\n${passed} passed, ${failed} failed`);
 for (const f of failures) console.log(`  FAIL  ${f}`);

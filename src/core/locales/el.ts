@@ -7,6 +7,8 @@ export const el: Dict = {
   'menu.stages_cleared': '{cleared} από {total} στάδια   ·   {credits} cr',
   'menu.course': 'ΣΕΙΡΑ ΒΟΛΗΣ',
   'menu.course_sub': '{count} στάδια · εκπαίδευση έως ένα μίλι',
+  'menu.free_field': 'ΕΛΕΥΘΕΡΟ ΠΕΔΙΟ',
+  'menu.free_field_sub': 'οι πλάκες σου · καιρός · οποιοδήποτε κιτ · ρολόι μετρά πάνω',
   'menu.armoury': 'ΟΠΛΟΣΤΑΣΙΟ',
   'menu.glossary': 'ΓΛΩΣΣΑΡΙ',
   'menu.glossary_sub': 'mil, DOPE, παρεκκλίσεις, βαθμοί — με απλά λόγια',
@@ -16,6 +18,31 @@ export const el: Dict = {
   'menu.how_it_works': 'ΠΩΣ ΔΟΥΛΕΥΕΙ',
   'menu.footer':
     'Σύρε για σκόπευση, κράτα την αναπνοή, πάτα τη σκανδάλη. Όλα τα υπόλοιπα είναι αριθμητική.',
+
+  // --- free field ---
+  'free_field.title': 'ΕΛΕΥΘΕΡΟ ΠΕΔΙΟ',
+  'free_field.blurb':
+    'Φτιάξε τη δική σου σειρά. Αριθμός και τύπος πλακών, απόσταση για καθεμία, κρυφές αποστάσεις αν θες να μετρήσεις με mil, καιρός (ή τυχαία) και οποιοδήποτε κιτ. Χωρίς όριο χρόνου — το ρολόι μετρά μόνο προς τα πάνω.',
+  'free_field.weather': 'ΚΑΙΡΟΣ',
+  'free_field.weather_note': 'Προεπιλογές · το τυχαίο ξαναρίχνει seed και ριπές',
+  'free_field.weather_random': 'Τυχαίο σε κάθε GO HOT',
+  'free_field.randomise': 'ΞΑΝΑ',
+  'free_field.randomise_all': 'ΑΝΑΚΑΤΕΜΑ ΠΛΑΚΩΝ + ΚΑΙΡΟΥ',
+  'free_field.weather_rerolled': 'Νέο seed καιρού',
+  'free_field.shuffled': 'Η σειρά ανακατεύτηκε',
+  'free_field.targets': 'ΠΛΑΚΕΣ',
+  'free_field.target_n': 'ΠΛΑΚΑ {n}',
+  'free_field.range_hidden': 'απόσταση κρυφή',
+  'free_field.unknown_on': 'ΑΓΝΩΣΤΗ',
+  'free_field.unknown_off': 'ΓΝΩΣΤΗ',
+  'free_field.all_unknown': 'ΚΡΥΨΕ ΟΛΕΣ ΤΙΣ ΑΠΟΣΤΑΣΕΙΣ',
+  'free_field.rounds': 'ΦΥΣΙΓΓΙΑ',
+  'free_field.kit': 'ΣΤΟ ΟΠΛΟ',
+  'free_field.kit_btn': 'ΚΙΤ (ΟΠΟΙΟΔΗΠΟΤΕ)',
+  'free_field.go': 'ΕΝΗΜΕΡΩΣΗ & ΒΟΛΗ',
+  'stage.free-field.name': 'Ελεύθερο Πεδίο',
+  'stage.free-field.brief':
+    'Η σειρά σου, ο καιρός σου, το κιτ σου. Χωρίς όριο χρόνου — το ρολόι μετρά μόνο πάνω. Χτύπα κάθε πλάκα· όταν οι αποστάσεις είναι κρυφές, μέτρα με mil ή χρησιμοποίησε τηλεμετρητή.',
 
   // --- common ---
   'common.menu': 'ΜΕΝΟΥ',
@@ -120,7 +147,14 @@ export const el: Dict = {
   'brief.targets': 'ΣΤΟΧΟΙ',
   'brief.rounds': 'ΦΥΣΙΓΓΙΑ',
   'brief.time_limit': 'ΟΡΙΟ ΧΡΟΝΟΥ',
+  'brief.time_count_up': 'χωρίς όριο · το ρολόι μετρά πάνω',
+  'brief.time_practice': 'χωρίς όριο (εξάσκηση)',
   'brief.par': 'PAR ΑΝΑ ΣΤΟΧΟ',
+  'brief.par_free': 'χωρίς βαθμολογία ταχύτητας',
+  'brief.ranges': 'ΑΠΟΣΤΑΣΕΙΣ',
+  'brief.ranges_known': 'όλες γνωστές',
+  'brief.ranges_unknown': 'όλες κρυφές',
+  'brief.ranges_mixed': '{n} κρυφές',
   'brief.ranging': 'ΜΕΤΡΗΣΗ',
   'brief.ranging_lrf': 'αποστασιόμετρο τοποθετημένο',
   'brief.ranging_mil': 'μέτρησε σε mil μόνος σου',
@@ -143,6 +177,8 @@ export const el: Dict = {
 
   // --- armoury ---
   'armoury.title': 'ΟΠΛΟΣΤΑΣΙΟ',
+  'armoury.title_free': 'ΚΙΤ ΕΛΕΥΘΕΡΟΥ ΠΕΔΙΟΥ',
+  'armoury.free_kit_badge': 'ΟΠΟΙΟΔΗΠΟΤΕ',
   'armoury.tab.rifle': 'ΟΠΛΟ',
   'armoury.tab.ammo': 'ΠΥΡΟΜ.',
   'armoury.tab.optic': 'ΟΠΤΙΚΑ',
@@ -263,6 +299,10 @@ export const el: Dict = {
   'result.never': 'ποτέ δεν στοχεύτηκε',
   'result.again': 'ΞΑΝΑ ΒΟΛΗ',
   'result.course': 'ΣΕΙΡΑ ΒΟΛΗΣ',
+  'result.free_field_setup': 'ΡΥΘΜΙΣΗ ΕΛΕΥΘΕΡΟΥ ΠΕΔΙΟΥ',
+  'result.free_field_done': 'Ελεύθερο Πεδίο ολοκληρώθηκε',
+  'result.free_field_done_detail': 'Sandbox — χωρίς credits και χωρίς ξεκλειδώματα πορείας.',
+  'result.payout_free': '—',
   'result.menu': 'ΚΥΡΙΟ ΜΕΝΟΥ',
   'result.view_target': 'ΠΡΟΒΟΛΗ',
   'result.view_title': '{shape} · {range}',
@@ -563,6 +603,9 @@ export const el: Dict = {
   'glossary.practice.term': 'Λειτουργία εξάσκησης',
   'glossary.practice.def':
     'Στις ρυθμίσεις: πλήρεις λύσεις, χωρίς λήξη χρόνου, πλήρεις πόντοι ταχύτητας. Σκορ και credits μετράνε.',
+  'glossary.free_field.term': 'Ελεύθερο Πεδίο',
+  'glossary.free_field.def':
+    'Sandbox από το κύριο μενού. Φτιάχνεις τη σειρά: πλήθος/τύπος πλακών, απόσταση, γνωστές ή κρυφές αποστάσεις, καιρός ή τυχαία, οποιοδήποτε όπλο/εξοπλισμό. Χωρίς όριο χρόνου — το ρολόι μετρά πάνω. Βαθμολογείται, χωρίς credits και ξεκλειδώματα.',
   'glossary.rangefinder.term': 'Αποστασιόμετρο',
   'glossary.rangefinder.def':
     'Εξοπλισμός που δίνει πραγματική απόσταση. Χωρίς αυτό μετράς mil και διαιρείς (απόσταση = μέγεθος / mils).',

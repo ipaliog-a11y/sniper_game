@@ -29,6 +29,11 @@ export interface Target {
   knownSizeM: number;
   /** Label on the target board. */
   label?: string;
+  /**
+   * When true the shooter is told the range without a rangefinder (Free Field
+   * known-distance plates, and any future “marked” stages). Pre-seeds session.known.
+   */
+  disclosedRange?: boolean;
   /** Targets can be worth more than each other. */
   value: number;
   /** Seconds the target is exposed, from the moment it appears. Infinity if static. */
@@ -67,6 +72,11 @@ export interface Stage {
   reward: number;
   /** Score needed on the previous stage to unlock this one, 0..1. */
   unlockScore: number;
+  /**
+   * Built by Free Field setup rather than the fixed Course of Fire list.
+   * Timeless count-up clock; no unlock ladder or credit farming.
+   */
+  freeField?: boolean;
 }
 
 /** Angular size of a target's known dimension, mils, at its true range. */
@@ -400,6 +410,9 @@ export function nextCourseStage(stageId: string): Stage | null {
 
 /** First-shots tutorial stage (always available in Course of Fire). */
 export const isTutorialStage = (stageId: string) => stageId === 'tutorial';
+
+/** Free Field custom string (not part of the graded course list). */
+export const isFreeFieldStage = (stageId: string) => stageId === 'free-field';
 
 export const stageMaxRange = (stage: Stage) =>
   stage.targets.reduce((m, t) => Math.max(m, t.rangeM), 0);

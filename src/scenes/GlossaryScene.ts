@@ -34,6 +34,7 @@ const GLOSSARY_KEYS = [
   'qualified',
   'unlock',
   'practice',
+  'free_field',
   'rangefinder',
   'weather_meter',
   'solver',

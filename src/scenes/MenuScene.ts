@@ -7,6 +7,7 @@ import { audio } from '../ui/audio';
 import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
 import { C, T } from '../ui/theme';
 import { ArmouryScene } from './ArmouryScene';
+import { FreeFieldScene } from './FreeFieldScene';
 import { GlossaryScene } from './GlossaryScene';
 import { SettingsScene } from './SettingsScene';
 import { StageSelectScene } from './StageSelectScene';
@@ -99,6 +100,11 @@ export class MenuScene implements Scene {
       audio.unlock();
       audio.tap();
       app.set(new StageSelectScene());
+    }
+    if (item(t('menu.free_field'), t('menu.free_field_sub'))) {
+      audio.unlock();
+      audio.tap();
+      app.set(new FreeFieldScene());
     }
     if (
       item(

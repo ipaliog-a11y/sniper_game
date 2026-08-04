@@ -1,7 +1,8 @@
 import { catalogName } from '../core/catalogLabels';
+import type { FreeFieldConfig } from '../core/freeField';
 import { t } from '../core/i18n';
 import { claimedMuzzleVelocityFps } from '../core/loadout';
-import type { Stage } from '../core/range';
+import { type Stage, isFreeFieldStage } from '../core/range';
 import { type Session, createSession } from '../core/session';
 import { msToFps, mToYard } from '../core/units';
 import { type App, type Scene } from '../ui/app';
@@ -9,6 +10,7 @@ import { audio } from '../ui/audio';
 import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
 import { dopePanel, turretPanel, weatherPanel } from '../ui/panels';
 import { C, Scroll, T } from '../ui/ui';
+import { FreeFieldScene } from './FreeFieldScene';
 import { ShootScene } from './ShootScene';
 import { StageSelectScene } from './StageSelectScene';
 
@@ -25,21 +27,34 @@ const TAB_KEYS = [
   'brief.tab.turrets',
 ] as const;
 
+export interface BriefOptions {
+  /** When set, BACK returns to Free Field setup with this config. */
+  freeFieldConfig?: FreeFieldConfig;
+}
+
 export class BriefScene implements Scene {
   readonly name = 'brief';
   private readonly stage: Stage;
+  private readonly freeFieldConfig: FreeFieldConfig | null;
   /** Built on entry, which is always before the first update or render. */
   private session!: Session;
   private tab = 0;
   private dopeScroll = new Scroll('briefdope');
   private time = 0;
 
-  constructor(stage: Stage) {
+  constructor(stage: Stage, options: BriefOptions = {}) {
     this.stage = stage;
+    this.freeFieldConfig = options.freeFieldConfig ?? null;
   }
 
   enter(app: App): void {
-    this.session = createSession(this.stage, app.profile.loadout, app.profile.settings.assist);
+    const freeField = isFreeFieldStage(this.stage.id) || Boolean(this.stage.freeField);
+    this.session = createSession(
+      this.stage,
+      app.profile.loadout,
+      app.profile.settings.assist || freeField,
+      freeField,
+    );
     audio.unlock();
   }
 
@@ -54,9 +69,10 @@ export class BriefScene implements Scene {
     const g = app.gauge;
     const safe = app.safe;
     const session = this.session;
+    const freeField = session.freeField;
 
     ui.fitText(
-      t(`stage.${this.stage.id}.name`),
+      freeField ? t('stage.free-field.name') : t(`stage.${this.stage.id}.name`),
       safe.x,
       safe.y + 12 * g,
       safe.w - 160 * g,
@@ -69,7 +85,11 @@ export class BriefScene implements Scene {
     if (ui.button(back, t('common.back'), { size: T.small * g })) {
       audio.tap();
       audio.stopWind();
-      app.set(new StageSelectScene());
+      if (freeField) {
+        app.set(new FreeFieldScene(this.freeFieldConfig ?? undefined));
+      } else {
+        app.set(new StageSelectScene());
+      }
     }
 
     const tabs = TAB_KEYS.map((k) => t(k));
@@ -131,6 +151,7 @@ export class BriefScene implements Scene {
     const imperial = app.profile.settings.imperial;
     const loadout = session.loadout;
     const tutorial = this.stage.id === 'tutorial';
+    const freeField = session.freeField;
 
     const twoUp = r.w > 520 * g && !tutorial;
     const colW = twoUp ? r.w / 2 - 14 * g : r.w;
@@ -160,7 +181,7 @@ export class BriefScene implements Scene {
 
     const briefHeight = paragraph(
       ctx,
-      t(`stage.${this.stage.id}.brief`),
+      freeField ? t('stage.free-field.brief') : t(`stage.${this.stage.id}.brief`),
       r.x,
       left,
       colW,
@@ -219,11 +240,32 @@ export class BriefScene implements Scene {
 
     text(ctx, t('brief.the_course'), rightX, right, T.small * g, C.amber);
     right += 20 * g;
+    const unknownCount = this.stage.targets.filter((tgt) => !tgt.disclosedRange).length;
     const courseRows: Array<[string, string, string?]> = [
       [t('brief.targets'), `${this.stage.targets.length}`],
       [t('brief.rounds'), `${this.stage.rounds}`],
-      [t('brief.time_limit'), `${Math.round(this.stage.timeLimitS)} s`],
-      [t('brief.par'), `${Math.round(this.stage.parPerTargetS)} s`],
+      [
+        t('brief.time_limit'),
+        freeField
+          ? t('brief.time_count_up')
+          : session.practice
+            ? t('brief.time_practice')
+            : `${Math.round(this.stage.timeLimitS)} s`,
+      ],
+      [t('brief.par'), freeField ? t('brief.par_free') : `${Math.round(this.stage.parPerTargetS)} s`],
+      ...(freeField
+        ? ([
+            [
+              t('brief.ranges'),
+              unknownCount === 0
+                ? t('brief.ranges_known')
+                : unknownCount === this.stage.targets.length
+                  ? t('brief.ranges_unknown')
+                  : t('brief.ranges_mixed', { n: unknownCount }),
+              unknownCount > 0 ? C.amber : C.green,
+            ],
+          ] as Array<[string, string, string?]>)
+        : []),
       [
         t('brief.ranging'),
         loadout.hasGear('lrf') ? t('brief.ranging_lrf') : t('brief.ranging_mil'),

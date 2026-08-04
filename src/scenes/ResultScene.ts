@@ -1,5 +1,5 @@
 import { t } from '../core/i18n';
-import { type Target, isTutorialStage, nextCourseStage } from '../core/range';
+import { type Target, isFreeFieldStage, isTutorialStage, nextCourseStage } from '../core/range';
 import type { StageScore } from '../core/scoring';
 import { gradeColour, nextGradeAbove } from '../core/scoring';
 import type { Session } from '../core/session';
@@ -11,6 +11,7 @@ import { audio } from '../ui/audio';
 import { type Rect, bar, fillPanel, rule, text } from '../ui/gfx';
 import { C, Scroll, T } from '../ui/ui';
 import { BriefScene } from './BriefScene';
+import { FreeFieldScene } from './FreeFieldScene';
 import { StageSelectScene } from './StageSelectScene';
 
 /**
@@ -38,17 +39,21 @@ export class ResultScene implements Scene {
     if (this.banked) return;
     this.banked = true;
     const stage = this.session.stage;
-    app.profile.credits += this.score.reward;
-    recordStage(
-      app.profile,
-      stage.id,
-      this.score.fraction,
-      this.score.points,
-      this.score.grade,
-      this.score.elapsedS,
-      this.score.cleared,
-    );
-    app.save();
+    // Free Field is sandbox: grade the string, but do not farm credits or
+    // write course unlock records.
+    if (!this.session.freeField && !isFreeFieldStage(stage.id)) {
+      app.profile.credits += this.score.reward;
+      recordStage(
+        app.profile,
+        stage.id,
+        this.score.fraction,
+        this.score.points,
+        this.score.grade,
+        this.score.elapsedS,
+        this.score.cleared,
+      );
+      app.save();
+    }
     audio.chime(this.score.fraction >= 0.48);
   }
 
@@ -63,7 +68,9 @@ export class ResultScene implements Scene {
     const score = this.score;
     const imperial = app.profile.settings.imperial;
     ui.fitText(
-      t(`stage.${this.session.stage.id}.name`),
+      this.session.freeField
+        ? t('stage.free-field.name')
+        : t(`stage.${this.session.stage.id}.name`),
       safe.x,
       safe.y + 12 * g,
       safe.w * 0.6,
@@ -126,7 +133,12 @@ export class ResultScene implements Scene {
       [t('result.rounds'), `${score.shots}`],
       [t('result.time'), `${score.elapsedS.toFixed(1)} s`],
       [t('result.mean_miss'), `${score.meanRadialMil.toFixed(2)} MIL`],
-      [t('result.payout'), `${score.reward.toLocaleString()} cr`],
+      [
+        t('result.payout'),
+        this.session.freeField
+          ? t('result.payout_free')
+          : `${score.reward.toLocaleString()} cr`,
+      ],
     ];
     const colW = safe.w / summary.length;
     summary.forEach(([label, value], i) => {
@@ -251,13 +263,24 @@ export class ResultScene implements Scene {
     const again: Rect = { x: safe.x, y: safe.y + safe.h - footerH, w: half, h: footerH - 4 * g };
     const next: Rect = { x: safe.x + half + 10 * g, y: again.y, w: half, h: again.h };
     if (!this.viewTargetId) {
-      if (ui.button(again, t('result.again'), { size: T.body * g })) {
-        audio.tap();
-        app.set(new BriefScene(this.session.stage));
-      }
-      if (ui.button(next, t('result.course'), { accent: true, size: T.body * g })) {
-        audio.tap();
-        app.set(new StageSelectScene());
+      if (this.session.freeField) {
+        if (ui.button(again, t('result.again'), { size: T.body * g })) {
+          audio.tap();
+          app.set(new BriefScene(this.session.stage));
+        }
+        if (ui.button(next, t('result.free_field_setup'), { accent: true, size: T.body * g })) {
+          audio.tap();
+          app.set(new FreeFieldScene());
+        }
+      } else {
+        if (ui.button(again, t('result.again'), { size: T.body * g })) {
+          audio.tap();
+          app.set(new BriefScene(this.session.stage));
+        }
+        if (ui.button(next, t('result.course'), { accent: true, size: T.body * g })) {
+          audio.tap();
+          app.set(new StageSelectScene());
+        }
       }
     }
 
@@ -528,7 +551,11 @@ export class ResultScene implements Scene {
 
     let line = y + 14 * g;
 
-    if (isTutorialStage(stage.id) && next) {
+    if (this.session.freeField || isFreeFieldStage(stage.id)) {
+      text(ctx, t('result.free_field_done'), x + 12 * g, line, T.small * g, C.amber, 'left', 'bold');
+      line += 15 * g;
+      text(ctx, t('result.free_field_done_detail'), x + 12 * g, line, T.micro * g, C.textDim);
+    } else if (isTutorialStage(stage.id) && next) {
       text(ctx, t('result.tutorial_done'), x + 12 * g, line, T.small * g, C.amber, 'left', 'bold');
       line += 15 * g;
       text(

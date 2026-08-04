@@ -51,12 +51,29 @@ interface Entry {
   reason?: string;
 }
 
+export interface ArmouryOptions {
+  /**
+   * Free Field kit mode: every catalogue item can be fitted without buying.
+   * Ownership and credits are not changed.
+   */
+  freeKit?: boolean;
+  /** Where BACK returns (defaults to main menu). */
+  returnTo?: () => Scene;
+}
+
 export class ArmouryScene implements Scene {
   readonly name = 'armoury';
   private tab = 0;
   private scroll = new Scroll('armoury');
   /** Data cards cost tens of milliseconds to build, so never build one twice. */
   private dopeCache = new Map<string, ReturnType<typeof buildDope>>();
+  private readonly freeKit: boolean;
+  private readonly returnTo: (() => Scene) | null;
+
+  constructor(options: ArmouryOptions = {}) {
+    this.freeKit = Boolean(options.freeKit);
+    this.returnTo = options.returnTo ?? null;
+  }
 
   update(): void {}
 
@@ -197,7 +214,9 @@ export class ArmouryScene implements Scene {
         const rifle = RIFLES.find((r) => r.id === id)!;
         const compatible = cartridgesFor(rifle.chambering);
         if (!compatible.some((c) => c.id === selection.cartridgeId)) {
-          const affordable = compatible.find((c) => owns(app.profile, c.id)) ?? compatible[0];
+          const affordable = this.freeKit
+            ? compatible[0]
+            : (compatible.find((c) => owns(app.profile, c.id)) ?? compatible[0]);
           selection.cartridgeId = affordable.id;
           app.toast(t('armoury.ammo_switched', { name: catalogName(affordable.id, affordable.name) }));
         }
@@ -232,21 +251,43 @@ export class ArmouryScene implements Scene {
     const safe = app.safe;
     const imperial = profile.settings.imperial;
 
-    text(ctx, t('armoury.title'), safe.x, safe.y + 12 * g, T.head * g, C.text, 'left', 'bold');
     text(
       ctx,
-      t('common.cr', { n: profile.credits.toLocaleString() }),
-      safe.x + safe.w - 84 * g,
-      safe.y + 14 * g,
-      T.body * g,
-      C.amber,
-      'right',
+      this.freeKit ? t('armoury.title_free') : t('armoury.title'),
+      safe.x,
+      safe.y + 12 * g,
+      T.head * g,
+      C.text,
+      'left',
       'bold',
     );
+    if (!this.freeKit) {
+      text(
+        ctx,
+        t('common.cr', { n: profile.credits.toLocaleString() }),
+        safe.x + safe.w - 84 * g,
+        safe.y + 14 * g,
+        T.body * g,
+        C.amber,
+        'right',
+        'bold',
+      );
+    } else {
+      text(
+        ctx,
+        t('armoury.free_kit_badge'),
+        safe.x + safe.w - 84 * g,
+        safe.y + 14 * g,
+        T.small * g,
+        C.amber,
+        'right',
+        'bold',
+      );
+    }
     const back: Rect = { x: safe.x + safe.w - 78 * g, y: safe.y, w: 78 * g, h: 30 * g };
-    if (ui.button(back, t('common.menu'), { size: T.small * g })) {
+    if (ui.button(back, this.returnTo ? t('common.back') : t('common.menu'), { size: T.small * g })) {
       audio.tap();
-      app.set(new MenuScene());
+      app.set(this.returnTo ? this.returnTo() : new MenuScene());
     }
 
     const tabRect: Rect = { x: safe.x, y: safe.y + 38 * g, w: safe.w, h: 30 * g };
@@ -295,7 +336,8 @@ export class ArmouryScene implements Scene {
       const y = view.y + i * (cardH + gap) - this.scroll.offset;
       if (y > view.y + view.h || y + cardH < view.y) return;
       const r: Rect = { x: view.x, y, w: view.w, h: cardH };
-      const held = owns(profile, entry.id);
+      // Free Field kit: every item is usable as if owned (equip only, no buy).
+      const held = this.freeKit || owns(profile, entry.id);
       // Temporary debug: free shop prices when settings.debugFreeShop is on.
       const price = profile.settings.debugFreeShop ? 0 : entry.cost;
       const affordable = profile.credits >= price;

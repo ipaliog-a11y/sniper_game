@@ -590,7 +590,19 @@ export class ShootScene implements Scene {
       `${session.roundsLeft}`,
       session.roundsLeft <= 2 ? C.red : C.text,
     );
-    if (session.practice) {
+    if (session.freeField) {
+      // Free Field: no limit — show elapsed time counting up.
+      const elapsed = Math.max(0, session.clockS);
+      const mm = Math.floor(elapsed / 60);
+      const ss = Math.floor(elapsed % 60);
+      stat(
+        right,
+        statTop + 36 * g,
+        t('shoot.clock'),
+        `${mm}:${String(ss).padStart(2, '0')}`,
+        C.amber,
+      );
+    } else if (session.practice) {
       stat(right, statTop + 36 * g, t('shoot.clock'), t('shoot.clock_practice'), C.amber);
     } else {
       const remaining = Math.max(0, session.stage.timeLimitS - session.clockS);

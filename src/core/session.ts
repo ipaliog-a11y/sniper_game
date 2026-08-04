@@ -54,13 +54,22 @@ export interface Session {
    * does not rewrite the run.
    */
   practice: boolean;
+  /**
+   * Free Field custom string: timeless like practice, but the HUD clock counts
+   * up and the run does not bank course credits or unlocks.
+   */
+  freeField: boolean;
 }
 
 export function createSession(
   stage: Stage,
   selection: LoadoutSelection,
   practice = false,
+  freeField = false,
 ): Session {
+  const isFree = freeField || Boolean(stage.freeField) || stage.id === 'free-field';
+  // Free Field is always timeless; practice assist setting also forces timeless.
+  const timeless = practice || isFree;
   const conditions = generateConditions(
     presetById(stage.presetId),
     stage.seed,
@@ -79,6 +88,12 @@ export function createSession(
     azimuth: 0,
   };
   const zero = zeroAngle(loadout.projectile, zeroEnv, loadout.zeroRangeM, loadout.rifle.sightHeightM);
+
+  // Known-distance Free Field plates (and any marked targets) start disclosed.
+  const known: Record<string, number> = {};
+  for (const target of stage.targets) {
+    if (target.disclosedRange) known[target.id] = target.rangeM;
+  }
 
   return {
     stage,
@@ -107,8 +122,9 @@ export function createSession(
       firstRound: false,
     })),
     shots: [],
-    known: {},
-    practice,
+    known,
+    practice: timeless,
+    freeField: isFree,
   };
 }
 
@@ -221,9 +237,13 @@ export function tick(session: Session, dt: number): void {
     shotsFired: session.barrel.shotsFired,
     heat: clamp(session.barrel.heat - dt * 0.035, 0, 1),
   };
-  // Practice mode is timeless: the clock still runs for wind and movers, but
-  // it never ends the stage.
-  if (!session.practice && session.clockS >= session.stage.timeLimitS) {
+  // Practice / Free Field are timeless: the clock still runs for wind and
+  // movers, but it never ends the stage. Free Field's HUD counts the clock up.
+  if (
+    !session.practice &&
+    Number.isFinite(session.stage.timeLimitS) &&
+    session.clockS >= session.stage.timeLimitS
+  ) {
     session.phase = 'complete';
   }
 }
