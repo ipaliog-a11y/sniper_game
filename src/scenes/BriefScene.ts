@@ -8,6 +8,11 @@ import { type Session, createSession } from '../core/session';
 import { msToFps, mToYard } from '../core/units';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
+import {
+  type DialCoachState,
+  createDialCoach,
+  drawDialCoach,
+} from '../ui/dialCoach';
 import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
 import { dopePanel, turretPanel, weatherPanel } from '../ui/panels';
 import { C, Scroll, T } from '../ui/ui';
@@ -42,6 +47,8 @@ export class BriefScene implements Scene {
   private tab = 0;
   private dopeScroll = new Scroll('briefdope');
   private time = 0;
+  /** Guided dial-turrets coach (tutorial stage only). */
+  private dialCoach: DialCoachState | null = null;
 
   constructor(stage: Stage, options: BriefOptions = {}) {
     this.stage = stage;
@@ -56,6 +63,7 @@ export class BriefScene implements Scene {
       app.profile.settings.assist || freeField,
       freeField,
     );
+    this.dialCoach = null;
     audio.unlock();
   }
 
@@ -95,8 +103,10 @@ export class BriefScene implements Scene {
 
     const tabs = TAB_KEYS.map((k) => t(k));
     const tabRect: Rect = { x: safe.x, y: safe.y + 38 * g, w: safe.w, h: 30 * g };
+    const coachOpen = Boolean(this.dialCoach && !this.dialCoach.complete);
     const picked = ui.tabs(tabRect, tabs, this.tab);
-    if (picked >= 0) {
+    // While the dial coach is open it drives the highlighted tab; ignore manual switches.
+    if (picked >= 0 && !coachOpen) {
       this.tab = picked;
       audio.tap();
     }
@@ -117,26 +127,68 @@ export class BriefScene implements Scene {
       gauge: g,
     };
 
-    switch (this.tab) {
-      case 0:
-        this.drawBrief(ctx, body, app);
-        break;
-      case 1:
-        weatherPanel(ctx, body, panelCtx);
-        break;
-      case 2:
-        dopePanel(ctx, body, panelCtx, this.dopeScroll);
-        break;
-      case 3:
-        turretPanel(ctx, body, panelCtx, () => audio.click());
-        break;
+    // When the dial coach is open it owns the body; still keep tab chrome.
+    if (this.dialCoach && !this.dialCoach.complete) {
+      // Soft-sync tab highlight with the step being taught.
+      // (drawDialCoach returns the suggested focus tab each frame.)
+    } else {
+      switch (this.tab) {
+        case 0:
+          this.drawBrief(ctx, body, app);
+          break;
+        case 1:
+          weatherPanel(ctx, body, panelCtx);
+          break;
+        case 2:
+          dopePanel(ctx, body, panelCtx, this.dopeScroll);
+          break;
+        case 3:
+          turretPanel(ctx, body, panelCtx, () => audio.click());
+          break;
+      }
     }
 
     const go: Rect = { x: safe.x, y: safe.y + safe.h - goH, w: safe.w, h: goH - 4 * g };
-    if (ui.button(go, t('brief.go_hot'), { accent: true, size: T.head * g })) {
+    const goLabel =
+      this.stage.id === 'tutorial' && this.dialCoach?.complete
+        ? t('brief.go_hot_ready')
+        : t('brief.go_hot');
+    if (ui.button(go, goLabel, { accent: true, size: T.head * g })) {
       audio.unlock();
       audio.bolt();
       app.set(new ShootScene(session));
+    }
+
+    // Guided coach draws last so it sits above the brief (and captures taps).
+    if (this.dialCoach && !this.dialCoach.complete) {
+      const coachArea: Rect = {
+        x: safe.x,
+        y: tabRect.y + tabRect.h + 8 * g,
+        w: safe.w,
+        h: safe.h - (tabRect.y + tabRect.h + 8 * g - safe.y) - goH - 8 * g,
+      };
+      const outcome = drawDialCoach(
+        ctx,
+        coachArea,
+        ui,
+        session,
+        app.profile.settings,
+        panelCtx,
+        this.dialCoach,
+        g,
+        () => audio.click(),
+      );
+      if (outcome.focusTab !== this.tab && outcome.focusTab >= 0 && outcome.focusTab <= 3) {
+        this.tab = outcome.focusTab;
+      }
+      if (outcome.closed) {
+        if (this.dialCoach.complete) {
+          app.toast(t('coach.complete_toast'), 'good');
+          this.tab = 3;
+        }
+        // Keep complete state so GO HOT can show “ready”; drop open overlay.
+        if (!this.dialCoach.complete) this.dialCoach = null;
+      }
     }
   }
 
@@ -160,7 +212,7 @@ export class BriefScene implements Scene {
 
     let left = r.y + 12 * g;
 
-    // Tutorial: put the mil-dial coach first so new shooters see it before kit stats.
+    // Tutorial: mil-dial coach + Begin Tutorial for the visual guided flow.
     if (tutorial) {
       const pad = 12 * g;
       const maxTextW = r.w - pad * 2;
@@ -172,11 +224,38 @@ export class BriefScene implements Scene {
       const stepLines = Math.max(2, Math.ceil(steps.length / Math.max(24, maxTextW / (T.micro * g * 0.48))));
       const bodyH = bodyLines * T.small * g * 1.45;
       const stepsH = stepLines * T.micro * g * 1.45;
-      const coachH = 30 * g + bodyH + 10 * g + stepsH + 12 * g;
+      const btnH = 40 * g;
+      const coachH = 30 * g + bodyH + 10 * g + stepsH + 14 * g + btnH + 14 * g;
       fillPanel(ctx, { x: r.x, y: left, w: r.w, h: coachH }, 8, 'rgba(232,163,61,0.08)', C.amber);
       text(ctx, t('brief.tutorial_dial_title'), r.x + pad, left + 14 * g, T.small * g, C.amber, 'left', 'bold');
       const drawnBody = paragraph(ctx, body, r.x + pad, left + 28 * g, maxTextW, T.small * g, C.text);
-      paragraph(ctx, steps, r.x + pad, left + 28 * g + drawnBody + 8 * g, maxTextW, T.micro * g, C.textDim);
+      const stepsY = left + 28 * g + drawnBody + 8 * g;
+      paragraph(ctx, steps, r.x + pad, stepsY, maxTextW, T.micro * g, C.textDim);
+      const btnY = left + coachH - btnH - 10 * g;
+      const beginW = Math.min(220 * g, r.w - pad * 2);
+      const begin: Rect = { x: r.x + pad, y: btnY, w: beginW, h: btnH };
+      const beginLabel = this.dialCoach?.complete
+        ? t('brief.tutorial_replay')
+        : t('brief.tutorial_begin');
+      if (ui.button(begin, beginLabel, { accent: true, size: T.small * g })) {
+        audio.tap();
+        // Fresh coach; reset turrets so the practice dial is honest.
+        this.session.scope.elevationClicks = 0;
+        this.session.scope.windageClicks = 0;
+        this.dialCoach = createDialCoach();
+      }
+      if (this.dialCoach?.complete) {
+        text(
+          ctx,
+          t('brief.tutorial_done_badge'),
+          r.x + pad + beginW + 12 * g,
+          btnY + btnH / 2,
+          T.micro * g,
+          C.green,
+          'left',
+          'bold',
+        );
+      }
       left += coachH + 12 * g;
     }
 
