@@ -1,5 +1,11 @@
 import { LANG_LABELS, nextLanguage, setLanguage, t } from '../core/i18n';
-import { defaultProfile, nextControlMode } from '../core/store';
+import {
+  type Profile,
+  defaultProfile,
+  downloadProfileSave,
+  nextControlMode,
+  pickAndReadSaveFile,
+} from '../core/store';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import { type Rect, paragraph, rule, text } from '../ui/gfx';
@@ -7,14 +13,29 @@ import { C, Scroll, T } from '../ui/ui';
 import { GlossaryScene } from './GlossaryScene';
 import { MenuScene } from './MenuScene';
 
-/** Preferences, practice mode, debug free-shop, glossary link, hard reset. */
+/** Preferences, practice mode, backup, debug free-shop, glossary link, hard reset. */
 export class SettingsScene implements Scene {
   readonly name = 'settings';
   private confirmWipe = false;
   private confirmFreeShop = false;
+  /** Staged import: file was parsed; second tap applies and replaces progress. */
+  private pendingImport: Profile | null = null;
+  private importBusy = false;
   private scroll = new Scroll('settings');
 
   update(): void {}
+
+  private applyImported(app: App, profile: Profile): void {
+    app.profile = profile;
+    setLanguage(profile.settings.language);
+    audio.applySettings(profile.settings);
+    app.save();
+    this.pendingImport = null;
+    this.confirmWipe = false;
+    this.confirmFreeShop = false;
+    app.toast(t('settings.import_done'), 'good');
+    audio.chime(true);
+  }
 
   render(ctx: CanvasRenderingContext2D, app: App): void {
     const { ui, profile } = app;
@@ -32,8 +53,8 @@ export class SettingsScene implements Scene {
     rule(ctx, safe.x, safe.y + 34 * g, safe.w);
 
     const view: Rect = { x: safe.x, y: safe.y + 44 * g, w: safe.w, h: safe.h - 44 * g };
-    // Content height is fixed enough for the scroll region on short phones.
-    this.scroll.update(ui.input, view, 920 * g, 1 / 60);
+    // Backup + debug + reset need extra room on short phones.
+    this.scroll.update(ui.input, view, 1180 * g, 1 / 60);
 
     ctx.save();
     ctx.beginPath();
@@ -175,6 +196,62 @@ export class SettingsScene implements Scene {
     }
     y += 50 * g;
 
+    // --- backup: export / import JSON save ---
+    rule(ctx, safe.x, y, w);
+    y += 14 * g;
+    text(ctx, t('settings.backup_section'), safe.x, y, T.micro * g, C.amber);
+    y += 16 * g;
+    paragraph(ctx, t('settings.backup_note'), safe.x, y, w, T.small * g, C.textDim);
+    y += 40 * g;
+
+    const exportBtn: Rect = { x: safe.x, y, w, h: 40 * g };
+    if (ui.button(exportBtn, t('settings.export'), { size: T.small * g, accent: true })) {
+      app.save();
+      const name = downloadProfileSave(app.profile);
+      if (name) {
+        app.toast(t('settings.export_done', { name }), 'good');
+        audio.chime(true);
+      } else {
+        app.toast(t('settings.export_fail'), 'bad');
+        audio.click();
+      }
+    }
+    y += 48 * g;
+
+    const importLabel = this.pendingImport
+      ? t('settings.import_confirm')
+      : this.importBusy
+        ? t('settings.import_busy')
+        : t('settings.import');
+    const importBtn: Rect = { x: safe.x, y, w, h: 40 * g };
+    if (
+      ui.button(importBtn, importLabel, {
+        size: T.small * g,
+        danger: this.pendingImport != null,
+        accent: this.pendingImport != null,
+      })
+    ) {
+      if (this.pendingImport) {
+        this.applyImported(app, this.pendingImport);
+      } else if (!this.importBusy) {
+        this.importBusy = true;
+        audio.tap();
+        void pickAndReadSaveFile().then((loaded) => {
+          this.importBusy = false;
+          if (!loaded) {
+            app.toast(t('settings.import_fail'), 'bad');
+            return;
+          }
+          this.pendingImport = loaded;
+          this.confirmWipe = false;
+          app.toast(t('settings.import_ready'), 'info');
+        });
+      }
+    }
+    y += 48 * g;
+    text(ctx, t('settings.import_note'), safe.x, y, T.micro * g, C.textFaint);
+    y += 28 * g;
+
     // --- temporary debug: free armoury ---
     rule(ctx, safe.x, y, w);
     y += 14 * g;
@@ -234,8 +311,10 @@ export class SettingsScene implements Scene {
         app.toast(t('settings.erased'), 'bad');
         this.confirmWipe = false;
         this.confirmFreeShop = false;
+        this.pendingImport = null;
       } else {
         this.confirmWipe = true;
+        this.pendingImport = null;
       }
     }
     y += 50 * g;

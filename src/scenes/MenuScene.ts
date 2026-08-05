@@ -138,6 +138,12 @@ export class MenuScene implements Scene {
       audio.tap();
       app.set(new SettingsScene());
     }
+    if (item(t('menu.exit'), t('menu.exit_sub'))) {
+      audio.unlock();
+      audio.tap();
+      audio.stopWind();
+      app.quit(t('menu.quit_body'));
+    }
 
     const footer: Rect = { x, y: app.height - safe.y - 64 * g, w, h: 52 * g };
     if (footer.y > y) {

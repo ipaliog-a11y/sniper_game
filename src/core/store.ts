@@ -18,6 +18,17 @@ import type { Grade } from './scoring';
 
 const KEY = 'coldbore.profile.v1';
 
+/** File backup envelope so imports can be distinguished from raw profile dumps. */
+export const SAVE_FORMAT = 'coldbore-save';
+export const SAVE_VERSION = 1;
+
+export interface SaveEnvelope {
+  format: typeof SAVE_FORMAT;
+  version: number;
+  exportedAt: number;
+  profile: Profile;
+}
+
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 export interface StageRecord {
@@ -162,44 +173,61 @@ function storage(): Storage | null {
   }
 }
 
+/**
+ * Coerce any partial / legacy JSON into a playable Profile. Shared by localStorage
+ * load and file import so recovery uses the same migration rules.
+ */
+export function hydrateProfile(parsed: unknown): Profile {
+  const base = defaultProfile();
+  if (!parsed || typeof parsed !== 'object') return base;
+  const p = parsed as Partial<Profile>;
+  const profile: Profile = {
+    credits: typeof p.credits === 'number' && Number.isFinite(p.credits) ? p.credits : base.credits,
+    owned: Array.isArray(p.owned)
+      ? Array.from(new Set([...STARTER_KIT, ...p.owned.filter((id) => typeof id === 'string')]))
+      : base.owned,
+    loadout: { ...base.loadout, ...(p.loadout ?? {}) },
+    records:
+      p.records && typeof p.records === 'object' && !Array.isArray(p.records)
+        ? (p.records as Profile['records'])
+        : {},
+    settings: {
+      ...base.settings,
+      ...(p.settings ?? {}),
+      language: isLang(p.settings?.language) ? p.settings.language : base.settings.language,
+      controlMode: isControlMode(p.settings?.controlMode)
+        ? p.settings.controlMode
+        : base.settings.controlMode,
+      debugFreeShop: Boolean(p.settings?.debugFreeShop),
+      sound: p.settings?.sound !== false,
+      masterVolume: clamp01(
+        typeof p.settings?.masterVolume === 'number'
+          ? p.settings.masterVolume
+          : base.settings.masterVolume,
+      ),
+      soundSfx: p.settings?.soundSfx !== false,
+      soundEnv: p.settings?.soundEnv !== false,
+      aimSensitivity:
+        typeof p.settings?.aimSensitivity === 'number' && Number.isFinite(p.settings.aimSensitivity)
+          ? Math.max(0.3, Math.min(2.5, p.settings.aimSensitivity))
+          : base.settings.aimSensitivity,
+      invertDrag: Boolean(p.settings?.invertDrag),
+      imperial: Boolean(p.settings?.imperial),
+      assist: Boolean(p.settings?.assist),
+    },
+    career: migrateCareer(p.career),
+  };
+  ensureCareer(profile);
+  return profile;
+}
+
 export function loadProfile(): Profile {
   const s = storage();
   if (!s) return defaultProfile();
   try {
     const raw = s.getItem(KEY);
     if (!raw) return defaultProfile();
-    const parsed = JSON.parse(raw) as Partial<Profile>;
-    const base = defaultProfile();
-    const profile: Profile = {
-      credits: typeof parsed.credits === 'number' ? parsed.credits : base.credits,
-      owned: Array.isArray(parsed.owned)
-        ? Array.from(new Set([...STARTER_KIT, ...parsed.owned]))
-        : base.owned,
-      loadout: { ...base.loadout, ...(parsed.loadout ?? {}) },
-      records: parsed.records ?? {},
-      settings: {
-        ...base.settings,
-        ...(parsed.settings ?? {}),
-        language: isLang(parsed.settings?.language)
-          ? parsed.settings.language
-          : base.settings.language,
-        controlMode: isControlMode(parsed.settings?.controlMode)
-          ? parsed.settings.controlMode
-          : base.settings.controlMode,
-        debugFreeShop: Boolean(parsed.settings?.debugFreeShop),
-        sound: parsed.settings?.sound !== false,
-        masterVolume: clamp01(
-          typeof parsed.settings?.masterVolume === 'number'
-            ? parsed.settings.masterVolume
-            : base.settings.masterVolume,
-        ),
-        soundSfx: parsed.settings?.soundSfx !== false,
-        soundEnv: parsed.settings?.soundEnv !== false,
-      },
-      career: migrateCareer(parsed.career),
-    };
-    ensureCareer(profile);
-    return profile;
+    return hydrateProfile(JSON.parse(raw));
   } catch {
     return defaultProfile();
   }
@@ -228,6 +256,129 @@ export function saveProfile(profile: Profile): void {
   } catch {
     // Out of quota, or the user has storage switched off. Play on regardless.
   }
+}
+
+/** Build a portable JSON backup (pretty-printed for hand-editing if needed). */
+export function serializeSave(profile: Profile): string {
+  const envelope: SaveEnvelope = {
+    format: SAVE_FORMAT,
+    version: SAVE_VERSION,
+    exportedAt: Date.now(),
+    profile,
+  };
+  return JSON.stringify(envelope, null, 2);
+}
+
+/**
+ * Parse an export file or a raw profile dump. Returns null if the text is not
+ * usable JSON or does not look like Cold Bore progress.
+ */
+export function parseSaveJson(raw: string): Profile | null {
+  try {
+    const data = JSON.parse(raw) as unknown;
+    if (!data || typeof data !== 'object') return null;
+    const obj = data as Record<string, unknown>;
+    // Preferred: versioned envelope from Export.
+    if (obj.format === SAVE_FORMAT && obj.profile && typeof obj.profile === 'object') {
+      return hydrateProfile(obj.profile);
+    }
+    // Raw profile (e.g. copied from localStorage DevTools).
+    if (
+      'credits' in obj ||
+      'owned' in obj ||
+      'records' in obj ||
+      'loadout' in obj ||
+      'career' in obj
+    ) {
+      return hydrateProfile(obj);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Suggested download filename, e.g. coldbore-save-2026-08-05.json */
+export function saveFilename(when = new Date()): string {
+  const y = when.getFullYear();
+  const m = String(when.getMonth() + 1).padStart(2, '0');
+  const d = String(when.getDate()).padStart(2, '0');
+  return `coldbore-save-${y}-${m}-${d}.json`;
+}
+
+/**
+ * Trigger a browser download of the current profile. No-op outside a document
+ * (tests). Returns the filename used, or null if download could not start.
+ */
+export function downloadProfileSave(profile: Profile): string | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const json = serializeSave(profile);
+    const name = saveFilename();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoke after the download has a chance to start.
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return name;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Open a file picker and parse a Cold Bore save. Resolves null if cancelled
+ * or the file is invalid.
+ */
+export function pickAndReadSaveFile(): Promise<Profile | null> {
+  if (typeof document === 'undefined') return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json,text/json';
+    input.style.display = 'none';
+    let settled = false;
+    const finish = (value: Profile | null) => {
+      if (settled) return;
+      settled = true;
+      try {
+        document.body.removeChild(input);
+      } catch {
+        /* already detached */
+      }
+      resolve(value);
+    };
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) {
+        finish(null);
+        return;
+      }
+      file
+        .text()
+        .then((text) => finish(parseSaveJson(text)))
+        .catch(() => finish(null));
+    });
+    // Some browsers fire focus without change when the dialog is cancelled.
+    window.addEventListener(
+      'focus',
+      () => {
+        setTimeout(() => {
+          if (!settled && !input.files?.length) finish(null);
+        }, 400);
+      },
+      { once: true },
+    );
+    document.body.appendChild(input);
+    input.click();
+  });
 }
 
 export const owns = (profile: Profile, id: string) => profile.owned.includes(id);

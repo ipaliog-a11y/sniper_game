@@ -140,7 +140,48 @@ export class App {
     requestAnimationFrame(this.frame);
   }
 
+  /**
+   * Leave the game from the main menu. Saves first, stops the loop and audio,
+   * then tries to close the tab. Most browsers only allow close when the page
+   * opened itself — otherwise a static “safe to close” screen stays up.
+   */
+  quit(message?: string): void {
+    this.save();
+    this.running = false;
+    this.scene?.exit?.(this);
+    this.scene = null;
+    this.pending = null;
+    this.stack = [];
+    try {
+      window.close();
+    } catch {
+      /* blocked by the browser */
+    }
+    this.drawQuitScreen(message);
+  }
+
+  private drawQuitScreen(message?: string): void {
+    const { ctx } = this;
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.fillStyle = C.bgDeep;
+    ctx.fillRect(0, 0, this.width, this.height);
+    const g = this.gauge;
+    ctx.fillStyle = C.text;
+    ctx.font = `700 ${Math.round(22 * g)}px ui-monospace, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('COLD BORE', this.width / 2, this.height * 0.42);
+    ctx.fillStyle = C.textDim;
+    ctx.font = `400 ${Math.round(13 * g)}px ui-monospace, monospace`;
+    ctx.fillText(
+      message ?? 'Progress saved. You can close this tab.',
+      this.width / 2,
+      this.height * 0.42 + 28 * g,
+    );
+  }
+
   private frame = (now: number): void => {
+    if (!this.running) return;
     // Clamp so a backgrounded tab does not resume with a monstrous step.
     const dt = Math.min(0.05, Math.max(0, (now - this.lastFrame) / 1000));
     this.lastFrame = now;
@@ -159,7 +200,7 @@ export class App {
     }
     this.drawToasts(ctx);
     this.input.endFrame();
-    requestAnimationFrame(this.frame);
+    if (this.running) requestAnimationFrame(this.frame);
   };
 
   private drawToasts(ctx: CanvasRenderingContext2D): void {

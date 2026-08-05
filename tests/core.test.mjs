@@ -27,7 +27,15 @@ import { gaussian, makeRng } from '../src/core/rng.ts';
 import { gradeFor, scoreTarget } from '../src/core/scoring.ts';
 import { buildDope, fieldOfView, interpolateDope, reticleScale } from '../src/core/scope.ts';
 import { createSession, fireRound, targetUnderAim, tick } from '../src/core/session.ts';
-import { bankRun, defaultProfile } from '../src/core/store.ts';
+import {
+  SAVE_FORMAT,
+  bankRun,
+  defaultProfile,
+  hydrateProfile,
+  parseSaveJson,
+  saveFilename,
+  serializeSave,
+} from '../src/core/store.ts';
 import {
   MIL,
   MOA,
@@ -675,6 +683,60 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   // Empty career clone is independent.
   const bare = emptyCareer();
   check('empty career has no history', bare.history.length === 0);
+}
+
+// --- save export / import -----------------------------------------------
+
+{
+  const profile = defaultProfile();
+  profile.credits = 4242;
+  profile.owned.push('opt-tree');
+  profile.records.zero = {
+    bestFraction: 0.8,
+    bestPoints: 700,
+    bestGrade: 'Sharpshooter',
+    bestTimeS: 60,
+    attempts: 2,
+    cleared: true,
+  };
+  profile.career.totals.runs = 3;
+  profile.career.unlocked.push('first_string');
+
+  const json = serializeSave(profile);
+  const envelope = JSON.parse(json);
+  check('export format tag', envelope.format === SAVE_FORMAT);
+  check('export version is positive', envelope.version >= 1);
+  check('export embeds profile credits', envelope.profile.credits === 4242);
+
+  const restored = parseSaveJson(json);
+  check('import envelope restores credits', restored != null && restored.credits === 4242);
+  check('import restores owned kit', restored != null && restored.owned.includes('opt-tree'));
+  check(
+    'import restores stage record',
+    restored != null && restored.records.zero?.cleared === true,
+  );
+  check(
+    'import restores career unlock',
+    restored != null && restored.career.unlocked.includes('first_string'),
+  );
+
+  // Raw localStorage-style dump (no envelope) still imports.
+  const rawDump = JSON.stringify(profile);
+  const fromRaw = parseSaveJson(rawDump);
+  check('raw profile dump imports', fromRaw != null && fromRaw.credits === 4242);
+
+  check('garbage JSON rejects', parseSaveJson('{not json') === null);
+  check('unrelated JSON rejects', parseSaveJson('{"hello":1}') === null);
+  check('empty object rejects', parseSaveJson('{}') === null);
+
+  // hydrate fills missing fields and keeps starter kit.
+  const partial = hydrateProfile({ credits: 99, owned: ['lr338'] });
+  check('hydrate keeps starter rifle', partial.owned.includes('ranger24'));
+  check('hydrate adds custom owned', partial.owned.includes('lr338'));
+  check('hydrate uses provided credits', partial.credits === 99);
+  check('hydrate has career object', partial.career != null && Array.isArray(partial.career.history));
+
+  check('save filename shape', /^coldbore-save-\d{4}-\d{2}-\d{2}\.json$/.test(saveFilename()));
 }
 
 // --- scenery biomes -----------------------------------------------------
