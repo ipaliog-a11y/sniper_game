@@ -5,7 +5,7 @@ import { gradeColour } from '../core/scoring';
 import { presetById } from '../core/weather';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
-import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
+import { type Rect, fillRaised, paragraph, rule, text } from '../ui/gfx';
 import { C, Scroll, T } from '../ui/ui';
 import { mToYard } from '../core/units';
 import { BriefScene } from './BriefScene';
@@ -22,6 +22,8 @@ export class StageSelectScene implements Scene {
   update(): void {}
 
   private unlocked(app: App, index: number): boolean {
+    // Debug free-shop also opens the full course so kit can be tested on any stage.
+    if (app.profile.settings.debugFreeShop) return true;
     if (index === 0) return true;
     const previous = STAGES[index - 1];
     const record = app.profile.records[previous.id];
@@ -62,9 +64,19 @@ export class StageSelectScene implements Scene {
       const open = this.unlocked(app, i);
       const record = profile.records[stage.id];
 
-      fillPanel(ctx, r, 8, open ? C.panel : 'rgba(21,29,25,0.45)', open ? C.edge : C.edgeSoft);
+      const accent = !open
+        ? C.edgeSoft
+        : record && record.attempts > 0
+          ? gradeColour(record.bestGrade)
+          : C.edgeBright;
+      fillRaised(ctx, r, 9, {
+        fillTop: open ? C.panelHi : 'rgba(21,29,25,0.55)',
+        fillBottom: open ? C.panel : 'rgba(13,18,16,0.4)',
+        stroke: open ? C.edge : C.edgeSoft,
+        accentLeft: accent,
+      });
 
-      const pad = 14 * g;
+      const pad = 16 * g;
       const stageName = t(`stage.${stage.id}.name`);
       text(ctx, stageName, r.x + pad, r.y + 20 * g, T.body * g, open ? C.text : C.textFaint, 'left', 'bold');
 

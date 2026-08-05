@@ -102,36 +102,77 @@ export function lightFor(conditions: Conditions, biome: Biome = biomeById('open'
   const h = conditions.hour;
   // Full daylight between about seven and five, falling off either side.
   const dusk = clamp(Math.min(h - 4.5, 20 - h) / 2.5, 0, 1);
+  // Last light: still bright enough to shoot, but the sky is already warm.
+  const lastLight = clamp(1 - Math.abs(h - 18.2) / 2.4, 0, 1) * (h > 16 ? 1 : 0);
   const overcast =
-    conditions.sky === 'overcast' ? 0.7 : conditions.sky === 'rain' ? 0.55 : conditions.sky === 'fog' ? 0.6 : 1;
+    conditions.sky === 'overcast'
+      ? 0.68
+      : conditions.sky === 'rain'
+        ? 0.48
+        : conditions.sky === 'fog'
+          ? 0.55
+          : 1;
   const level = clamp(dusk * overcast, 0.12, 1);
   const warm = 1 - dusk;
   const biomeWarm = biome.palette.skyWarmth;
+  const stormGrey = conditions.sky === 'rain' || conditions.sky === 'overcast' ? 1 : 0;
 
-  const dayTop: Rgb =
-    conditions.sky === 'clear' ? [74, 124, 166] : conditions.sky === 'high-cloud' ? [104, 134, 158] : [102, 108, 110];
-  const dayBottom: Rgb = conditions.sky === 'clear' ? [176, 202, 212] : [162, 166, 168];
+  let dayTop: Rgb =
+    conditions.sky === 'clear'
+      ? [74, 124, 166]
+      : conditions.sky === 'high-cloud'
+        ? [104, 134, 158]
+        : conditions.sky === 'fog'
+          ? [128, 132, 134]
+          : [88, 92, 96];
+  let dayBottom: Rgb =
+    conditions.sky === 'clear'
+      ? [176, 202, 212]
+      : conditions.sky === 'fog'
+        ? [168, 170, 172]
+        : conditions.sky === 'rain'
+          ? [118, 122, 124]
+          : [148, 152, 154];
+  // Storm washes the colour out of the sky.
+  if (stormGrey > 0) {
+    dayTop = mixRgb(dayTop, [92, 96, 98], 0.45 * stormGrey);
+    dayBottom = mixRgb(dayBottom, [120, 124, 126], 0.4 * stormGrey);
+  }
   // Desert days go a little amber; forest stays cooler.
-  const dayTopTinted = mixRgb(dayTop, [168, 142, 98], biomeWarm * 0.55);
-  const dayBottomTinted = mixRgb(dayBottom, [210, 186, 140], biomeWarm * 0.4);
+  let dayTopTinted = mixRgb(dayTop, [168, 142, 98], biomeWarm * 0.55);
+  let dayBottomTinted = mixRgb(dayBottom, [210, 186, 140], biomeWarm * 0.4);
+  // Last-light warm rim on the lower sky.
+  if (lastLight > 0.05) {
+    dayBottomTinted = mixRgb(dayBottomTinted, [220, 148, 88], lastLight * 0.55);
+    dayTopTinted = mixRgb(dayTopTinted, [120, 90, 110], lastLight * 0.25);
+  }
   const nightTop: Rgb = [22, 28, 40];
   const nightBottom: Rgb = [78, 68, 60];
 
-  // Biome ground, pushed greyer at dusk / low light.
+  // Biome ground, pushed greyer at dusk / low light; wet days go darker and cooler.
   const dry = clamp(1 - conditions.atmosphere.humidity, 0, 1);
-  const near = mixRgb(biome.palette.groundNear, mixRgb(biome.palette.groundNear, [148, 132, 96], dry * 0.35), 0.25);
-  const far = mixRgb(biome.palette.groundFar, mixRgb(biome.palette.groundFar, [150, 140, 110], dry * 0.3), 0.2);
+  const wet = conditions.sky === 'rain' ? 0.55 : clamp(conditions.atmosphere.humidity - 0.55, 0, 1) * 0.7;
+  let near = mixRgb(biome.palette.groundNear, mixRgb(biome.palette.groundNear, [148, 132, 96], dry * 0.35), 0.25);
+  let far = mixRgb(biome.palette.groundFar, mixRgb(biome.palette.groundFar, [150, 140, 110], dry * 0.3), 0.2);
+  if (wet > 0) {
+    near = mixRgb(near, [36, 42, 40], wet * 0.55);
+    far = mixRgb(far, [48, 54, 56], wet * 0.45);
+  }
+
+  // Fog pushes haze cooler and greyer so distant plates disappear sooner.
+  const fog = conditions.sky === 'fog' ? 1 : clamp(1 - conditions.visibility, 0, 1) * 0.6;
+  const hazeBase: Rgb = [
+    150 + 40 * warm + 24 * biomeWarm - 18 * fog - 12 * stormGrey,
+    158 + 20 * warm - 10 * biomeWarm - 8 * fog - 10 * stormGrey,
+    152 + 10 * warm - 28 * biomeWarm + 12 * fog - 6 * stormGrey,
+  ];
 
   return {
     skyTop: css(mixRgb(nightTop, dayTopTinted, dusk)),
     skyBottom: css(mixRgb(nightBottom, dayBottomTinted, dusk)),
     groundNear: mixRgb([20, 24, 20], near, level),
-    groundFar: mixRgb([26, 32, 32], mixRgb(far, lightHazeHint(biome), 0.2), level),
-    haze: [
-      150 + 40 * warm + 24 * biomeWarm,
-      158 + 20 * warm - 10 * biomeWarm,
-      152 + 10 * warm - 28 * biomeWarm,
-    ],
+    groundFar: mixRgb([26, 32, 32], mixRgb(far, lightHazeHint(biome), 0.2 + fog * 0.15), level),
+    haze: hazeBase,
     level,
   };
 }
@@ -201,7 +242,14 @@ function drawGround(
     const d = view.project(view.aimAz - halfSpan, elFar);
 
     const base = mixRgb(light.groundNear, light.groundFar, Math.pow(t, 0.7));
-    const hazed = mixRgb(base, light.haze, clamp(Math.pow(t, 1.4) * hazeAmount, 0, 0.9));
+    // Fog / rain falloff: distant bands sink into haze harder.
+    const weatherBoost =
+      conditions.sky === 'fog' ? 0.28 : conditions.sky === 'rain' ? 0.14 : conditions.sky === 'overcast' ? 0.06 : 0;
+    const hazed = mixRgb(
+      base,
+      light.haze,
+      clamp(Math.pow(t, 1.35) * hazeAmount + weatherBoost * Math.pow(t, 0.9), 0, 0.94),
+    );
 
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
@@ -211,6 +259,24 @@ function drawGround(
     ctx.closePath();
     ctx.fillStyle = css(hazed);
     ctx.fill();
+  }
+
+  // Wet ground: a few soft specular bands so rain-soaked dirt reads shiny, not just dark.
+  if (conditions.sky === 'rain' || conditions.atmosphere.humidity > 0.78) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 8; i++) {
+      const d = 40 * Math.pow(900 / 40, i / 7);
+      const el = elAt(d);
+      const p = view.project(view.aimAz, el);
+      const scale = view.pxPerRad / d;
+      ctx.globalAlpha = 0.03 + 0.02 * (i % 2);
+      ctx.fillStyle = 'rgb(180,190,188)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, view.radius * 0.55, Math.max(1.2, scale * 0.9), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 }
 
@@ -469,6 +535,9 @@ function drawRidges(
  * boils — and it drifts with the wind, which makes it the most sensitive wind
  * gauge on the range, right up until it tells you nothing because the wind is
  * straight down the pipe.
+ *
+ * Better glass cleans the boil without inventing a different wind; cheap glass
+ * leaves the picture swimming.
  */
 function drawMirage(
   ctx: CanvasRenderingContext2D,
@@ -476,39 +545,148 @@ function drawMirage(
   conditions: Conditions,
   firingHeightM: number,
   time: number,
+  glassQuality = 0.55,
 ): void {
-  if (conditions.mirage < 0.06) return;
+  if (conditions.mirage < 0.05) return;
   const zone = conditions.zones[Math.floor(conditions.zones.length / 2)] ?? conditions.zones[0];
   const wind = zoneWindAt(zone, time);
   const cross = Math.sin(wind.fromAngle) * wind.speed;
   const head = Math.cos(wind.fromAngle) * wind.speed;
   // Straight into or away from you and the mirage boils vertically instead of
   // running: that is the classic "no value wind" picture.
-  const run = clamp(-cross / 6, -1, 1);
+  const run = clamp(-cross / 5.5, -1, 1);
   const boil = clamp(1 - Math.abs(cross) / 4, 0, 1) * clamp(Math.abs(head) / 6 + 0.4, 0, 1);
+  // Elite glass damps the boil; budget glass keeps every shimmer.
+  const glassDamp = clamp(1 - glassQuality * 0.62, 0.28, 1);
+  const strength = conditions.mirage * glassDamp;
 
   ctx.save();
   ctx.beginPath();
   ctx.arc(view.cx, view.cy, view.radius, 0, Math.PI * 2);
   ctx.clip();
   ctx.globalCompositeOperation = 'lighter';
-  const strips = 26;
+
+  // Horizontal heat bands — lean hard with crosswind so the picture "runs".
+  const strips = 34;
   for (let i = 0; i < strips; i++) {
-    const d = 250 * Math.pow(2400 / 250, i / (strips - 1));
-    const el = Math.atan2(-firingHeightM + 0.8, d);
+    const d = 200 * Math.pow(2600 / 200, i / (strips - 1));
+    const el = Math.atan2(-firingHeightM + 0.6 + (i % 3) * 0.15, d);
     const p = view.project(view.aimAz, el);
-    const phase = time * (1.6 + i * 0.13) + i;
-    const wobble = Math.sin(phase) * 6 * conditions.mirage * (0.4 + boil);
-    const slide = run * conditions.mirage * 22 * (0.6 + 0.4 * Math.sin(phase * 0.4));
-    ctx.globalAlpha = 0.045 * conditions.mirage;
-    ctx.fillStyle = 'rgb(200,200,170)';
+    const phase = time * (1.7 + i * 0.14) + i * 0.9;
+    const wobble = Math.sin(phase) * 7.5 * strength * (0.35 + boil);
+    const slide = run * strength * 36 * (0.55 + 0.45 * Math.sin(phase * 0.37));
+    const bandH = Math.max(1.4, view.radius * (0.012 + 0.01 * boil));
+    ctx.globalAlpha = 0.038 * strength * (0.7 + 0.3 * Math.sin(phase * 0.5));
+    ctx.fillStyle = boil > 0.55 ? 'rgb(210,205,170)' : 'rgb(198,200,175)';
     ctx.fillRect(
       view.cx - view.radius + slide,
-      p.y + wobble - view.radius * 0.008,
+      p.y + wobble - bandH * 0.5,
       view.radius * 2,
-      Math.max(1.5, view.radius * 0.016),
+      bandH,
     );
   }
+
+  // Diagonal shimmer cells so a full-value crosswind is obvious at a glance.
+  if (Math.abs(run) > 0.12 || boil > 0.5) {
+    const cells = 18;
+    for (let i = 0; i < cells; i++) {
+      const d = 320 * Math.pow(1800 / 320, i / (cells - 1));
+      const el = Math.atan2(-firingHeightM + 1.1, d);
+      const azOff = ((i % 5) - 2) * 0.012;
+      const p = view.project(view.aimAz + azOff, el);
+      const phase = time * 2.1 + i * 1.3;
+      const lean = run * strength * 14;
+      const rise = Math.sin(phase) * strength * 5 * (0.4 + boil);
+      const w = Math.max(4, view.radius * 0.07);
+      ctx.globalAlpha = 0.028 * strength;
+      ctx.fillStyle = 'rgb(220,215,180)';
+      ctx.beginPath();
+      ctx.ellipse(p.x + lean, p.y + rise, w, w * 0.22, run * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * Weather in the glass: rain streaks, fog wash, and a last-light warm rim.
+ * Drawn after scenery so it sits on top of the world without moving mils.
+ */
+function drawAtmosphere(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  conditions: Conditions,
+  light: Light,
+  time: number,
+): void {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(view.cx, view.cy, view.radius, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Fog falloff — soft milky wash that densifies toward the horizon / distance.
+  const fogAmt =
+    conditions.sky === 'fog'
+      ? 0.42
+      : conditions.visibility < 0.85
+        ? (1 - conditions.visibility) * 0.35
+        : 0;
+  if (fogAmt > 0.04) {
+    const fog = ctx.createRadialGradient(
+      view.cx,
+      view.cy + view.radius * 0.15,
+      view.radius * 0.15,
+      view.cx,
+      view.cy,
+      view.radius,
+    );
+    fog.addColorStop(0, `rgba(170,176,178,${0.08 * fogAmt})`);
+    fog.addColorStop(0.55, `rgba(150,156,158,${0.22 * fogAmt})`);
+    fog.addColorStop(1, `rgba(130,136,140,${0.45 * fogAmt})`);
+    ctx.fillStyle = fog;
+    ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
+  }
+
+  // Rain streaks — wind-leaned so they agree with the flag picture.
+  if (conditions.sky === 'rain') {
+    const zone = conditions.zones[0] ?? conditions.zones[conditions.zones.length - 1];
+    const wind = zone ? zoneWindAt(zone, time) : { speed: 3, fromAngle: Math.PI / 2 };
+    const lean = Math.sin(wind.fromAngle) * clamp(wind.speed / 10, 0.15, 0.85);
+    const streaks = 48;
+    for (let i = 0; i < streaks; i++) {
+      const u = hash(i, Math.floor(time * 9), conditions.seed ^ 0x71);
+      const v = hash(i * 3, Math.floor(time * 9) + 1, conditions.seed ^ 0xa3);
+      const x0 = view.cx - view.radius + u * view.radius * 2;
+      const y0 = view.cy - view.radius + ((v + (time * 0.35) % 1) % 1) * view.radius * 2.2;
+      const len = view.radius * (0.06 + u * 0.1);
+      ctx.strokeStyle = `rgba(190,200,210,${0.12 + v * 0.14})`;
+      ctx.lineWidth = 1 + u * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0 + lean * len * 1.4, y0 + len);
+      ctx.stroke();
+    }
+  }
+
+  // Last-light warm rim — lower half of the tube catches residual sun.
+  const h = conditions.hour;
+  const lastLight = clamp(1 - Math.abs(h - 18.2) / 2.4, 0, 1) * (h > 16 && h < 20.5 ? 1 : 0);
+  if (lastLight > 0.08 && conditions.sky !== 'rain') {
+    const rim = ctx.createLinearGradient(view.cx, view.cy, view.cx, view.cy + view.radius);
+    rim.addColorStop(0, 'rgba(0,0,0,0)');
+    rim.addColorStop(0.45, 'rgba(0,0,0,0)');
+    rim.addColorStop(1, `rgba(210,120,60,${0.14 * lastLight * light.level})`);
+    ctx.fillStyle = rim;
+    ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
+  }
+
+  // Storm grey cast over the whole picture.
+  if (conditions.sky === 'rain' || (conditions.sky === 'overcast' && light.level < 0.75)) {
+    const grey = conditions.sky === 'rain' ? 0.12 : 0.06;
+    ctx.fillStyle = `rgba(70,76,80,${grey})`;
+    ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
+  }
+
   ctx.restore();
 }
 
@@ -964,75 +1142,160 @@ function drawTarget(
   const dt = clamp(Math.log(Math.max(1, t.rangeM) / 100) / Math.log(4000 / 100), 0, 1);
   const wash = clamp(dt * (1.05 - conditions.visibility * 0.72), 0, 0.72);
 
-  const steel: Rgb = runtime.hit ? [214, 208, 190] : [46, 50, 46];
+  // Hit plates keep pale paint-dust scars; unhit steel is dark with a cool sheen.
+  const steel: Rgb = runtime.hit ? [208, 200, 178] : [52, 58, 54];
   const body = mixRgb(steel, light.haze, wash);
-  const rim = mixRgb(runtime.hit ? [244, 238, 218] : [104, 112, 104], light.haze, wash);
+  const shade = mixRgb(runtime.hit ? [160, 152, 130] : [28, 32, 30], light.haze, wash);
+  const highlight = mixRgb(runtime.hit ? [250, 246, 230] : [168, 178, 168], light.haze, wash);
 
   ctx.save();
   ctx.translate(centre.x, centre.y);
   ctx.rotate(-view.cant);
 
-  // The frame it stands on.
+  // Stand posts + crossbar + feet — reads as a real steel target frame.
   const standPx = STAND_HEIGHT_M * scale;
   if (standPx > 1.2) {
-    ctx.strokeStyle = css(mixRgb([34, 36, 32], light.haze, wash), 0.9);
-    ctx.lineWidth = Math.max(0.6, halfW * 0.12);
+    const postX = halfW * 0.42;
+    const postW = Math.max(0.7, halfW * 0.1);
+    const footY = halfH + standPx;
+    const barY = halfH + standPx * 0.22;
+    // Soft contact shadow on the dirt.
+    ctx.fillStyle = css(mixRgb([18, 20, 16], light.haze, wash), 0.28);
     ctx.beginPath();
-    ctx.moveTo(-halfW * 0.4, halfH * 0.8);
-    ctx.lineTo(-halfW * 0.4, halfH + standPx);
-    ctx.moveTo(halfW * 0.4, halfH * 0.8);
-    ctx.lineTo(halfW * 0.4, halfH + standPx);
+    ctx.ellipse(0, footY + postW, halfW * 0.7, postW * 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Posts.
+    ctx.strokeStyle = css(mixRgb([40, 42, 38], light.haze, wash), 0.95);
+    ctx.lineWidth = postW;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-postX, halfH * 0.75);
+    ctx.lineTo(-postX, footY);
+    ctx.moveTo(postX, halfH * 0.75);
+    ctx.lineTo(postX, footY);
+    ctx.stroke();
+    // Crossbar and feet.
+    if (halfW > 3) {
+      ctx.lineWidth = Math.max(0.6, postW * 0.85);
+      ctx.beginPath();
+      ctx.moveTo(-postX, barY);
+      ctx.lineTo(postX, barY);
+      ctx.moveTo(-postX - postW * 1.2, footY);
+      ctx.lineTo(-postX + postW * 1.2, footY);
+      ctx.moveTo(postX - postW * 1.2, footY);
+      ctx.lineTo(postX + postW * 1.2, footY);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  }
+
+  const pathPlate = (): void => {
+    switch (t.shape) {
+      case 'gong':
+      case 'head':
+        ctx.beginPath();
+        ctx.ellipse(0, 0, Math.max(0.7, halfW), Math.max(0.7, halfH), 0, 0, Math.PI * 2);
+        break;
+      case 'diamond':
+        ctx.beginPath();
+        ctx.moveTo(0, -halfH);
+        ctx.lineTo(halfW, 0);
+        ctx.lineTo(0, halfH);
+        ctx.lineTo(-halfW, 0);
+        ctx.closePath();
+        break;
+      case 'silhouette': {
+        const shoulder = -halfH * 0.42;
+        ctx.beginPath();
+        ctx.moveTo(-halfW, halfH);
+        ctx.lineTo(-halfW, shoulder);
+        ctx.lineTo(-halfW * 0.42, shoulder);
+        ctx.lineTo(-halfW * 0.42, -halfH);
+        ctx.lineTo(halfW * 0.42, -halfH);
+        ctx.lineTo(halfW * 0.42, shoulder);
+        ctx.lineTo(halfW, shoulder);
+        ctx.lineTo(halfW, halfH);
+        ctx.closePath();
+        break;
+      }
+    }
+  };
+
+  // Body fill.
+  pathPlate();
+  ctx.fillStyle = css(body);
+  ctx.fill();
+
+  // Edge bevel: dark outer lip + light inner ring so the plate has thickness.
+  if (halfW > 2.5) {
+    pathPlate();
+    ctx.strokeStyle = css(shade, 0.9);
+    ctx.lineWidth = Math.max(1, halfW * 0.1);
+    ctx.stroke();
+    pathPlate();
+    ctx.strokeStyle = css(highlight, 0.55);
+    ctx.lineWidth = Math.max(0.6, halfW * 0.045);
     ctx.stroke();
   }
 
-  ctx.fillStyle = css(body);
-  ctx.strokeStyle = css(rim);
-  ctx.lineWidth = Math.max(0.7, halfW * 0.07);
+  // Specular sheen across the face (steel, not matte cardboard).
+  if (halfW > 4) {
+    ctx.save();
+    pathPlate();
+    ctx.clip();
+    const sheen = ctx.createLinearGradient(-halfW, -halfH, halfW * 0.6, halfH);
+    sheen.addColorStop(0, `rgba(255,255,255,${runtime.hit ? 0.1 : 0.2})`);
+    sheen.addColorStop(0.35, 'rgba(255,255,255,0)');
+    sheen.addColorStop(0.7, `rgba(0,0,0,${runtime.hit ? 0.08 : 0.18})`);
+    sheen.addColorStop(1, 'rgba(0,0,0,0.05)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(-halfW * 1.2, -halfH * 1.2, halfW * 2.4, halfH * 2.4);
+    // Soft top-left catch light.
+    const catchLight = ctx.createRadialGradient(
+      -halfW * 0.35,
+      -halfH * 0.4,
+      0,
+      -halfW * 0.35,
+      -halfH * 0.4,
+      Math.max(halfW, halfH) * 0.9,
+    );
+    catchLight.addColorStop(0, `rgba(230,235,228,${runtime.hit ? 0.12 : 0.22})`);
+    catchLight.addColorStop(1, 'rgba(230,235,228,0)');
+    ctx.fillStyle = catchLight;
+    ctx.fillRect(-halfW * 1.2, -halfH * 1.2, halfW * 2.4, halfH * 2.4);
+    ctx.restore();
+  }
 
-  switch (t.shape) {
-    case 'gong':
-    case 'head': {
+  // Centre ring / paint zone on gongs once they resolve.
+  if ((t.shape === 'gong' || t.shape === 'head') && halfW > 9) {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, halfW * 0.36, halfH * 0.36, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = css(mixRgb(runtime.hit ? [150, 140, 118] : [122, 130, 120], light.haze, wash), 0.8);
+    ctx.lineWidth = Math.max(0.5, halfW * 0.05);
+    ctx.stroke();
+  }
+
+  // Lasting paint-dust scars on a hit plate — deterministic per target id.
+  if (runtime.hit && halfW > 5) {
+    ctx.save();
+    pathPlate();
+    ctx.clip();
+    let seed = 0;
+    for (let i = 0; i < t.id.length; i++) seed = (seed * 33 + t.id.charCodeAt(i)) | 0;
+    for (let i = 0; i < 7; i++) {
+      const r1 = hash(seed, i, 0x51);
+      const r2 = hash(seed ^ 0x2f, i * 3, 0xb7);
+      const r3 = hash(i, seed, 0x9e);
+      const px = (r1 - 0.5) * halfW * 1.5;
+      const py = (r2 - 0.5) * halfH * 1.5;
+      const s = Math.max(0.8, halfW * (0.06 + r3 * 0.12));
+      ctx.globalAlpha = 0.35 + r3 * 0.35;
+      ctx.fillStyle = css(mixRgb([236, 228, 200], light.haze, wash * 0.5));
       ctx.beginPath();
-      ctx.ellipse(0, 0, Math.max(0.7, halfW), Math.max(0.7, halfH), 0, 0, Math.PI * 2);
+      ctx.ellipse(px, py, s, s * (0.55 + r1 * 0.4), r2 * Math.PI, 0, Math.PI * 2);
       ctx.fill();
-      if (halfW > 2) ctx.stroke();
-      // A painted centre ring, once the plate is big enough to make one out.
-      if (halfW > 9) {
-        ctx.beginPath();
-        ctx.ellipse(0, 0, halfW * 0.36, halfH * 0.36, 0, 0, Math.PI * 2);
-        ctx.strokeStyle = css(mixRgb(runtime.hit ? [150, 140, 118] : [122, 130, 120], light.haze, wash), 0.8);
-        ctx.lineWidth = Math.max(0.5, halfW * 0.05);
-        ctx.stroke();
-      }
-      break;
     }
-    case 'diamond': {
-      ctx.beginPath();
-      ctx.moveTo(0, -halfH);
-      ctx.lineTo(halfW, 0);
-      ctx.lineTo(0, halfH);
-      ctx.lineTo(-halfW, 0);
-      ctx.closePath();
-      ctx.fill();
-      if (halfW > 2) ctx.stroke();
-      break;
-    }
-    case 'silhouette': {
-      const shoulder = -halfH * 0.42;
-      ctx.beginPath();
-      ctx.moveTo(-halfW, halfH);
-      ctx.lineTo(-halfW, shoulder);
-      ctx.lineTo(-halfW * 0.42, shoulder);
-      ctx.lineTo(-halfW * 0.42, -halfH);
-      ctx.lineTo(halfW * 0.42, -halfH);
-      ctx.lineTo(halfW * 0.42, shoulder);
-      ctx.lineTo(halfW, shoulder);
-      ctx.lineTo(halfW, halfH);
-      ctx.closePath();
-      ctx.fill();
-      if (halfW > 2) ctx.stroke();
-      break;
-    }
+    ctx.restore();
   }
 
   if (t.label && halfW > 10) {
@@ -1179,6 +1442,10 @@ export interface ScopeRender {
   showLevel: boolean;
   /** Darkens as the eye box narrows under recoil. */
   eyeRelief: number;
+  /** Residual recoil kick 0..1 — drives flinch, flash, and dust outside the tube. */
+  shotKick?: number;
+  /** Muzzle device signature 0..1 (brake high, suppressor low). */
+  muzzleSignature?: number;
 }
 
 export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): TargetDraw[] {
@@ -1187,6 +1454,9 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
   const biome = biomeById(session.stage.biomeId);
   const light = lightFor(conditions, biome);
   const firingHeightM = session.stage.firingHeightM;
+  const clarity = session.loadout.optic.glass;
+  const shotKick = r.shotKick ?? 0;
+  const muzzleSig = r.muzzleSignature ?? 0.7;
 
   ctx.save();
   ctx.beginPath();
@@ -1215,7 +1485,8 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
     if (d) drawn.push(d);
   }
 
-  drawMirage(ctx, view, conditions, firingHeightM, time);
+  drawMirage(ctx, view, conditions, firingHeightM, time, clarity);
+  drawAtmosphere(ctx, view, conditions, light, time);
 
   // Vapour trail. Only the part of the flight that has happened is drawn.
   for (const tracer of r.tracers) {
@@ -1240,26 +1511,52 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
     ctx.stroke();
   }
 
-  // Impacts.
+  // Impacts — steel hit splash (paint dust) vs dirt puff.
   for (const splash of r.splashes) {
+    if (splash.age < 0) continue;
     const p = view.project(splash.az, splash.el);
     const scale = view.pxPerRad / splash.rangeM;
-    const grow = 1 - Math.exp(-splash.age * 6);
-    const fade = clamp(1 - splash.age / (splash.hit ? 1.2 : 2.4), 0, 1);
-    ctx.globalAlpha = fade;
+    const grow = 1 - Math.exp(-splash.age * 5.5);
+    const hitLife = 1.85;
+    const missLife = 2.5;
+    const fade = clamp(1 - splash.age / (splash.hit ? hitLife : missLife), 0, 1);
     if (splash.hit) {
+      // Bright strike flash, then expanding paint/dust chips that hang a beat.
+      const core = Math.max(2.5, scale * 0.55 * grow);
+      ctx.globalAlpha = fade * 0.95;
       ctx.strokeStyle = '#ffe9a8';
-      ctx.lineWidth = Math.max(1.2, scale * 0.08);
+      ctx.lineWidth = Math.max(1.2, scale * 0.09);
       ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(3, scale * 0.7 * grow), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, core, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.globalAlpha = fade * 0.55;
+      ctx.fillStyle = 'rgba(255,240,190,0.9)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, core * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+      // Paint dust cloud.
+      ctx.globalAlpha = fade * 0.4;
+      ctx.fillStyle = 'rgb(230,222,190)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, core * 1.8, core * 1.15, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      // Chips flying off the face.
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * Math.PI * 2 + splash.age * 1.5;
+        const dist = core * (0.9 + grow * 1.4) * (0.6 + (i % 3) * 0.2);
+        ctx.globalAlpha = fade * 0.5;
+        ctx.fillStyle = i % 2 === 0 ? '#f0e6c0' : '#c8c0a0';
+        ctx.beginPath();
+        ctx.arc(p.x + Math.cos(ang) * dist, p.y + Math.sin(ang) * dist * 0.75, Math.max(0.8, core * 0.12), 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else {
       // Dust. A rifle bullet into dry ground throws maybe half a metre of it,
       // and it hangs for a second or two, which is all the time you get to
       // read a correction off it.
       const radius = Math.max(1.5, scale * 0.45 * grow);
       ctx.globalAlpha = fade * 0.55;
-      ctx.fillStyle = 'rgb(178,166,136)';
+      ctx.fillStyle = conditions.sky === 'rain' ? 'rgb(120,124,118)' : 'rgb(178,166,136)';
       ctx.beginPath();
       ctx.ellipse(p.x, p.y + radius * 0.5, radius * 1.15, radius * 0.8, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -1271,23 +1568,71 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
     ctx.globalAlpha = 1;
   }
 
-  // Glass: a cool cast, a bright ring at the edge, and vignetting.
+  // --- Scope glass chrome (inside the tube, after the world) -------------
+  // Soft edge falloff — poor optics and high power both darken the rim.
+  const mag = session.scope.magnification;
+  const powerEdge = clamp((mag - 8) / 28, 0, 1);
+  const rimDark = 0.5 + (1 - r.eyeRelief) * 0.42 + (1 - clarity) * 0.18 + powerEdge * 0.12;
   const vignette = ctx.createRadialGradient(
     view.cx,
     view.cy,
-    view.radius * 0.55,
+    view.radius * (0.42 + clarity * 0.12),
     view.cx,
     view.cy,
     view.radius,
   );
   vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, `rgba(4,8,6,${0.55 + (1 - r.eyeRelief) * 0.4})`);
+  vignette.addColorStop(0.62, 'rgba(4,8,6,0)');
+  vignette.addColorStop(0.88, `rgba(4,8,6,${0.22 * rimDark})`);
+  vignette.addColorStop(1, `rgba(2,5,4,${rimDark})`);
   ctx.fillStyle = vignette;
   ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
 
-  const clarity = session.loadout.optic.glass;
-  ctx.fillStyle = `rgba(90,110,96,${0.13 * (1 - clarity) + 0.03})`;
+  // Cool glass cast; worse glass goes greener/murkier.
+  ctx.fillStyle = `rgba(90,110,96,${0.14 * (1 - clarity) + 0.025})`;
   ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
+
+  // Dust / smear on cheap glass — denser at high power where every smudge shows.
+  if (clarity < 0.72) {
+    const dust = Math.round(18 * (1 - clarity) * (0.6 + powerEdge * 0.5));
+    for (let i = 0; i < dust; i++) {
+      const u = hash(i, 3, conditions.seed ^ 0x44);
+      const v = hash(i * 5, 7, conditions.seed ^ 0x55);
+      const ang = u * Math.PI * 2;
+      const rad = Math.sqrt(v) * view.radius * 0.92;
+      const x = view.cx + Math.cos(ang) * rad;
+      const y = view.cy + Math.sin(ang) * rad;
+      ctx.globalAlpha = 0.04 + (1 - clarity) * 0.08;
+      ctx.fillStyle = 'rgb(200,205,190)';
+      ctx.beginPath();
+      ctx.arc(x, y, 0.6 + u * 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Soft bright ring at the exit pupil (tube chrome catch).
+  ctx.strokeStyle = `rgba(180,200,170,${0.12 + clarity * 0.1})`;
+  ctx.lineWidth = Math.max(1.5, view.radius * 0.014);
+  ctx.beginPath();
+  ctx.arc(view.cx, view.cy, view.radius * 0.985, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Recoil flinch: brief radial darkening / tunnel as the eye box collapses.
+  if (shotKick > 0.08) {
+    const flinch = ctx.createRadialGradient(
+      view.cx,
+      view.cy,
+      view.radius * (0.55 - shotKick * 0.2),
+      view.cx,
+      view.cy,
+      view.radius,
+    );
+    flinch.addColorStop(0, 'rgba(0,0,0,0)');
+    flinch.addColorStop(1, `rgba(0,0,0,${0.35 * shotKick})`);
+    ctx.fillStyle = flinch;
+    ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
+  }
 
   drawReticle(ctx, view, session.loadout.optic, session.scope.magnification);
   if (r.showLevel) drawLevel(ctx, view, view.cant);
@@ -1300,11 +1645,69 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
   ctx.rect(0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.arc(view.cx, view.cy, view.radius, 0, Math.PI * 2, true);
   ctx.fill();
-  ctx.strokeStyle = '#1b241f';
-  ctx.lineWidth = Math.max(2, view.radius * 0.02);
+
+  // Scope tube metal ring — layered chrome, not a single flat stroke.
+  const ringW = Math.max(2.5, view.radius * 0.028);
+  ctx.lineWidth = ringW;
+  ctx.strokeStyle = '#121816';
   ctx.beginPath();
-  ctx.arc(view.cx, view.cy, view.radius + ctx.lineWidth / 2, 0, Math.PI * 2);
+  ctx.arc(view.cx, view.cy, view.radius + ringW * 0.55, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.lineWidth = Math.max(1, ringW * 0.35);
+  ctx.strokeStyle = 'rgba(90,110,96,0.45)';
+  ctx.beginPath();
+  ctx.arc(view.cx, view.cy, view.radius + ringW * 0.15, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(20,28,24,0.9)';
+  ctx.beginPath();
+  ctx.arc(view.cx, view.cy, view.radius + ringW * 0.95, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Shot signature outside the tube: muzzle flash + dust (kit-gated by signature).
+  if (shotKick > 0.12) {
+    const flash = shotKick * shotKick;
+    const sig = clamp(muzzleSig, 0, 1);
+    // Flash blooms under the tube (muzzle is "below" the picture in feel).
+    const fx = view.cx + (hash(3, 1, 9) - 0.5) * view.radius * 0.08 * flash;
+    const fy = view.cy + view.radius * (0.92 + flash * 0.08);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // Suppressor: almost no flash; brake: bright and wide.
+    const flashAlpha = 0.55 * flash * (0.15 + 0.85 * sig);
+    if (flashAlpha > 0.04) {
+      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, view.radius * (0.18 + 0.2 * sig) * flash);
+      g.addColorStop(0, `rgba(255,230,160,${flashAlpha})`);
+      g.addColorStop(0.35, `rgba(255,140,40,${flashAlpha * 0.55})`);
+      g.addColorStop(1, 'rgba(255,80,20,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(fx, fy, view.radius * (0.2 + 0.22 * sig) * flash, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Brake / bare: dust and debris kicked up under the muzzle.
+    if (sig > 0.35 && flash > 0.2) {
+      ctx.globalCompositeOperation = 'source-over';
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI - Math.PI * 0.5;
+        const dist = view.radius * (0.15 + flash * 0.2) * (0.5 + i * 0.08);
+        ctx.globalAlpha = 0.18 * flash * sig;
+        ctx.fillStyle = 'rgb(160,148,120)';
+        ctx.beginPath();
+        ctx.ellipse(
+          fx + Math.cos(a) * dist * 0.6,
+          fy + Math.sin(a) * dist * 0.35 + view.radius * 0.06,
+          view.radius * 0.06 * flash,
+          view.radius * 0.035 * flash,
+          a,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
 
   return drawn;
 }

@@ -1,8 +1,8 @@
 import { setLanguage } from '../core/i18n';
 import { type Profile, loadProfile, saveProfile } from '../core/store';
-import type { Rect } from './gfx';
+import { type Rect, drawShellBackground, fillPanel } from './gfx';
 import { Input } from './input';
-import { C } from './theme';
+import { C, font } from './theme';
 import { Ui } from './ui';
 
 /**
@@ -73,11 +73,21 @@ export class App {
     this.input.setScale(1);
   };
 
-  /** The usable box, kept clear of notches and home indicators. */
+  /**
+   * The usable box, kept clear of notches and home indicators.
+   * On wide / ultrawide screens the column is capped and centered so menus
+   * and full-width buttons do not stretch edge-to-edge.
+   */
   get safe(): Rect {
     const pad = Math.max(10, Math.min(this.width, this.height) * 0.022);
     const top = pad + (this.height > this.width ? 12 : 0);
-    return { x: pad, y: top, w: this.width - pad * 2, h: this.height - top - pad - 6 };
+    const bottom = pad + 6;
+    const available = this.width - pad * 2;
+    // ~large-phone / small-tablet width; still wide enough for two-col weather.
+    const maxContentW = 720 * this.gauge;
+    const w = Math.min(available, maxContentW);
+    const x = (this.width - w) / 2;
+    return { x, y: top, w, h: this.height - top - bottom };
   }
 
   get portrait(): boolean {
@@ -191,8 +201,7 @@ export class App {
     this.ui.beginFrame(now);
 
     const { ctx } = this;
-    ctx.fillStyle = C.bgDeep;
-    ctx.fillRect(0, 0, this.width, this.height);
+    drawShellBackground(ctx, this.width, this.height, this.safe);
 
     if (this.scene) {
       this.scene.update(dt, this);
@@ -209,23 +218,21 @@ export class App {
     const g = this.gauge;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    let y = this.safe.y + 26 * g;
+    let y = this.safe.y + 28 * g;
     for (const toast of this.toasts) {
       const fade = Math.min(1, (toast.until - this.time) / 0.5);
       ctx.globalAlpha = fade;
-      ctx.font = `600 ${12 * g}px ui-monospace, monospace`;
-      const w = ctx.measureText(toast.message).width + 26 * g;
-      const box = { x: this.width / 2 - w / 2, y: y - 13 * g, w, h: 26 * g };
-      ctx.fillStyle = 'rgba(8,11,10,0.92)';
-      ctx.beginPath();
-      ctx.roundRect(box.x, box.y, box.w, box.h, 13 * g);
-      ctx.fill();
-      ctx.strokeStyle =
-        toast.tone === 'good' ? C.green : toast.tone === 'bad' ? C.red : C.edge;
-      ctx.stroke();
-      ctx.fillStyle = toast.tone === 'good' ? C.green : toast.tone === 'bad' ? C.red : C.text;
-      ctx.fillText(toast.message, this.width / 2, y);
-      y += 32 * g;
+      ctx.font = font(12 * g, 'bold');
+      const w = ctx.measureText(toast.message).width + 28 * g;
+      const box = { x: this.width / 2 - w / 2, y: y - 14 * g, w, h: 28 * g };
+      const tone =
+        toast.tone === 'good' ? C.green : toast.tone === 'bad' ? C.red : C.amber;
+      fillPanel(ctx, box, 14 * g, 'rgba(8,11,10,0.94)', tone);
+      ctx.fillStyle = tone;
+      ctx.fillRect(box.x + 8 * g, box.y + 7 * g, 3 * g, box.h - 14 * g);
+      ctx.fillStyle = toast.tone === 'info' ? C.text : tone;
+      ctx.fillText(toast.message, this.width / 2 + 2 * g, y);
+      y += 34 * g;
       ctx.globalAlpha = 1;
     }
   }

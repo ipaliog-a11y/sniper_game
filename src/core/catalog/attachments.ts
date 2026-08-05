@@ -185,6 +185,27 @@ export const OPTICS: Optic[] = [
     cost: 16000,
     blurb: 'Thirty-five power. At that magnification the mirage becomes a wind gauge.',
   },
+  {
+    id: 'opt-horizon',
+    name: 'Horizon 8-80x56 FFP',
+    slot: 'optic',
+    magMin: 8,
+    magMax: 80,
+    turretUnit: 'MIL',
+    clickRad: MIL_CLICK,
+    // Deep internal travel; stack with an ELR canted rail for 3+ km dials.
+    elevationTravelMils: 60,
+    windageTravelMils: 20,
+    reticle: 'tree',
+    ffp: true,
+    trueAtMag: 80,
+    fovDegAtMin: 2.6,
+    glass: 1.0,
+    massKg: 1.55,
+    cost: 28000,
+    blurb:
+      'Competition ELR glass: eighty power and 60 mils of elevation. Pair with a canted rail for two-mile-plus dials; find the plate low, then zoom for the hold.',
+  },
 ];
 
 export const MUZZLES: Muzzle[] = [
@@ -306,7 +327,8 @@ export const GEAR: Gear[] = [
     gear: 'kestrel',
     massKg: 0.12,
     cost: 2100,
-    blurb: 'Reads temperature, pressure, humidity and the wind at the firing point exactly.',
+    blurb:
+      'Reads temperature, pressure, humidity, wind at the firing point, and station latitude — the latitude the ballistic solver needs for Coriolis.',
   },
   {
     id: 'gear-solver',
@@ -315,7 +337,8 @@ export const GEAR: Gear[] = [
     gear: 'solver',
     massKg: 0.15,
     cost: 3600,
-    blurb: 'Turns whatever numbers you feed it into a dial-and-hold. Garbage in, miss out.',
+    blurb:
+      'Full firing solution including wind, spin drift and Coriolis from latitude and shooting azimuth. Without a weather meter the air and lat are estimates.',
   },
   {
     id: 'gear-level',

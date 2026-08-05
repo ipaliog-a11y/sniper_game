@@ -6,7 +6,7 @@ export const en: Dict = {
   'menu.subtitle': 'P R E C I S I O N   R I F L E   T R A I N E R',
   'menu.stages_cleared': '{cleared} of {total} stages cleared   ·   {credits} cr',
   'menu.course': 'COURSE OF FIRE',
-  'menu.course_sub': '{count} stages · tutorial through a mile',
+  'menu.course_sub': '{count} stages · tutorial through the horizon',
   'menu.free_field': 'FREE FIELD',
   'menu.free_field_sub': 'your plates · weather · any kit · clock counts up',
   'menu.armoury': 'ARMOURY',
@@ -86,13 +86,13 @@ export const en: Dict = {
     'Drag aim · wheel zoom · right-hold breath · left-click or Space to fire',
   'settings.glossary': 'OPEN GLOSSARY',
   'settings.debug_section': 'DEBUG (TEMPORARY)',
-  'settings.free_shop': 'SET ALL ARMOURY PRICES TO 0 CR',
-  'settings.free_shop_confirm': 'ARE YOU SURE? TAP AGAIN TO ENABLE FREE SHOP',
-  'settings.free_shop_off': 'FREE SHOP ON — TAP TO TURN OFF',
+  'settings.free_shop': 'UNLOCK ARMOURY + ALL COURSE STAGES',
+  'settings.free_shop_confirm': 'ARE YOU SURE? TAP AGAIN TO ENABLE DEBUG UNLOCK',
+  'settings.free_shop_off': 'DEBUG UNLOCK ON — TAP TO TURN OFF',
   'settings.free_shop_note':
-    'Temporary debug. Every armoury item shows and costs 0 credits so you can try kit without grinding. Does not erase progress. Turn off anytime. Remove this before a public release.',
-  'settings.free_shop_enabled': 'Armoury prices are 0 cr',
-  'settings.free_shop_disabled': 'Armoury prices restored',
+    'Temporary debug. Armoury items cost 0 credits and every stage in Course of Fire is open. Does not erase progress. Turn off anytime. Remove this before a public release.',
+  'settings.free_shop_enabled': 'Armoury free · all stages open',
+  'settings.free_shop_disabled': 'Shop prices and stage locks restored',
   'settings.backup_section': 'BACKUP',
   'settings.backup_note':
     'Progress auto-saves in this browser. Export a JSON file to recover after a wipe, or move kit to another device.',
@@ -152,6 +152,15 @@ export const en: Dict = {
   'stage.mile.name': '08 — The Mile',
   'stage.mile.brief':
     'One thousand six hundred and nine metres. Bring something that is still supersonic when it arrives, because nothing else is going to be predictable.',
+  'stage.beyond.name': '09 — Beyond the Mile',
+  'stage.beyond.brief':
+    'Past one mile the card alone is not enough. Large steel at 1.8–2.5 km, calm desert air, and flight times measured in seconds. .338 Lapua class or better — .308 is out of its depth.',
+  'stage.two-mile.name': '10 — Two Miles',
+  'stage.two-mile.brief':
+    'Three thousand two hundred and eighteen metres. Drop is measured in storeys, wind in metres of hold, and Coriolis is no longer a footnote. Bring a .50 BMG or a true ELR magnum, deep glass, and a solver that knows latitude.',
+  'stage.horizon.name': '11 — Horizon',
+  'stage.horizon.brief':
+    'Three thousand five hundred and forty metres — TAC-50 class distance. Flight time near ten seconds, wind layers you cannot see, and a final plate that rewards only a full ELR stack: .50 match, deep glass, meter, solver, and patience.',
 
   // --- weather presets ---
   'weather.calm.name': 'Still Morning',
@@ -174,6 +183,66 @@ export const en: Dict = {
     'The data card always lists elevation in mils. One mil ≈ 10 cm of correction at 100 m (20 cm at 200 m). Open DATA CARD, find your plate’s range, read the ELEV column (mils). Open TURRETS and use −− / − / 0 / + / ++ on elevation. Dial until the line “about … on the card” matches the plate range. On mil glass the big readout should equal the card (often 0.1 mil per click). On MOA glass (starter scope) do not convert by hand — trust that “about range” line. Windage stays at 0 here (press 0). You can re-open DIAL while hot.',
   'brief.tutorial_dial_steps':
     '1) DATA CARD → ELEV (mils) for 100 / 150 / 200 m   ·   2) TURRETS → dial elevation until card-range matches   ·   3) Windage 0   ·   4) GO HOT · hold breath · fire',
+  'brief.tutorial_begin': 'BEGIN TUTORIAL',
+  'brief.tutorial_replay': 'REPLAY TUTORIAL',
+  'brief.tutorial_done_badge': 'DIAL COACH COMPLETE',
+  'brief.go_hot_ready': 'GO HOT — YOU ARE SET',
+
+  // --- dial coach (visual guided tutorial) ---
+  'coach.header': 'DIAL COACH  ·  STEP {n} / {total}',
+  'coach.next': 'NEXT',
+  'coach.back': 'BACK',
+  'coach.close': 'CLOSE',
+  'coach.finish': 'FINISH',
+  'coach.next_locked': 'complete the action to continue',
+  'coach.complete_toast': 'Dial coach complete — turrets are yours',
+  'coach.verify.ok': '✓ Looks good — press NEXT',
+  'coach.verify.elev':
+    'Dial + on elevation until “about range” reads {range} (now {about}). Card elev ≈ {elev} mil · you have {dial} mil',
+  'coach.verify.wind': 'Press 0 on windage so it reads mechanical zero',
+  'coach.shot.intro': 'SCREEN · FIRST SHOTS',
+  'coach.shot.mils': 'SCREEN · WHAT IS A MIL',
+  'coach.shot.card': 'SCREEN · DATA CARD',
+  'coach.shot.tabs': 'SCREEN · BRIEF TABS',
+  'coach.shot.turrets': 'SCREEN · TURRETS',
+  'coach.shot.ready': 'SCREEN · GO HOT',
+  'coach.shot.reticle': 'reticle',
+  'coach.shot.card_preview': 'RANGE · ELEV (mils) · WIND · TOF',
+  'coach.shot.turret_preview': '−−  −  0  +  ++   elevation & windage',
+  'coach.shot.brief_preview': 'Course brief and kit summary',
+  'coach.shot.hold_fire': 'Hold breath · break the shot',
+  // ready-shot HUD example uses practice range
+
+  'coach.step.intro.title': 'Welcome to the dial coach',
+  'coach.step.intro.body':
+    'This walkthrough uses screens that look like the real game. You will learn how to read the data card and set elevation before you go hot. Three plates sit at known ranges: 100, 150 and 200 m. Click NEXT to continue; on practice steps you must dial correctly before NEXT unlocks.',
+  'coach.step.mils.title': 'What a mil is',
+  'coach.step.mils.body':
+    'One mil is an angle: about 10 cm of correction at 100 m (20 cm at 200 m). The data card lists elevation in mils. Your turrets move in fixed click steps (often 0.1 mil or ¼ MOA). You do not need to convert on MOA glass — watch the “about range” line instead.',
+  'coach.step.open_card.title': 'Open the DATA CARD tab',
+  'coach.step.open_card.body':
+    'In the brief, the tabs across the top are BRIEF · WEATHER · DATA CARD · TURRETS. The data card is where drop and wind holds live for your load. The screenshot shows that tab selected — in the real brief it is the third tab.',
+  'coach.step.read_card.title': 'Read the ELEV column',
+  'coach.step.read_card.body':
+    'Each row is a range. ELEV is the elevation in mils for that distance off a standard card. Tutorial plates at 100 / 150 / 200 m are highlighted when they land on hundred-metre lines. Find the elev number for the plate you will shoot.',
+  'coach.step.pick_row.title': 'Focus the 200 m plate',
+  'coach.step.pick_row.body':
+    'The data card lists every 100 m, so 150 m never appears as “about range”. We practice on the 200 m plate — a real row on the card and a real tutorial target. Note its ELEV (mils). Later you dial until the turret panel says “about 200 m”.',
+  'coach.step.open_turrets.title': 'Open the TURRETS tab',
+  'coach.step.open_turrets.body':
+    'Turrets are the fourth tab. You can also open DIAL while the stage is hot. The screenshot shows the TURRETS tab active — that is where elevation and windage clicks live.',
+  'coach.step.turret_layout.title': 'Elevation controls',
+  'coach.step.turret_layout.body':
+    'Use −− − 0 + ++ on elevation. + adds elevation (up); − takes it off. 0 returns that turret to mechanical zero. The large readout is the dialled value; the line below maps it back to a card range so you can catch a wrong-way turn.',
+  'coach.step.dial_elev.title': 'Your turn — dial for 200 m',
+  'coach.step.dial_elev.body':
+    'Use the live turret controls below the screenshot. Press + on elevation until the line says about 200 m (not 100 m). On the starter MOA scope you may need several clicks — watch “about range”, not the mil/MOA number. NEXT unlocks when about range is 200 m.',
+  'coach.step.wind_zero.title': 'Zero windage',
+  'coach.step.wind_zero.body':
+    'This tutorial stage has no real wind to hold. Press 0 on the windage row so it sits at mechanical zero. NEXT unlocks when windage clicks are 0.',
+  'coach.step.ready.title': 'Ready to go hot',
+  'coach.step.ready.body':
+    'You can re-open DATA CARD or TURRETS any time before GO HOT, and DIAL while the stage is live. Hold breath to quiet the reticle, then fire. Finish the coach, then press GO HOT on the brief to start First Shots.',
   'brief.gear': 'GEAR',
   'brief.nothing_fitted': 'nothing fitted',
   'brief.zero': 'ZERO',
@@ -208,7 +277,7 @@ export const en: Dict = {
   'brief.traj_yes': 'trajectory plotter fitted — side-view of each round',
   'brief.traj_no': 'no plotter — path only as a brief glass tracer',
   'brief.moa_cone': '{moa} MOA cone',
-  'brief.mil_travel': '{mils} MIL travel',
+  'brief.mil_travel': '{mils} MIL usable elev',
   'brief.transonic_warn':
     'This load goes transonic at {range} and the far targets are past it. Expect the groups to open up.',
 
@@ -432,6 +501,12 @@ export const en: Dict = {
   'achieve.storm_clear.desc': 'Clear the storm stage.',
   'achieve.mile_clear.name': 'Mile steel',
   'achieve.mile_clear.desc': 'Clear the mile stage.',
+  'achieve.beyond_clear.name': 'Past the mile',
+  'achieve.beyond_clear.desc': 'Clear Beyond the Mile (past 1.5 miles).',
+  'achieve.two_mile_clear.name': 'Two-mile steel',
+  'achieve.two_mile_clear.desc': 'Clear the two-mile stage.',
+  'achieve.horizon_clear.name': 'Over the horizon',
+  'achieve.horizon_clear.desc': 'Clear Horizon (3540 m / TAC-50 class).',
   'achieve.course_complete.name': 'Course complete',
   'achieve.course_complete.desc': 'Clear every graded course stage.',
   'achieve.grade_marksman.name': 'Marksman ribbon',
@@ -512,7 +587,7 @@ export const en: Dict = {
   'panel.turrets': 'TURRETS',
   'panel.clicks': '{n} clicks',
   'panel.zero_btn': '0',
-  'panel.elevation_travel': 'ELEVATION  ·  {mils} MIL of travel',
+  'panel.elevation_travel': 'ELEVATION  ·  {mils} MIL usable ({glass} glass + {rail} rail)',
   'panel.windage': 'WINDAGE',
   'panel.about_range': 'that is about {range} on the card',
   'panel.tutorial_dial_tip':
@@ -539,11 +614,13 @@ export const en: Dict = {
   'panel.at_target': 'AT THE TARGET',
   'panel.spin_drift': 'SPIN DRIFT',
   'panel.spin_right': '{cm} cm right',
+  'panel.coriolis': 'CORIOLIS',
+  'panel.coriolis_value': '{h} H / {v} V MIL · lat {lat}°',
   'panel.lead': 'LEAD',
   'panel.dial_it': 'DIAL IT',
   'panel.not_enough_elev': 'NOT ENOUGH ELEVATION',
   'panel.out_of_travel':
-    'The scope has run out of travel. Hold the correction on the reticle instead, or fit glass with more of it.',
+    'Need {need} MIL of elevation; usable dial is {have} MIL (glass + canted rail). Hold the rest on the reticle, zero farther, or fit Horizon glass on the AM50.',
 
   // --- panels: trajectory ---
   'panel.traj_title': 'TRAJECTORY',
@@ -618,7 +695,7 @@ export const en: Dict = {
     'How “thick” the air acts for ballistics, combining height, temperature, pressure, and humidity. Thin air means less drag and less drop.',
   'glossary.coriolis.term': 'Coriolis',
   'glossary.coriolis.def':
-    'Earth rotation effect. In the northern hemisphere shots walk slightly right over long range; east/west fire also shifts elevation a little.',
+    'Earth rotation effect. In the northern hemisphere shots walk slightly right over long range; east/west fire also shifts elevation a little. The ballistic solver includes it and shows H/V mils when fitted; the weather meter supplies latitude. The printed data card does not (standard air, zero lat).',
   'glossary.spin_drift.term': 'Spin drift',
   'glossary.spin_drift.def':
     'Lateral walk from the bullet’s spin (right for a right-hand twist). Grows with time of flight; often a few centimetres at long range.',

@@ -179,7 +179,8 @@ export function generateConditions(
     1,
   );
 
-  const zoneCount = clamp(Math.round(maxRangeM / 250), 2, 5);
+  // More zones on ELR strings so mid-course wind is not a single smear.
+  const zoneCount = clamp(Math.round(maxRangeM / 280), 2, 7);
   const zones: WindZone[] = [];
   for (let i = 0; i < zoneCount; i++) {
     const distanceM = i === 0 ? 25 : Math.round((maxRangeM * (i + 0.5)) / zoneCount);

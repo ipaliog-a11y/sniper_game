@@ -297,6 +297,26 @@ export function trueSolution(session: Session, target: Target): FiringSolution {
   );
 }
 
+/**
+ * Same solution with latitude forced to zero so the ballistic solver panel can
+ * show how much of the dial is Coriolis (Earth rate) rather than wind or spin.
+ */
+export function trueSolutionNoCoriolis(session: Session, target: Target): FiringSolution {
+  const env: Environment = {
+    atmosphere: session.conditions.atmosphere,
+    wind: effectiveWind(session.conditions, target.rangeM, session.clockS),
+    latitude: 0,
+    azimuth: session.conditions.azimuth,
+  };
+  return solve(
+    session.loadout.projectile,
+    env,
+    target.rangeM,
+    session.loadout.rifle.sightHeightM,
+    targetInclination(target, session.stage.firingHeightM),
+  );
+}
+
 /** What the solver should be told to dial, relative to the zero, in mils. */
 export function dialMils(session: Session, solution: FiringSolution): number {
   return radToMil(solution.elevation - session.zero);

@@ -135,7 +135,7 @@ export function resolveShot(input: ShotInput): ShotResult {
       sightHeight: loadout.rifle.sightHeightM,
     },
     rangeM,
-    { dt: 0.0008, sampleEvery: 24, massKg: loadout.massKg, maxTof: 14 },
+    { dt: 0.0008, sampleEvery: 24, massKg: loadout.massKg, maxTof: 22 },
   );
 
   // Everything the shooter cannot see or correct: the rifle's own group, plus

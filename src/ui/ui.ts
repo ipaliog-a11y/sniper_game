@@ -1,4 +1,13 @@
-import { type Align, type Rect, fillPanel, inside, measure, rule, text } from './gfx';
+import {
+  type Align,
+  type Rect,
+  fillPanel,
+  fillRaised,
+  inside,
+  measure,
+  rule,
+  text,
+} from './gfx';
 import type { Input } from './input';
 import { C, T } from './theme';
 
@@ -40,17 +49,35 @@ export class Ui {
     const { ctx } = this;
     const held = !style.disabled && this.input.isDownIn(r.x, r.y, r.w, r.h);
     const accentColour = style.danger ? C.red : C.amber;
-    const fill = style.disabled
-      ? C.panel
-      : style.accent
-        ? held
-          ? accentColour
-          : 'rgba(232,163,61,0.16)'
-        : held
-          ? C.panelHi
-          : C.panel;
-    const stroke = style.disabled ? C.edgeSoft : style.accent ? accentColour : C.edge;
-    fillPanel(ctx, r, style.radius ?? 6, style.fill ?? fill, style.stroke ?? stroke);
+    const radius = style.radius ?? 7;
+
+    if (style.disabled) {
+      fillPanel(ctx, r, radius, C.panel, C.edgeSoft);
+    } else if (style.accent) {
+      fillRaised(ctx, r, radius, {
+        fillTop: held ? accentColour : 'rgba(232,163,61,0.20)',
+        fillBottom: held ? accentColour : 'rgba(232,163,61,0.08)',
+        stroke: accentColour,
+        held,
+      });
+      // Soft outer glow so primary actions pop without neon.
+      if (!held) {
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.shadowColor = accentColour;
+        ctx.shadowBlur = 10;
+        fillPanel(ctx, r, radius, 'transparent', accentColour);
+        ctx.restore();
+      }
+    } else if (style.fill || style.stroke) {
+      fillPanel(ctx, r, radius, style.fill ?? C.panel, style.stroke ?? C.edge);
+    } else {
+      fillRaised(ctx, r, radius, {
+        held,
+        stroke: held ? C.edgeBright : C.edge,
+      });
+    }
+
     const colour = style.disabled
       ? C.textFaint
       : style.accent
@@ -58,32 +85,42 @@ export class Ui {
           ? C.bgDeep
           : accentColour
         : C.text;
-    text(
-      ctx,
-      label,
-      style.align === 'left' ? r.x + 12 : r.x + r.w / 2,
-      r.y + r.h / 2,
-      style.size ?? T.body,
-      colour,
-      style.align ?? 'center',
-      style.accent ? 'bold' : 'normal',
-    );
+    if (label) {
+      text(
+        ctx,
+        label,
+        style.align === 'left' ? r.x + 12 : r.x + r.w / 2,
+        r.y + r.h / 2,
+        style.size ?? T.body,
+        colour,
+        style.align ?? 'center',
+        style.accent ? 'bold' : 'normal',
+      );
+    }
     if (style.disabled) return false;
     return this.input.takeTap(r.x, r.y, r.w, r.h);
   }
 
-  /** A button that fires once on press and then repeats while it is held. */
+  /**
+   * Hold-to-repeat control: one fire on press, then auto-repeat after a short
+   * delay while held. Must not also fire on release — the old path called
+   * takeTap after the press-fire, so every “+1 click” was applied twice (0.2
+   * mil steps on a 0.1 mil turret).
+   */
   stepper(id: string, r: Rect, label: string, disabled = false): boolean {
     const { ctx } = this;
     const held = !disabled && this.input.isHeldIn(r.x, r.y, r.w, r.h);
-    fillPanel(ctx, r, 6, held ? C.panelHi : C.panel, disabled ? C.edgeSoft : C.edge);
+    fillRaised(ctx, r, 6, {
+      held,
+      stroke: disabled ? C.edgeSoft : held ? C.amberDim : C.edge,
+    });
     text(
       ctx,
       label,
       r.x + r.w / 2,
       r.y + r.h / 2,
       T.head,
-      disabled ? C.textFaint : C.text,
+      disabled ? C.textFaint : held ? C.amber : C.text,
       'center',
       'bold',
     );
@@ -91,7 +128,14 @@ export class Ui {
 
     const last = this.repeats.get(id);
     if (!held) {
-      this.repeats.delete(id);
+      // Consume any release tap so a press-fire is not followed by a second
+      // takeTap on pointer-up (that was the double-step bug).
+      if (last !== undefined) {
+        this.input.takeTap(r.x, r.y, r.w, r.h);
+        this.repeats.delete(id);
+        return false;
+      }
+      // Pointer never registered as held (edge case): still allow a clean tap.
       return this.input.takeTap(r.x, r.y, r.w, r.h);
     }
     if (last === undefined) {
@@ -107,12 +151,16 @@ export class Ui {
 
   toggle(r: Rect, label: string, on: boolean): boolean {
     const { ctx } = this;
-    fillPanel(ctx, r, 6, on ? 'rgba(232,163,61,0.16)' : C.panel, on ? C.amber : C.edge);
+    fillRaised(ctx, r, 7, {
+      fillTop: on ? 'rgba(232,163,61,0.18)' : C.panelHi,
+      fillBottom: on ? 'rgba(232,163,61,0.06)' : C.panel,
+      stroke: on ? C.amber : C.edge,
+    });
     text(ctx, label, r.x + 12, r.y + r.h / 2, T.body, on ? C.amber : C.textDim, 'left');
-    const knob = { x: r.x + r.w - 34, y: r.y + r.h / 2 - 8, w: 26, h: 16 };
-    fillPanel(ctx, knob, 8, on ? C.amber : C.edgeSoft, 'transparent');
+    const knob = { x: r.x + r.w - 36, y: r.y + r.h / 2 - 9, w: 28, h: 18 };
+    fillPanel(ctx, knob, 9, on ? C.amber : C.edgeSoft, 'transparent');
     ctx.beginPath();
-    ctx.arc(on ? knob.x + knob.w - 8 : knob.x + 8, knob.y + 8, 6, 0, Math.PI * 2);
+    ctx.arc(on ? knob.x + knob.w - 9 : knob.x + 9, knob.y + 9, 6.5, 0, Math.PI * 2);
     ctx.fillStyle = on ? C.bgDeep : C.textDim;
     ctx.fill();
     return this.input.takeTap(r.x, r.y, r.w, r.h);
@@ -127,7 +175,10 @@ export class Ui {
       const tab: Rect = { x: r.x + i * w, y: r.y, w, h: r.h };
       const on = i === active;
       if (on) {
-        ctx.fillStyle = 'rgba(232,163,61,0.10)';
+        const g = ctx.createLinearGradient(tab.x, tab.y, tab.x, tab.y + tab.h);
+        g.addColorStop(0, 'rgba(232,163,61,0.14)');
+        g.addColorStop(1, 'rgba(232,163,61,0.02)');
+        ctx.fillStyle = g;
         ctx.fillRect(tab.x, tab.y, tab.w, tab.h);
       }
       text(
@@ -142,7 +193,7 @@ export class Ui {
       );
       if (on) {
         ctx.fillStyle = C.amber;
-        ctx.fillRect(tab.x + 8, tab.y + tab.h - 2, tab.w - 16, 2);
+        ctx.fillRect(tab.x + 10, tab.y + tab.h - 2, tab.w - 20, 2);
       }
       if (this.input.takeTap(tab.x, tab.y, tab.w, tab.h)) picked = i;
     }

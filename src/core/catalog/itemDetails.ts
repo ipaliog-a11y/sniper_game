@@ -38,6 +38,18 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
       'Starter kit: free, honest, and already zeroed-friendly for the early course stages.',
     ],
   },
+  fieldman4: {
+    kind: 'rifle',
+    role: 'Classic wartime bolt · .303 British',
+    image: 'gear/fieldman4.jpg',
+    detail:
+      'The Fieldman No.4 is a glassed-up battle rifle from an earlier war: wood furniture, a slick bolt, and a 25-inch barrel in .303 British. It is lighter and cheaper than the modern rack, and its mechanical cone is honest rather than competitive — about 0.9 MOA before the ammunition. The rail is shallow because the era did not buy mils of elevation; you hold more and dial less past a few hundred metres. It teaches wind and hold-off without magnum recoil, and it will not paper over a bad call with flat modern ballistics.',
+    notes: [
+      'Surplus .303 is wide; match 180 gr loads tighten the cone if you can afford them.',
+      'Low rail (~1.5 mil) — expect holds rather than deep turret runs on long plates.',
+      'Light mass (~5.2 kg) means more sway unless you settle the bipod carefully.',
+    ],
+  },
   mk14: {
     kind: 'rifle',
     role: 'Semi-automatic marksman · .308 Winchester',
@@ -48,6 +60,18 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
       'Semi cycle (~0.55 s) dominates stages with multiple plates at similar range.',
       'Expect more dispersion than bolt guns; do not blame the wind for a loose group.',
       'Same .308 chambering as the Ranger — ammo is interchangeable once owned.',
+    ],
+  },
+  trailhand260: {
+    kind: 'rifle',
+    role: 'Light mountain bolt · .260 Remington',
+    image: 'gear/trailhand260.jpg',
+    detail:
+      'The Trailhand 260 is a light precision bolt for stalking ground and long walks to the firing point. Chambered in .260 Remington with a 24-inch 1:8 barrel, it throws 6.5-class bullets with mild recoil and a short-action cycle. Mass sits around five kilograms — kinder to carry than a PRS chassis, less forgiving when your pulse is high. It rewards bipod and bag work: get the set-up right and it groups like a school rifle; rush the hold and the reticle walks. A bridge between the free Ranger and the heavy Sabre.',
+    notes: [
+      'Pairs with 130–140 gr .260 loads; same bullet family as 6.5, different case.',
+      'Light mass amplifies breath and pulse — bipod set-up time is not optional.',
+      'Faster cycle (~1.6 s) than magnums without giving up bolt precision.',
     ],
   },
   prs26: {
@@ -62,6 +86,18 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
       'Precision around 0.22 MOA mechanical — the ammo is usually the wider cone.',
     ],
   },
+  qmarc: {
+    kind: 'rifle',
+    role: 'Modern gas DMR · 6mm ARC',
+    image: 'gear/qmarc.jpg',
+    detail:
+      'The Quartermaster ARC is a gas-operated DMR that learned modern ballistics. A 20-inch barrel and 1:7.5 twist push high-BC 6mm bullets with less wind drift than the Mk14’s .308, while the semi cycle stays near half a second. Mechanical precision is still behind a bolt gun — around half a MOA — but the second plate on a timed string is where it earns its keep. Milder recoil than .308 gas guns keeps the reticle closer to the next hold. Fit glass with a real reticle; the ARC is wasted behind a hunting duplex.',
+    notes: [
+      'Semi cycle (~0.5 s) for multi-plate speed without Mk14-level .308 wind.',
+      '6mm ARC match loads are flat and soft; surplus or hunting loads open the group.',
+      'Same role as Mk14, different chambering — not ammo-compatible with .308.',
+    ],
+  },
   aw300: {
     kind: 'rifle',
     role: 'Cold-weather magnum bolt gun · .300 Winchester Magnum',
@@ -72,6 +108,18 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
       'Magnum recoil — brake or can recommended if you care about second-round hits.',
       'Pairs with 190–215 gr match loads for stretch past 1000 m.',
       'Slow cycle rewards one deliberate shot; multi-plate speed stages favour lighter chamberings.',
+    ],
+  },
+  northlineprc: {
+    kind: 'rifle',
+    role: 'Modern magnum chassis · .300 PRC',
+    image: 'gear/northlineprc.jpg',
+    detail:
+      'The Northline PRC is a magnum built around the data card rather than nostalgia. .300 Precision Rifle Cartridge feeds heavy .30 bullets efficiently: high BC, sensible powder, and a flatter path than classic .300 Winchester Magnum for the same class of projectile. A 26-inch 1:8.5 barrel and 11.6 mils of rail give room for true long-range work without jumping straight to .338 recoil. Cycle time is still deliberate; recovery is kinder than the Arctic AW300 if you brake it. Between the old magnum and the Lapua, this is the “new card” option.',
+    notes: [
+      '212–225 gr match loads are the point of the chambering — light pills waste it.',
+      'Deep rail for long dope; pair with FFP glass that has the travel.',
+      'Slightly quicker cycle than AW300; still not a speed-stage toy.',
     ],
   },
   lr338: {
@@ -86,16 +134,28 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
       'Use 250–300 gr match loads; lighter pills waste the chambering.',
     ],
   },
+  sentineltrg: {
+    kind: 'rifle',
+    role: 'Cold-weather .338 bolt · .338 Lapua Magnum',
+    image: 'gear/sentineltrg.jpg',
+    detail:
+      'The Sentinel TRG is the other way to own a mile in .338 Lapua Magnum. Same chambering as the Vanguard, different personality: slightly lighter, a smoother 2.2-second bolt stroke, and stock geometry built for long waits in bad weather. Precision sits near 0.3 MOA mechanical — a hair behind the Vanguard’s best days, but the hold often feels quieter once the bipod is set. You are not buying new ballistics; you are buying feel, balance, and a rifle that prefers patience over haste at the far end of the course.',
+    notes: [
+      'Same .338 LM ammo pool as the Vanguard once owned.',
+      'Slightly lighter and quicker to cycle than LR338 — still a magnum recovery.',
+      'Deep rail for mile work; bring glass and a real wind call.',
+    ],
+  },
   am50: {
     kind: 'rifle',
     role: 'Anti-materiel bolt gun · .50 BMG',
     image: 'gear/am50.jpg',
     detail:
-      'The Hadron AM50 is an anti-materiel rifle first and a precision tool second. Thirteen and a half kilograms of steel and composite, a 29-inch barrel, and a slow 1:15 twist for heavy .50 projectiles. Wind deflection shrinks because the bullet is a freight train, but recoil, blast, and cycle time grow with it. Transonic distance is measured in kilometres, not hundreds of metres. It is the wrong answer for a tight timed plate rack and the right answer when the problem is simply “too far, too hard, still standing.”',
+      'The Hadron AM50 is an anti-materiel rifle first and a precision tool second. Thirteen and a half kilograms of steel and composite, a 29-inch barrel, and a slow 1:15 twist for heavy .50 projectiles. A 20 mil canted rail is built in so extreme long-range dope still fits under deep glass. Wind deflection shrinks because the bullet is a freight train, but recoil, blast, and cycle time grow with it. Transonic distance is measured in kilometres, not hundreds of metres. It is the wrong answer for a tight timed plate rack and the right answer when the problem is simply “too far, too hard, still standing.”',
     notes: [
       'Extreme mass and recoil — expect long recovery and loud signature without a can.',
       'Slow twist suited to heavy match and AP projectiles, not light hunting bullets.',
-      '14.5 mil rail for deep elevation; bring glass that can use it.',
+      '20 mil canted rail stacks with optic travel (usable elev = glass + rail).',
     ],
   },
 
@@ -158,6 +218,18 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
       '35× turns mirage into readable wind layers when glass is clean.',
       '32 MIL elevation for .338 / .50 class trajectories.',
       'Narrow FOV at high power — find the target at 7–12×, then zoom for the shot.',
+    ],
+  },
+  'opt-horizon': {
+    kind: 'optic',
+    role: 'Competition ELR FFP · 8–80×56 · MIL',
+    image: 'gear/opt-horizon.jpg',
+    detail:
+      'The Horizon 8–80×56 is purpose-built for extreme long range: sixty mils of internal elevation, eighty power so a 1.5 m plate fills the glass, and a first-focal-plane tree reticle that stays true while you zoom. Stacked on the Hadron’s canted rail you get ~80 mils of usable dial — enough for 3500 m .50 dope. Field of view at 80× is a tunnel — find the target at 10–15×, then zoom for the hold.',
+    notes: [
+      '60 MIL glass + AM50 20 MIL rail ≈ 80 MIL usable — covers Horizon stage dials.',
+      '80× is for mirage and group analysis, not for searching — start low.',
+      'Pairs with the Hadron AM50 and a ballistic solver that knows latitude.',
     ],
   },
 
