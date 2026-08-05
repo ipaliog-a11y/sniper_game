@@ -261,7 +261,7 @@ export const en: Dict = {
   'brief.traj_yes': 'trajectory plotter fitted — side-view of each round',
   'brief.traj_no': 'no plotter — path only as a brief glass tracer',
   'brief.moa_cone': '{moa} MOA cone',
-  'brief.mil_travel': '{mils} MIL travel',
+  'brief.mil_travel': '{mils} MIL usable elev',
   'brief.transonic_warn':
     'This load goes transonic at {range} and the far targets are past it. Expect the groups to open up.',
 
@@ -571,7 +571,7 @@ export const en: Dict = {
   'panel.turrets': 'TURRETS',
   'panel.clicks': '{n} clicks',
   'panel.zero_btn': '0',
-  'panel.elevation_travel': 'ELEVATION  ·  {mils} MIL of travel',
+  'panel.elevation_travel': 'ELEVATION  ·  {mils} MIL usable ({glass} glass + {rail} rail)',
   'panel.windage': 'WINDAGE',
   'panel.about_range': 'that is about {range} on the card',
   'panel.tutorial_dial_tip':
@@ -604,7 +604,7 @@ export const en: Dict = {
   'panel.dial_it': 'DIAL IT',
   'panel.not_enough_elev': 'NOT ENOUGH ELEVATION',
   'panel.out_of_travel':
-    'The scope has run out of travel. Hold the correction on the reticle instead, or fit glass with more of it.',
+    'Need {need} MIL of elevation; usable dial is {have} MIL (glass + canted rail). Hold the rest on the reticle, zero farther, or fit Horizon glass on the AM50.',
 
   // --- panels: trajectory ---
   'panel.traj_title': 'TRAJECTORY',

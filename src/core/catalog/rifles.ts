@@ -203,10 +203,12 @@ export const RIFLES: Rifle[] = [
     massKg: 13.5,
     precisionMoa: 0.4,
     cycleSeconds: 3.4,
-    railMils: 14.5,
+    // ~70 MOA canted rail — ELR anti-materiel standard so deep dope still dials.
+    railMils: 20,
     sightHeightM: 0.075,
     cost: 22000,
-    blurb: 'Anti-materiel rifle. It does not care about the wind and the wind does not care about you.',
+    blurb:
+      'Anti-materiel rifle with a deep canted rail. It does not care about the wind and the wind does not care about you.',
   },
 ];
 

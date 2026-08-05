@@ -32,13 +32,30 @@ export function initialScope(loadout: ResolvedLoadout): ScopeState {
 export const clicksToRad = (optic: Optic, clicks: number) => clicks * optic.clickRad;
 export const radToClicks = (optic: Optic, rad: number) => rad / optic.clickRad;
 
-export const maxElevationClicks = (optic: Optic) =>
-  Math.round((optic.elevationTravelMils * MIL) / optic.clickRad);
+/**
+ * Usable elevation above mechanical zero: optic turret travel plus the rifle’s
+ * canted rail (MOA base). Real ELR stacks a 40–60 MOA base under deep glass so
+ * two-mile dope still fits in the dials.
+ */
+export const usableElevationMils = (
+  optic: Optic,
+  rifle: { railMils: number } = { railMils: 0 },
+): number => optic.elevationTravelMils + Math.max(0, rifle.railMils);
+
+export const maxElevationClicks = (
+  optic: Optic,
+  rifle: { railMils: number } = { railMils: 0 },
+) => Math.round((usableElevationMils(optic, rifle) * MIL) / optic.clickRad);
+
 export const maxWindageClicks = (optic: Optic) =>
   Math.round((optic.windageTravelMils * MIL) / optic.clickRad);
 
-export function clampScope(optic: Optic, scope: ScopeState): ScopeState {
-  const e = maxElevationClicks(optic);
+export function clampScope(
+  optic: Optic,
+  scope: ScopeState,
+  rifle: { railMils: number } = { railMils: 0 },
+): ScopeState {
+  const e = maxElevationClicks(optic, rifle);
   const w = maxWindageClicks(optic);
   return {
     ...scope,

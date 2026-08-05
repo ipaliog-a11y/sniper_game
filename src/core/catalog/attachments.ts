@@ -193,8 +193,9 @@ export const OPTICS: Optic[] = [
     magMax: 80,
     turretUnit: 'MIL',
     clickRad: MIL_CLICK,
-    elevationTravelMils: 48,
-    windageTravelMils: 18,
+    // Deep internal travel; stack with an ELR canted rail for 3+ km dials.
+    elevationTravelMils: 60,
+    windageTravelMils: 20,
     reticle: 'tree',
     ffp: true,
     trueAtMag: 80,
@@ -203,7 +204,7 @@ export const OPTICS: Optic[] = [
     massKg: 1.55,
     cost: 28000,
     blurb:
-      'Competition ELR glass: eighty power and 48 mils of elevation. Find the plate at 12×, then zoom until the mirage is a wind gauge at two miles.',
+      'Competition ELR glass: eighty power and 60 mils of elevation. Pair with a canted rail for two-mile-plus dials; find the plate low, then zoom for the hold.',
   },
 ];
 

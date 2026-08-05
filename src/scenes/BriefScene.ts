@@ -291,7 +291,11 @@ export class BriefScene implements Scene {
       ],
       [
         catalogName(loadout.optic.id, loadout.optic.name).toUpperCase(),
-        t('brief.mil_travel', { mils: loadout.optic.elevationTravelMils }),
+        t('brief.mil_travel', {
+          mils: (
+            loadout.optic.elevationTravelMils + loadout.rifle.railMils
+          ).toFixed(1),
+        }),
       ],
       [
         t('brief.gear'),

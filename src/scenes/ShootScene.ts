@@ -1,6 +1,6 @@
 import { t } from '../core/i18n';
 import { targetInclination, targetMils } from '../core/range';
-import { fieldOfView, reticleScale } from '../core/scope';
+import { clampScope, fieldOfView, reticleScale } from '../core/scope';
 import {
   type Session,
   type TargetRuntime,
@@ -1029,6 +1029,11 @@ export class ShootScene implements Scene {
         solutionPanel(ctx, body, panelCtx, aimed?.target ?? null, (elev, wind) => {
           session.scope.elevationClicks = elev;
           session.scope.windageClicks = wind;
+          session.scope = clampScope(
+            session.loadout.optic,
+            session.scope,
+            session.loadout.rifle,
+          );
           audio.click();
           app.toast(t('shoot.dialled'));
           this.overlay = 'none';

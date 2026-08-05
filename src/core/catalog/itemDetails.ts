@@ -151,11 +151,11 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
     role: 'Anti-materiel bolt gun · .50 BMG',
     image: 'gear/am50.jpg',
     detail:
-      'The Hadron AM50 is an anti-materiel rifle first and a precision tool second. Thirteen and a half kilograms of steel and composite, a 29-inch barrel, and a slow 1:15 twist for heavy .50 projectiles. Wind deflection shrinks because the bullet is a freight train, but recoil, blast, and cycle time grow with it. Transonic distance is measured in kilometres, not hundreds of metres. It is the wrong answer for a tight timed plate rack and the right answer when the problem is simply “too far, too hard, still standing.”',
+      'The Hadron AM50 is an anti-materiel rifle first and a precision tool second. Thirteen and a half kilograms of steel and composite, a 29-inch barrel, and a slow 1:15 twist for heavy .50 projectiles. A 20 mil canted rail is built in so extreme long-range dope still fits under deep glass. Wind deflection shrinks because the bullet is a freight train, but recoil, blast, and cycle time grow with it. Transonic distance is measured in kilometres, not hundreds of metres. It is the wrong answer for a tight timed plate rack and the right answer when the problem is simply “too far, too hard, still standing.”',
     notes: [
       'Extreme mass and recoil — expect long recovery and loud signature without a can.',
       'Slow twist suited to heavy match and AP projectiles, not light hunting bullets.',
-      '14.5 mil rail for deep elevation; bring glass that can use it.',
+      '20 mil canted rail stacks with optic travel (usable elev = glass + rail).',
     ],
   },
 
@@ -225,11 +225,11 @@ export const ITEM_DETAILS: Record<string, ItemDetail> = {
     role: 'Competition ELR FFP · 8–80×56 · MIL',
     image: 'gear/opt-horizon.jpg',
     detail:
-      'The Horizon 8–80×56 is purpose-built for extreme long range: forty-eight mils of elevation so two-mile dope stays in the turrets, eighty power so a 1.5 m plate fills the glass, and a first-focal-plane tree reticle that stays true while you zoom. It is heavy and expensive. Field of view at 80× is a tunnel — find the target at 10–15×, then dial magnification for the hold. Without a canted rail mindset (or this travel), magnum drop past 2500 m runs out of glass.',
+      'The Horizon 8–80×56 is purpose-built for extreme long range: sixty mils of internal elevation, eighty power so a 1.5 m plate fills the glass, and a first-focal-plane tree reticle that stays true while you zoom. Stacked on the Hadron’s canted rail you get ~80 mils of usable dial — enough for 3500 m .50 dope. Field of view at 80× is a tunnel — find the target at 10–15×, then zoom for the hold.',
     notes: [
-      '48 MIL elevation covers .50 BMG two-mile cards without running out of turret.',
+      '60 MIL glass + AM50 20 MIL rail ≈ 80 MIL usable — covers Horizon stage dials.',
       '80× is for mirage and group analysis, not for searching — start low.',
-      'Pairs with the Hadron AM50 / Vanguard LR338 and a ballistic solver that knows latitude.',
+      'Pairs with the Hadron AM50 and a ballistic solver that knows latitude.',
     ],
   },
 

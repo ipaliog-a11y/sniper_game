@@ -390,7 +390,18 @@ function drawTurretsShot(
     ctx.fillStyle = 'rgba(232,163,61,0.10)';
     ctx.fillRect(inner.x, y - 4 * g, inner.w, 52 * g);
   }
-  text(ctx, t('panel.elevation_travel', { mils: optic.elevationTravelMils }), inner.x, y, T.micro * g, C.textFaint);
+  text(
+    ctx,
+    t('panel.elevation_travel', {
+      mils: (optic.elevationTravelMils + session.loadout.rifle.railMils).toFixed(1),
+      glass: optic.elevationTravelMils,
+      rail: session.loadout.rifle.railMils,
+    }),
+    inner.x,
+    y,
+    T.micro * g,
+    C.textFaint,
+  );
   y += 14 * g;
   text(ctx, formatDial(optic, session.scope.elevationClicks), inner.x, y, T.head * g, C.text, 'left', 'bold');
   // Fake buttons.

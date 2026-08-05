@@ -260,7 +260,7 @@ export const el: Dict = {
   'brief.traj_yes': 'καταγραφέας τροχιάς — πλευρική όψη κάθε βολής',
   'brief.traj_no': 'χωρίς plotter — μόνο σύντομο ίχνος στο γυαλί',
   'brief.moa_cone': 'κώνος {moa} MOA',
-  'brief.mil_travel': '{mils} MIL διαδρομή',
+  'brief.mil_travel': '{mils} MIL διαθέσιμο ύψος',
   'brief.transonic_warn':
     'Αυτό το βλήμα γίνεται διαηχητικό στα {range} και οι μακρινοί στόχοι είναι πέρα από εκεί. Περίμενε να ανοίξουν οι ομάδες.',
 
@@ -572,7 +572,7 @@ export const el: Dict = {
   'panel.turrets': 'ΠΥΡΓΙΣΚΟΙ',
   'panel.clicks': '{n} κλικ',
   'panel.zero_btn': '0',
-  'panel.elevation_travel': 'ΥΨΟΣ  ·  {mils} MIL διαδρομή',
+  'panel.elevation_travel': 'ΥΨΟΣ  ·  {mils} MIL διαθέσιμα ({glass} γυαλί + {rail} ράγα)',
   'panel.windage': 'ΠΑΡΕΚΚΛΙΣΗ',
   'panel.about_range': 'αυτό είναι περίπου {range} στην κάρτα',
   'panel.tutorial_dial_tip':
@@ -606,7 +606,7 @@ export const el: Dict = {
   'panel.dial_it': 'ΡΥΘΜΙΣΕ',
   'panel.not_enough_elev': 'ΑΝΕΠΑΡΚΕΣ ΥΨΟΣ',
   'panel.out_of_travel':
-    'Το σκοπευτικό τελείωσε τη διαδρομή. Κράτα τη διόρθωση στα σταυρωνικά, ή βάλε γυαλί με περισσότερη.',
+    'Χρειάζεσαι {need} MIL ύψος· διαθέσιμα {have} MIL (γυαλί + ράγα). Κράτα το υπόλοιπο στα σταυρωνικά, μηδένισε πιο μακριά, ή βάλε Horizon στο AM50.',
 
   // --- panels: trajectory ---
   'panel.traj_title': 'ΤΡΟΧΙΑ',

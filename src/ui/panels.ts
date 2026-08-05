@@ -19,6 +19,7 @@ import {
   maxElevationClicks,
   maxWindageClicks,
   radToClicks,
+  usableElevationMils,
 } from '../core/scope';
 import type { ShotResult } from '../core/shot';
 import {
@@ -427,11 +428,17 @@ export function turretPanel(
     y += rowH + 8 * g;
   };
 
-  const maxE = maxElevationClicks(optic);
+  const rifle = session.loadout.rifle;
+  const usableElev = usableElevationMils(optic, rifle);
+  const maxE = maxElevationClicks(optic, rifle);
   const maxW = maxWindageClicks(optic);
   dialRow(
     'elev',
-    t('panel.elevation_travel', { mils: optic.elevationTravelMils }),
+    t('panel.elevation_travel', {
+      mils: usableElev.toFixed(1),
+      glass: optic.elevationTravelMils,
+      rail: rifle.railMils,
+    }),
     session.scope.elevationClicks,
     maxE,
     -Math.round(maxE * 0.25),
@@ -515,7 +522,7 @@ export function turretPanel(
     changed = true;
   }
 
-  session.scope = clampScope(optic, session.scope);
+  session.scope = clampScope(optic, session.scope, session.loadout.rifle);
   ctx.restore();
   return { changed };
 }
@@ -692,7 +699,9 @@ export function solutionPanel(
     y += 30 * g;
   }
 
-  const overTravel = Math.abs(elevClicks) > maxElevationClicks(optic);
+  const maxE = maxElevationClicks(optic, session.loadout.rifle);
+  const usable = usableElevationMils(optic, session.loadout.rifle);
+  const overTravel = Math.abs(elevClicks) > maxE;
   const dialBtn: Rect = { x: r.x, y, w: r.w, h: 42 * g };
   if (
     ui.button(dialBtn, overTravel ? t('panel.not_enough_elev') : t('panel.dial_it'), {
@@ -704,7 +713,18 @@ export function solutionPanel(
   }
   if (overTravel) {
     y += 50 * g;
-    paragraph(ctx, t('panel.out_of_travel'), r.x, y, r.w, T.small * g, C.red);
+    paragraph(
+      ctx,
+      t('panel.out_of_travel', {
+        need: elevMil.toFixed(1),
+        have: usable.toFixed(1),
+      }),
+      r.x,
+      y,
+      r.w,
+      T.small * g,
+      C.red,
+    );
   }
 }
 
