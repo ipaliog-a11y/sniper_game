@@ -7,15 +7,21 @@
 export const C = {
   bg: '#0d1210',
   bgDeep: '#080b0a',
+  /** Slightly cooler void used outside the safe column on wide screens. */
+  gutter: '#060807',
   panel: '#151d19',
   panelHi: '#1d2823',
+  /** Soft top edge of raised panels. */
+  panelLift: '#24332c',
   edge: '#2b3a33',
   edgeSoft: '#22302a',
+  edgeBright: '#3a4d44',
   text: '#dbe5de',
   textDim: '#8b998f',
   textFaint: '#5d6b62',
   amber: '#e8a33d',
   amberDim: '#8a6425',
+  amberGlow: 'rgba(232,163,61,0.22)',
   green: '#7fc98a',
   red: '#e0705f',
   blue: '#79b8d1',
