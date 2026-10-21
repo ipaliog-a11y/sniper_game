@@ -314,23 +314,64 @@ function drawScatter(
   const place = (d: number, azOffset: number): { x: number; y: number } =>
     view.project(view.aimAz + azOffset, Math.atan2(-firingHeightM, d));
 
-  // Broad patches: very low alpha, several metres across, purely to break up a
-  // flat wash of colour.
-  const patchRings = Math.round(16 * biome.density.patch);
+  /**
+   * How hard a patch of flat ground is foreshortened at this distance.
+   *
+   * You are looking along the ground, not down at it, so a round patch of
+   * lighter going is seen almost edge-on and lands on the glass as a thin
+   * streak. For small angles that ratio is just the depression angle, which is
+   * the firing height over the distance. A fixed squash instead drew every
+   * patch as a fat soft ellipse, which is why the ground read as smudges on
+   * the lens rather than as ground.
+   */
+  const squashAt = (d: number) => clamp(firingHeightM / Math.max(1, d), 0.03, 0.7);
+
+  // Broad patches: very low alpha, a few metres across, purely to break up a
+  // flat wash of colour. Kept small and numerous — a handful of nine-metre
+  // blobs is a stain, a scatter of two-metre ones is terrain.
+  const patchRings = Math.round(18 * biome.density.patch);
   for (let ring = 0; ring < patchRings; ring++) {
     const d = near * Math.pow(far / near, ring / Math.max(1, patchRings - 1));
     const scale = view.pxPerRad / d;
-    const perRing = Math.round(10 * biome.density.patch);
+    const squash = squashAt(d);
+    const perRing = Math.round(16 * biome.density.patch);
     for (let i = 0; i < perRing; i++) {
       const r1 = hash(ring * 977, i, seed ^ 0x2f);
       const r2 = hash(i * 613, ring, seed ^ 0xb7);
       const p = place(d * (1 + (r2 - 0.5) * 0.18), (r1 - 0.5) * halfSpan * 2.1);
       if (Math.hypot(p.x - view.cx, p.y - view.cy) > view.radius * 1.1) continue;
-      const sizeM = 3 + r1 * 9;
-      ctx.globalAlpha = 0.06 * lightMix;
+      const sizeM = 1.4 + r1 * 4.2;
+      ctx.globalAlpha = 0.08 * lightMix;
       ctx.fillStyle = css(r2 > 0.5 ? pale : dark);
       ctx.beginPath();
-      ctx.ellipse(p.x, p.y, sizeM * scale, sizeM * scale * 0.3, 0, 0, Math.PI * 2);
+      ctx.ellipse(p.x, p.y, sizeM * scale, Math.max(0.5, sizeM * scale * squash), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Mid detail: clumps of going under a metre across. This is the layer that
+  // was missing — without something between the broad patches and the grit,
+  // the eye has no scale to read the ground at and the whole field flattens.
+  const clumpRings = Math.round(26 * biome.density.patch);
+  for (let ring = 0; ring < clumpRings; ring++) {
+    const d = near * Math.pow(far / near, ring / Math.max(1, clumpRings - 1));
+    const scale = view.pxPerRad / d;
+    const squash = squashAt(d);
+    const t = clamp(Math.log(d / 8) / Math.log(MAX_DRAW_RANGE / 8), 0, 1);
+    const perRing = Math.round(26 * biome.density.patch);
+    for (let i = 0; i < perRing; i++) {
+      const r1 = hash(ring * 7919, i * 13, seed ^ 0x3d);
+      const r2 = hash(i * 1049, ring * 29, seed ^ 0xc5);
+      const r3 = hash(i * 61, ring * 7, seed ^ 0x17);
+      const p = place(d * (1 + (r2 - 0.5) * 0.1), (r1 - 0.5) * halfSpan * 2.1);
+      if (Math.hypot(p.x - view.cx, p.y - view.cy) > view.radius) continue;
+      const sizeM = 0.28 + r3 * 0.95;
+      const w = sizeM * scale;
+      if (w < 0.4) continue;
+      ctx.globalAlpha = clamp((1 - t) * 0.22 + 0.05, 0.05, 0.26) * lightMix;
+      ctx.fillStyle = css(r3 > 0.55 ? pale : dark);
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, w, Math.max(0.4, w * squash * 1.6), 0, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -345,6 +386,7 @@ function drawScatter(
     const t = clamp(Math.log(d / 8) / Math.log(MAX_DRAW_RANGE / 8), 0, 1);
     const fade = clamp((1 - t) * 0.7 + 0.05, 0.05, 0.55) * lightMix;
     const ringKey = (ring * 2654435761) >>> 0;
+    const squash = squashAt(d);
     const perRing = Math.round(70 * biome.density.speck);
 
     for (let i = 0; i < perRing; i++) {
@@ -361,7 +403,16 @@ function drawScatter(
       ctx.globalAlpha = fade * (bush ? 0.75 : 0.5);
       ctx.fillStyle = css(bush ? scrub : r3 > 0.6 ? pale : dark);
       ctx.beginPath();
-      ctx.ellipse(p.x, p.y, w * (bush ? 1 : 1.6), w * (bush ? 0.85 : 0.55), 0, 0, Math.PI * 2);
+      // Grit lies flat and foreshortens; a bush stands up and barely does.
+      ctx.ellipse(
+        p.x,
+        p.y,
+        w * (bush ? 1 : 1.6),
+        bush ? w * 0.85 : Math.max(0.4, w * 1.6 * squash * 1.8),
+        0,
+        0,
+        Math.PI * 2,
+      );
       ctx.fill();
     }
   }
@@ -1242,6 +1293,22 @@ function drawTarget(
   pathPlate();
   ctx.fillStyle = css(body);
   ctx.fill();
+
+  /**
+   * A hairline of the plate's own shade around the edge.
+   *
+   * Past a kilometre a gong is three or four pixels of a soft antialiased
+   * ellipse, and the blend with the ground eats most of its contrast — so a
+   * plate that is genuinely there becomes a plate you cannot find. The line
+   * adds no size and no brightness, it just stops the silhouette dissolving
+   * into the dirt behind it.
+   */
+  if (halfW <= 2.5) {
+    pathPlate();
+    ctx.strokeStyle = css(shade, 0.75);
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
 
   // Edge bevel: dark outer lip + light inner ring so the plate has thickness.
   if (halfW > 2.5) {
