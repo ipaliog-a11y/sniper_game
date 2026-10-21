@@ -331,8 +331,25 @@ export const STAGES: Stage[] = [
     biomeId: 'desert',
     firingHeightM: 26,
     seed: 31337,
-    rounds: 10,
-    timeLimitS: 260,
+    /**
+     * Sized against measured demand rather than guessed. See tools/headroom.mjs.
+     *
+     * On the starter load every plate past 850 m here arrives transonic, where
+     * the cone opens by up to two and a half times. The 50 cm gong at 1080 m
+     * was arriving at Mach 0.93 and cost nearly nine rounds on its own; the
+     * 16 cm head at 640 m cost another nine for the opposite reason, being far
+     * too small for the rifle's group at that distance. Between them the stage
+     * needed about twenty-eight rounds against a budget of ten, which means it
+     * could not be cleared at all — only part-scored.
+     *
+     * The extreme-range stages had their budgets raised when the transonic
+     * model went in. This one sits in the same regime and was missed. The far
+     * gong now comes in to where the load is still honest and grows a little,
+     * the pinhead becomes a small gong closer in, and the budget matches what
+     * the stage costs with something over for a shooter who is not a solver.
+     */
+    rounds: 18,
+    timeLimitS: 330,
     parPerTargetS: 32,
     ordered: false,
     reward: 3200,
@@ -340,9 +357,9 @@ export const STAGES: Stage[] = [
     targets: [
       silhouette('a1', 720, -11, { heightM: 40 }),
       gong('a2', 850, -5, 0.5, { heightM: 55 }),
-      silhouette('a3', 960, 1.5, { heightM: 70 }),
-      gong('a4', 1080, 7, 0.5, { heightM: 84 }),
-      head('a5', 640, 12, { heightM: 32 }),
+      silhouette('a3', 930, 1.5, { heightM: 70 }),
+      gong('a4', 980, 7, 0.6, { heightM: 84 }),
+      gong('a5', 560, 12, 0.35, { heightM: 32 }),
     ],
   },
   {
