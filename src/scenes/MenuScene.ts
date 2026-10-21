@@ -2,6 +2,7 @@ import { catalogName } from '../core/catalogLabels';
 import { t } from '../core/i18n';
 import { resolveLoadout } from '../core/loadout';
 import { STAGES } from '../core/range';
+import { activeSlot } from '../core/slots';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
 import {
@@ -15,11 +16,13 @@ import {
   rule,
   text,
 } from '../ui/gfx';
-import { C, T } from '../ui/theme';
+import { clamp } from '../core/units';
+import { C, Scroll, T } from '../ui/ui';
 import { ArmouryScene } from './ArmouryScene';
 import { CareerScene } from './CareerScene';
 import { FreeFieldScene } from './FreeFieldScene';
 import { GlossaryScene } from './GlossaryScene';
+import { SaveSlotsScene } from './SaveSlotsScene';
 import { SettingsScene } from './SettingsScene';
 import { StageSelectScene } from './StageSelectScene';
 
@@ -27,6 +30,7 @@ import { StageSelectScene } from './StageSelectScene';
 export class MenuScene implements Scene {
   readonly name = 'menu';
   private t0 = 0;
+  private scroll = new Scroll('menulist');
 
   update(dt: number): void {
     this.t0 += dt;
@@ -67,7 +71,11 @@ export class MenuScene implements Scene {
     ctx.stroke();
     ctx.restore();
 
-    const titleY = safe.y + app.height * 0.16;
+    // A landscape phone has barely four hundred pixels of height, and the
+    // wordmark plus the strapline card were taking well over half of it —
+    // leaving the menu itself less room than it needs for its own entries.
+    const tight = app.height < 520;
+    const titleY = safe.y + app.height * (tight ? 0.11 : 0.16);
     // Wordmark
     text(ctx, t('menu.title'), app.width / 2, titleY, T.huge * g * 1.12, C.text, 'center', 'bold');
     // Amber accent underline under the title
@@ -119,10 +127,44 @@ export class MenuScene implements Scene {
 
     const w = Math.min(safe.w, 340 * g);
     const x = app.width / 2 - w / 2;
-    // Slightly tighter rows so CAREER fits above the footer on short phones.
-    let y = app.height * 0.48;
-    const h = 42 * g;
-    const gap = 8 * g;
+    const gap = (tight ? 6 : 8) * g;
+    // Starts just under the progress meter rather than at a fixed fraction of
+    // the height, which left a dead band on a short screen and none to spare.
+    const listTop = Math.max(progressY + 26 * g, app.height * (tight ? 0.3 : 0.48));
+
+    // The footer's height is known before the list is laid out, because the
+    // list needs to know how much room is actually left for it. On a short
+    // screen it is dropped entirely: the menu is the point of the menu.
+    const footerTextH = paragraphHeight(ctx, t('menu.footer'), w - 24 * g, T.small * g);
+    const footerH = 36 * g + footerTextH + 4 * g;
+    const footerY = tight ? app.height - safe.y : app.height - safe.y - footerH - 12 * g;
+
+    /**
+     * Rows shrink to fit, and scroll only when even the tightest will not.
+     *
+     * A fixed row height meant the menu simply ran off the bottom of a
+     * landscape phone — SETTINGS and EXIT were below the fold with no way to
+     * reach them, and every entry added made it worse. Eight entries at the
+     * full height need more than four hundred units; a short screen has half
+     * that.
+     */
+    const count = 8;
+    const band = Math.max(80 * g, footerY - 10 * g - listTop);
+    const h = clamp((band - gap * (count - 1)) / count, 32 * g, 42 * g);
+    const contentH = count * h + gap * (count - 1);
+    const scrolls = contentH > band + 1;
+    const listView: Rect = { x: safe.x, y: listTop, w: safe.w, h: band };
+    if (scrolls) {
+      this.scroll.update(ui.input, listView, contentH + 6 * g, 1 / 60);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(listView.x, listView.y, listView.w, listView.h);
+      ctx.clip();
+    } else {
+      this.scroll.offset = 0;
+    }
+    const blocked = scrolls && this.scroll.isDragging(ui.input);
+    let y = listTop - this.scroll.offset;
 
     const item = (label: string, sub: string, accent = false): boolean => {
       const r: Rect = { x, y, w, h };
@@ -157,7 +199,7 @@ export class MenuScene implements Scene {
         'right',
       );
       y += h + gap;
-      return ui.input.takeTap(r.x, r.y, r.w, r.h);
+      return !blocked && ui.input.takeTap(r.x, r.y, r.w, r.h);
     };
 
     // Graded stages only, matching the cleared count above it. Both numbers
@@ -193,6 +235,11 @@ export class MenuScene implements Scene {
       audio.tap();
       app.set(new GlossaryScene());
     }
+    if (item(t('menu.slots'), t('menu.slots_sub', { n: activeSlot() + 1 }))) {
+      audio.unlock();
+      audio.tap();
+      app.set(new SaveSlotsScene());
+    }
     if (
       item(
         t('menu.settings'),
@@ -210,12 +257,12 @@ export class MenuScene implements Scene {
       app.quit(t('menu.quit_body'));
     }
 
+    if (scrolls) ctx.restore();
+
     // Sized to the strapline it holds: it wraps to one line on a laptop and two
     // on a phone, and a fixed 56 units cropped the second line's descenders.
-    const footerTextH = paragraphHeight(ctx, t('menu.footer'), w - 24 * g, T.small * g);
-    const footerH = 36 * g + footerTextH + 4 * g;
-    const footer: Rect = { x, y: app.height - safe.y - footerH - 12 * g, w, h: footerH };
-    if (footer.y > y) {
+    const footer: Rect = { x, y: footerY, w, h: footerH };
+    if (!tight && !scrolls && footer.y > y) {
       fillPanel(ctx, footer, 8, 'rgba(21,29,25,0.55)', C.edgeSoft);
       cornerBrackets(ctx, footer, 10 * g, C.edge, 5 * g);
       rule(ctx, footer.x + 12 * g, footer.y + 22 * g, footer.w - 24 * g);
