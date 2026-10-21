@@ -29,12 +29,24 @@ import { gradeFor, scoreTarget } from '../src/core/scoring.ts';
 import { buildDope, fieldOfView, interpolateDope, reticleScale } from '../src/core/scope.ts';
 import { createSession, fireRound, targetUnderAim, tick } from '../src/core/session.ts';
 import {
+  SLOT_COUNT,
+  activeSlot,
+  clearSlot,
+  copySlot,
+  readSlot,
+  setActiveSlot,
+  slotKey,
+  slotSummaries,
+} from '../src/core/slots.ts';
+import {
   SAVE_FORMAT,
   bankRun,
   defaultProfile,
   hydrateProfile,
+  loadProfile,
   parseSaveJson,
   saveFilename,
+  saveProfile,
   serializeSave,
 } from '../src/core/store.ts';
 import {
@@ -578,6 +590,69 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   );
   check('and the penalty stays bounded', transonicSpread(0.5, 1.0) <= 3.5);
   check('a very stable bullet still pays something', transonicSpread(0.9, 2.5) > 1.5);
+}
+
+// --- save slots ---------------------------------------------------------
+
+{
+  // A localStorage that behaves like the real one, including the throw a
+  // private-mode browser hands you when quota is off.
+  const backing = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => (backing.has(k) ? backing.get(k) : null),
+    setItem: (k, v) => void backing.set(k, String(v)),
+    removeItem: (k) => void backing.delete(k),
+  };
+
+  check('slots start on the first one', activeSlot() === 0);
+  check('an untouched slot reads empty', readSlot(1) === null);
+
+  // The career every existing player already has lives under the original key,
+  // which is slot one. Writing it there must be what slot one then reads.
+  const legacy = defaultProfile();
+  legacy.credits = 4321;
+  backing.set('coldbore.profile.v1', JSON.stringify(legacy));
+  check('slot one is the original storage key', slotKey(0) === 'coldbore.profile.v1');
+  check('an existing career is already in slot one', readSlot(0)?.credits === 4321);
+  check('loadProfile finds it without a migration step', loadProfile().credits === 4321);
+
+  // Switching slots must not leak one career into another.
+  const second = defaultProfile();
+  second.credits = 99;
+  setActiveSlot(1);
+  saveProfile(second);
+  check('the second slot saves to its own key', readSlot(1)?.credits === 99);
+  check('the first slot is untouched by it', readSlot(0)?.credits === 4321);
+  check('loadProfile follows the active slot', loadProfile().credits === 99);
+
+  setActiveSlot(0);
+  check('and follows it back', loadProfile().credits === 4321);
+
+  // Copying is a real copy, not a reference.
+  check('copy reports success', copySlot(0, 2) === true);
+  check('the copy has the same career', readSlot(2)?.credits === 4321);
+  check('copying onto itself is refused', copySlot(1, 1) === false);
+  const empty = SLOT_COUNT;
+  check('there are three slots', empty === 3);
+
+  clearSlot(2);
+  check('a wiped slot reads empty again', readSlot(2) === null);
+  check('wiping one leaves the others alone', readSlot(0)?.credits === 4321);
+
+  const graded = STAGES.filter((s) => s.id !== 'tutorial').map((s) => s.id);
+  const summaries = slotSummaries(graded);
+  check('one summary per slot', summaries.length === 3);
+  check('the active slot is marked', summaries[0].active === true);
+  check('an empty slot says so', summaries[2].empty === true);
+  check('a used slot carries its credits', summaries[1].credits === 99);
+
+  // An out-of-range index must not write somewhere unexpected.
+  setActiveSlot(7);
+  check('an impossible slot index is clamped', activeSlot() === SLOT_COUNT - 1);
+
+  delete globalThis.localStorage;
+  check('with no storage at all, slot one is the answer', activeSlot() === 0);
+  check('and nothing blows up reading it', readSlot(0) === null);
 }
 
 // --- report -------------------------------------------------------------

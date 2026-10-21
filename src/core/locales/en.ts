@@ -14,6 +14,8 @@ export const en: Dict = {
   'menu.career_sub': 'stats · stage bests · history · achievements',
   'menu.glossary': 'GLOSSARY',
   'menu.glossary_sub': 'mils, DOPE, windage, grades — plain language',
+  'menu.slots': 'SAVES',
+  'menu.slots_sub': 'slot {n} of 3 · switch, copy or wipe a career',
   'menu.settings': 'SETTINGS',
   'menu.settings_imperial': 'yards, inches, Fahrenheit',
   'menu.settings_metric': 'metres, centimetres, Celsius',
@@ -22,6 +24,29 @@ export const en: Dict = {
   'menu.quit_body': 'Progress saved. You can close this tab.',
   'menu.how_it_works': 'HOW IT WORKS',
   'menu.footer': 'Drag to aim, hold your breath, break the shot. Everything else is arithmetic.',
+
+  // --- save slots ---
+  'slots.title': 'SAVES',
+  'slots.slot': 'SLOT {n}',
+  'slots.in_use': 'IN USE',
+  'slots.empty': 'empty — nothing shot here yet',
+  'slots.fresh': 'started · nothing shot yet · {credits} cr',
+  'slots.progress': '{cleared} of {total} cleared · {credits} cr',
+  'slots.saved': 'last saved {when}',
+  'slots.continue': 'CONTINUE',
+  'slots.open': 'OPEN',
+  'slots.start': 'START',
+  'slots.copy': 'COPY',
+  'slots.copy_here': 'COPY INTO SLOT {n}',
+  'slots.copy_over': 'REPLACE SLOT {n}',
+  'slots.copy_replace_confirm': 'REPLACE SLOT {n} FOR GOOD',
+  'slots.copied': 'Slot {from} copied into slot {to}.',
+  'slots.wipe': 'WIPE',
+  'slots.wipe_confirm': 'WIPE FOR GOOD',
+  'slots.wiped': 'Slot {n} wiped.',
+  'slots.opened': 'Slot {n} is now in use.',
+  'slots.note':
+    'Each slot is its own career: credits, kit, records and history. The slot in use is saved automatically before you switch away from it.',
 
   // --- free field ---
   'free_field.title': 'FREE FIELD',
@@ -54,6 +79,7 @@ export const en: Dict = {
   // --- common ---
   'common.menu': 'MENU',
   'common.back': 'BACK',
+  'common.cancel': 'CANCEL',
   'common.cr': '{n} cr',
 
   // --- settings ---

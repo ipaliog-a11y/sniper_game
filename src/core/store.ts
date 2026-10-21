@@ -221,16 +221,39 @@ export function hydrateProfile(parsed: unknown): Profile {
   return profile;
 }
 
+/**
+ * The profile in the slot the player is currently standing in.
+ *
+ * Slots live in their own module, which imports this one for hydration — so
+ * the lookup is late-bound through the key rather than through an import, and
+ * the two files do not have to import each other.
+ */
 export function loadProfile(): Profile {
   const s = storage();
   if (!s) return defaultProfile();
   try {
-    const raw = s.getItem(KEY);
+    const raw = s.getItem(activeKey(s));
     if (!raw) return defaultProfile();
     return hydrateProfile(JSON.parse(raw));
   } catch {
     return defaultProfile();
   }
+}
+
+/** Storage key of the active slot. Slot one is the original key; see slots.ts. */
+function activeKey(s: Storage): string {
+  try {
+    const raw = s.getItem('coldbore.slots.v1');
+    if (raw) {
+      const active = (JSON.parse(raw) as { active?: number }).active;
+      if (active === 1) return 'coldbore.slot.v1.2';
+      if (active === 2) return 'coldbore.slot.v1.3';
+    }
+  } catch {
+    // Unreadable slot file: slot one is the safe answer, because it is where
+    // every career that predates slots already lives.
+  }
+  return KEY;
 }
 
 function migrateCareer(raw: unknown): Career {
@@ -252,7 +275,7 @@ export function saveProfile(profile: Profile): void {
   const s = storage();
   if (!s) return;
   try {
-    s.setItem(KEY, JSON.stringify(profile));
+    s.setItem(activeKey(s), JSON.stringify(profile));
   } catch {
     // Out of quota, or the user has storage switched off. Play on regardless.
   }

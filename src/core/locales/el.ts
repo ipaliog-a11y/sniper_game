@@ -14,6 +14,8 @@ export const el: Dict = {
   'menu.career_sub': 'στατιστικά · ρεκόρ · ιστορικό · επιτεύγματα',
   'menu.glossary': 'ΓΛΩΣΣΑΡΙ',
   'menu.glossary_sub': 'mil, DOPE, παρεκκλίσεις, βαθμοί — με απλά λόγια',
+  'menu.slots': 'ΑΠΟΘΗΚΕΥΣΕΙΣ',
+  'menu.slots_sub': 'θέση {n} από 3 · αλλαγή, αντιγραφή ή σβήσιμο καριέρας',
   'menu.settings': 'ΡΥΘΜΙΣΕΙΣ',
   'menu.settings_imperial': 'γιάρδες, ίντσες, Φαρενάιτ',
   'menu.settings_metric': 'μέτρα, εκατοστά, Κελσίου',
@@ -23,6 +25,29 @@ export const el: Dict = {
   'menu.how_it_works': 'ΠΩΣ ΔΟΥΛΕΥΕΙ',
   'menu.footer':
     'Σύρε για σκόπευση, κράτα την αναπνοή, πάτα τη σκανδάλη. Όλα τα υπόλοιπα είναι αριθμητική.',
+
+  // --- save slots ---
+  'slots.title': 'ΑΠΟΘΗΚΕΥΣΕΙΣ',
+  'slots.slot': 'ΘΕΣΗ {n}',
+  'slots.in_use': 'ΣΕ ΧΡΗΣΗ',
+  'slots.empty': 'άδεια — δεν έχει ριχτεί τίποτα εδώ',
+  'slots.fresh': 'ξεκίνησε · καμία βολή ακόμη · {credits} cr',
+  'slots.progress': '{cleared} από {total} ολοκληρωμένα · {credits} cr',
+  'slots.saved': 'τελευταία αποθήκευση {when}',
+  'slots.continue': 'ΣΥΝΕΧΕΙΑ',
+  'slots.open': 'ΑΝΟΙΓΜΑ',
+  'slots.start': 'ΕΝΑΡΞΗ',
+  'slots.copy': 'ΑΝΤΙΓΡΑΦΗ',
+  'slots.copy_here': 'ΑΝΤΙΓΡΑΦΗ ΣΤΗ ΘΕΣΗ {n}',
+  'slots.copy_over': 'ΑΝΤΙΚΑΤΑΣΤΑΣΗ ΘΕΣΗΣ {n}',
+  'slots.copy_replace_confirm': 'ΟΡΙΣΤΙΚΗ ΑΝΤΙΚΑΤΑΣΤΑΣΗ ΘΕΣΗΣ {n}',
+  'slots.copied': 'Η θέση {from} αντιγράφηκε στη θέση {to}.',
+  'slots.wipe': 'ΣΒΗΣΙΜΟ',
+  'slots.wipe_confirm': 'ΟΡΙΣΤΙΚΟ ΣΒΗΣΙΜΟ',
+  'slots.wiped': 'Η θέση {n} σβήστηκε.',
+  'slots.opened': 'Η θέση {n} είναι τώρα σε χρήση.',
+  'slots.note':
+    'Κάθε θέση είναι ξεχωριστή καριέρα: credits, κιτ, ρεκόρ και ιστορικό. Η θέση σε χρήση αποθηκεύεται αυτόματα πριν αλλάξεις.',
 
   // --- free field ---
   'free_field.title': 'ΕΛΕΥΘΕΡΟ ΠΕΔΙΟ',
@@ -55,6 +80,7 @@ export const el: Dict = {
   // --- common ---
   'common.menu': 'ΜΕΝΟΥ',
   'common.back': 'ΠΙΣΩ',
+  'common.cancel': 'ΑΚΥΡΟ',
   'common.cr': '{n} cr',
 
   // --- settings ---
