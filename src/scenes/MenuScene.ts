@@ -91,6 +91,7 @@ export class MenuScene implements Scene {
 
     // Progress counts graded stages only — tutorial is practice, not a clear.
     const graded = STAGES.filter((s) => s.id !== 'tutorial');
+    const gradedCount = graded.length;
     const cleared = graded.filter((s) => profile.records[s.id]?.cleared).length;
     const progressY = titleY + 58 * g;
     text(
@@ -159,7 +160,10 @@ export class MenuScene implements Scene {
       return ui.input.takeTap(r.x, r.y, r.w, r.h);
     };
 
-    if (item(t('menu.course'), t('menu.course_sub', { count: STAGES.length }), true)) {
+    // Graded stages only, matching the cleared count above it. Both numbers
+    // were right before — one counted the tutorial and one did not — but
+    // "0 of 11 cleared" sitting over "12 stages" reads as an off-by-one.
+    if (item(t('menu.course'), t('menu.course_sub', { count: gradedCount }), true)) {
       audio.unlock();
       audio.tap();
       app.set(new StageSelectScene());
