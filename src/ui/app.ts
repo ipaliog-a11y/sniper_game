@@ -204,7 +204,7 @@ export class App {
     this.time += dt;
 
     this.swap();
-    this.ui.beginFrame(now);
+    this.ui.beginFrame(now, this.gauge);
 
     const { ctx } = this;
     drawShellBackground(ctx, this.width, this.height, this.safe);

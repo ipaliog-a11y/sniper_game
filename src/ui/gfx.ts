@@ -207,6 +207,47 @@ export function text(
   ctx.fillText(value, x, y);
 }
 
+/**
+ * Break a string into the lines it will actually occupy at this width.
+ *
+ * The single source of truth for wrapping. A panel that sizes itself from a
+ * guess at the line count and then draws with the real wrapper will eventually
+ * guess low and bury its own text, so anything that needs a height asks here
+ * rather than estimating from character counts.
+ */
+export function wrapText(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  maxWidth: number,
+  size: number,
+): string[] {
+  ctx.font = font(size);
+  const lines: string[] = [];
+  let line = '';
+  for (const word of value.split(' ')) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (ctx.measureText(candidate).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/** How tall `paragraph` will draw this string, without drawing it. */
+export function paragraphHeight(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  maxWidth: number,
+  size: number,
+  lineHeight = 1.45,
+): number {
+  return wrapText(ctx, value, maxWidth, size).length * size * lineHeight;
+}
+
 /** Wrap to a width and return how tall it ended up. */
 export function paragraph(
   ctx: CanvasRenderingContext2D,
@@ -218,24 +259,13 @@ export function paragraph(
   colour: string = C.textDim,
   lineHeight = 1.45,
 ): number {
+  const lines = wrapText(ctx, value, maxWidth, size);
   ctx.font = font(size);
   ctx.fillStyle = colour;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const words = value.split(' ');
-  let line = '';
   let cursor = y;
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word;
-    if (ctx.measureText(candidate).width > maxWidth && line) {
-      ctx.fillText(line, x, cursor);
-      cursor += size * lineHeight;
-      line = word;
-    } else {
-      line = candidate;
-    }
-  }
-  if (line) {
+  for (const line of lines) {
     ctx.fillText(line, x, cursor);
     cursor += size * lineHeight;
   }

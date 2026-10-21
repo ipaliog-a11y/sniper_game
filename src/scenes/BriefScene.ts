@@ -13,7 +13,7 @@ import {
   createDialCoach,
   drawDialCoach,
 } from '../ui/dialCoach';
-import { type Rect, fillPanel, paragraph, rule, text } from '../ui/gfx';
+import { type Rect, fillPanel, paragraph, paragraphHeight, rule, text } from '../ui/gfx';
 import { dopePanel, turretPanel, weatherPanel } from '../ui/panels';
 import { C, Scroll, T } from '../ui/ui';
 import { FreeFieldScene } from './FreeFieldScene';
@@ -46,6 +46,13 @@ export class BriefScene implements Scene {
   private session!: Session;
   private tab = 0;
   private dopeScroll = new Scroll('briefdope');
+  private briefScroll = new Scroll('briefbody');
+  /**
+   * How tall the brief ran last frame. Immediate mode draws and measures in the
+   * same pass, so the scroll clamp is always one frame behind — which nobody
+   * can see, and which beats laying the whole column out twice.
+   */
+  private briefContentH = 0;
   private time = 0;
   /** Guided dial-turrets coach (tutorial stage only). */
   private dialCoach: DialCoachState | null = null;
@@ -210,7 +217,20 @@ export class BriefScene implements Scene {
     const colW = twoUp ? r.w / 2 - 14 * g : r.w;
     const rightX = twoUp ? r.x + r.w / 2 + 14 * g : r.x;
 
-    let left = r.y + 12 * g;
+    // The brief is the one tab whose length is content-driven: a tutorial coach
+    // panel, a stage blurb, two stacks of fields and sometimes a warning. On a
+    // short screen that is taller than the space between the tabs and GO HOT,
+    // so it scrolls inside its box rather than spilling out under the button.
+    this.briefScroll.update(ui.input, r, this.briefContentH, 1 / 60);
+    const blocked = this.briefScroll.isDragging(ui.input);
+    const top = r.y - this.briefScroll.offset;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x, r.y, r.w, r.h);
+    ctx.clip();
+
+    let left = top + 12 * g;
 
     // Tutorial: mil-dial coach + Begin Tutorial for the visual guided flow.
     if (tutorial) {
@@ -218,12 +238,11 @@ export class BriefScene implements Scene {
       const maxTextW = r.w - pad * 2;
       const body = t('brief.tutorial_dial_body');
       const steps = t('brief.tutorial_dial_steps');
-      // Rough wrap estimates so the panel can be filled before text is drawn.
-      const charW = T.small * g * 0.48;
-      const bodyLines = Math.max(4, Math.ceil(body.length / Math.max(20, maxTextW / charW)));
-      const stepLines = Math.max(2, Math.ceil(steps.length / Math.max(24, maxTextW / (T.micro * g * 0.48))));
-      const bodyH = bodyLines * T.small * g * 1.45;
-      const stepsH = stepLines * T.micro * g * 1.45;
+      // Measured, not guessed. The old character-count estimate ran short in
+      // Greek and on a narrow column, and the button is positioned from this
+      // height — so a short guess parked it on top of the last line of steps.
+      const bodyH = paragraphHeight(ctx, body, maxTextW, T.small * g);
+      const stepsH = paragraphHeight(ctx, steps, maxTextW, T.micro * g);
       const btnH = 40 * g;
       const coachH = 30 * g + bodyH + 10 * g + stepsH + 14 * g + btnH + 14 * g;
       fillPanel(ctx, { x: r.x, y: left, w: r.w, h: coachH }, 8, 'rgba(232,163,61,0.08)', C.amber);
@@ -237,7 +256,7 @@ export class BriefScene implements Scene {
       const beginLabel = this.dialCoach?.complete
         ? t('brief.tutorial_replay')
         : t('brief.tutorial_begin');
-      if (ui.button(begin, beginLabel, { accent: true, size: T.small * g })) {
+      if (!blocked && ui.button(begin, beginLabel, { accent: true, size: T.small * g })) {
         audio.tap();
         // Fresh coach; reset turrets so the practice dial is honest.
         this.session.scope.elevationClicks = 0;
@@ -317,7 +336,7 @@ export class BriefScene implements Scene {
     }
 
     // Second column, or straight on underneath if the screen is narrow.
-    let right = twoUp ? r.y + 12 * g : left + 16 * g;
+    let right = twoUp ? top + 12 * g : left + 16 * g;
     if (!twoUp) {
       rule(ctx, r.x, right - 8 * g, colW);
     }
@@ -383,11 +402,13 @@ export class BriefScene implements Scene {
       right += 19 * g;
     }
 
+    let bottom = Math.max(left, right);
+
     // A quiet warning if the load simply will not reach.
     const furthest = this.stage.targets.reduce((m, tgt) => Math.max(m, tgt.rangeM), 0);
     const transonic = session.dope.transonicRangeM;
     if (transonic && furthest > transonic) {
-      const warnY = Math.min(r.y + r.h - 48 * g, Math.max(left, right) + 12 * g);
+      const warnY = bottom + 12 * g;
       const warn: Rect = { x: rightX, y: warnY, w: colW, h: 44 * g };
       fillPanel(ctx, warn, 6, 'rgba(224,112,95,0.10)', C.red);
       const rangeStr = imperial
@@ -402,6 +423,10 @@ export class BriefScene implements Scene {
         T.micro * g,
         C.red,
       );
+      bottom = warn.y + warn.h;
     }
+
+    ctx.restore();
+    this.briefContentH = bottom - top + 12 * g;
   }
 }

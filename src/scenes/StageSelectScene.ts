@@ -5,7 +5,7 @@ import { gradeColour } from '../core/scoring';
 import { presetById } from '../core/weather';
 import { type App, type Scene } from '../ui/app';
 import { audio } from '../ui/audio';
-import { type Rect, fillRaised, paragraph, rule, text } from '../ui/gfx';
+import { type Rect, fillRaised, paragraph, rule, text, wrapText } from '../ui/gfx';
 import { C, Scroll, T } from '../ui/ui';
 import { mToYard } from '../core/units';
 import { BriefScene } from './BriefScene';
@@ -45,11 +45,28 @@ export class StageSelectScene implements Scene {
     rule(ctx, safe.x, safe.y + 34 * g, safe.w);
 
     const view: Rect = { x: safe.x, y: safe.y + 44 * g, w: safe.w, h: safe.h - 44 * g };
-    // Briefs wrap to two lines on a wide screen and three on a phone, so the
-    // card is sized for whichever it is rather than padded for the worst case.
-    const cardH = (view.w > 560 * g ? 92 : 116) * g;
     const gap = 10 * g;
-    this.scroll.update(ui.input, view, STAGES.length * (cardH + gap) + 8 * g, 1 / 60);
+    const pad = 16 * g;
+    const briefW = view.w - pad * 2 - 74 * g;
+    const briefSize = T.small * g;
+
+    // Cards are sized to the brief they actually carry. A fixed height has to
+    // be either too tall for most stages or too short for the longest one, and
+    // too short means a sentence sliced off mid-word at the card's edge.
+    const cardHeights = STAGES.map((stage, i) => {
+      const min = 84 * g;
+      if (!this.unlocked(app, i)) return min;
+      const lines = wrapText(ctx, t(`stage.${stage.id}.brief`), briefW, briefSize).length;
+      return Math.max(min, 58 * g + (lines - 0.5) * briefSize * 1.45 + 14 * g);
+    });
+    const tops: number[] = [];
+    let stack = 0;
+    for (const h of cardHeights) {
+      tops.push(stack);
+      stack += h + gap;
+    }
+
+    this.scroll.update(ui.input, view, stack + 8 * g, 1 / 60);
     const blocked = this.scroll.isDragging(ui.input);
 
     ctx.save();
@@ -58,7 +75,8 @@ export class StageSelectScene implements Scene {
     ctx.clip();
 
     STAGES.forEach((stage, i) => {
-      const y = view.y + i * (cardH + gap) - this.scroll.offset;
+      const cardH = cardHeights[i];
+      const y = view.y + tops[i] - this.scroll.offset;
       if (y > view.y + view.h || y + cardH < view.y) return;
       const r: Rect = { x: view.x, y, w: view.w, h: cardH };
       const open = this.unlocked(app, i);
@@ -76,7 +94,6 @@ export class StageSelectScene implements Scene {
         accentLeft: accent,
       });
 
-      const pad = 16 * g;
       const stageName = t(`stage.${stage.id}.name`);
       text(ctx, stageName, r.x + pad, r.y + 20 * g, T.body * g, open ? C.text : C.textFaint, 'left', 'bold');
 
@@ -101,8 +118,8 @@ export class StageSelectScene implements Scene {
           t(`stage.${stage.id}.brief`),
           r.x + pad,
           r.y + 58 * g,
-          r.w - pad * 2 - 74 * g,
-          T.small * g,
+          briefW,
+          briefSize,
           C.textDim,
         );
       } else {

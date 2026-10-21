@@ -11,6 +11,7 @@ import {
   fillPanel,
   fillRaised,
   paragraph,
+  paragraphHeight,
   rule,
   text,
 } from '../ui/gfx';
@@ -205,7 +206,11 @@ export class MenuScene implements Scene {
       app.quit(t('menu.quit_body'));
     }
 
-    const footer: Rect = { x, y: app.height - safe.y - 68 * g, w, h: 56 * g };
+    // Sized to the strapline it holds: it wraps to one line on a laptop and two
+    // on a phone, and a fixed 56 units cropped the second line's descenders.
+    const footerTextH = paragraphHeight(ctx, t('menu.footer'), w - 24 * g, T.small * g);
+    const footerH = 36 * g + footerTextH + 4 * g;
+    const footer: Rect = { x, y: app.height - safe.y - footerH - 12 * g, w, h: footerH };
     if (footer.y > y) {
       fillPanel(ctx, footer, 8, 'rgba(21,29,25,0.55)', C.edgeSoft);
       cornerBrackets(ctx, footer, 10 * g, C.edge, 5 * g);

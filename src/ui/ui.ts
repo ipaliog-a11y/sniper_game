@@ -35,14 +35,17 @@ export class Ui {
   /** Repeat timer for hold-to-repeat steppers, keyed by widget id. */
   private repeats = new Map<string, number>();
   private now = 0;
+  /** Viewport type scale, refreshed every frame by the app. */
+  gauge = 1;
 
   constructor(ctx: CanvasRenderingContext2D, input: Input) {
     this.ctx = ctx;
     this.input = input;
   }
 
-  beginFrame(now: number): void {
+  beginFrame(now: number, gauge = 1): void {
     this.now = now;
+    this.gauge = gauge;
   }
 
   button(r: Rect, label: string, style: ButtonStyle = {}): boolean {
@@ -231,9 +234,27 @@ export class Ui {
   }
 
   /** A label/value pair on one line, the way a data card reads. */
+  /**
+   * A label on the left and its value hard against the right edge.
+   *
+   * The value only gets the room the label leaves it. Several of these carry a
+   * whole sentence — "no plotter, path only as a brief glass tracer" — and an
+   * unbudgeted right-aligned string walks straight over its own label, so the
+   * value shrinks to fit and is clipped to its half as a last resort.
+   */
   field(x: number, y: number, w: number, label: string, value: string, colour: string = C.text): void {
-    text(this.ctx, label, x, y, T.small, C.textFaint, 'left');
-    text(this.ctx, value, x + w, y, T.body, colour, 'right');
+    const g = this.gauge;
+    const labelSize = T.small * g;
+    text(this.ctx, label, x, y, labelSize, C.textFaint, 'left');
+
+    const room = Math.max(32 * g, w - measure(this.ctx, label, labelSize) - 10 * g);
+    const rowH = T.body * g * 1.6;
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.rect(x + w - room, y - rowH / 2, room, rowH);
+    this.ctx.clip();
+    this.fitText(value, x + w, y, room, T.body * g, colour, 'right');
+    this.ctx.restore();
   }
 
   /** Text that shrinks to fit rather than overflowing its box. */
