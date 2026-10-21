@@ -79,8 +79,10 @@ function hash(x: number, y: number, seed: number): number {
 type Rgb = [number, number, number];
 
 interface Light {
-  skyTop: string;
-  skyBottom: string;
+  /** Sky high overhead and at the horizon, as raw channels. Distant terrain is
+   *  tinted toward the horizon colour, so the backdrop needs them blendable. */
+  skyTop: Rgb;
+  skyBottom: Rgb;
   /** Ground colour close in and far out, as raw channels so bands can blend. */
   groundNear: Rgb;
   groundFar: Rgb;
@@ -138,9 +140,11 @@ export function lightFor(conditions: Conditions, biome: Biome = biomeById('open'
     dayTop = mixRgb(dayTop, [92, 96, 98], 0.45 * stormGrey);
     dayBottom = mixRgb(dayBottom, [120, 124, 126], 0.4 * stormGrey);
   }
-  // Desert days go a little amber; forest stays cooler.
+  // Desert days go a little amber high up, where it reads as dust in the air.
+  // Far less of it at the horizon: down there the amber was the same sand the
+  // ground is made of, so over a desert the skyline stopped being a line.
   let dayTopTinted = mixRgb(dayTop, [168, 142, 98], biomeWarm * 0.55);
-  let dayBottomTinted = mixRgb(dayBottom, [210, 186, 140], biomeWarm * 0.4);
+  let dayBottomTinted = mixRgb(dayBottom, [210, 186, 140], biomeWarm * 0.16);
   // Last-light warm rim on the lower sky.
   if (lastLight > 0.05) {
     dayBottomTinted = mixRgb(dayBottomTinted, [220, 148, 88], lastLight * 0.55);
@@ -168,8 +172,8 @@ export function lightFor(conditions: Conditions, biome: Biome = biomeById('open'
   ];
 
   return {
-    skyTop: css(mixRgb(nightTop, dayTopTinted, dusk)),
-    skyBottom: css(mixRgb(nightBottom, dayBottomTinted, dusk)),
+    skyTop: mixRgb(nightTop, dayTopTinted, dusk),
+    skyBottom: mixRgb(nightBottom, dayBottomTinted, dusk),
     groundNear: mixRgb([20, 24, 20], near, level),
     groundFar: mixRgb([26, 32, 32], mixRgb(far, lightHazeHint(biome), 0.2 + fog * 0.15), level),
     haze: hazeBase,
@@ -422,10 +426,12 @@ function drawHorizon(
   const d = biome.horizon === 'skyline' ? 2800 : biome.horizon === 'dunes' ? 3200 : 3400;
   const halfSpan = view.fov * 1.5 + 0.3;
   const base = Math.atan2(-firingHeightM, d);
+  // Three kilometres out, so most of the way to the sky's colour — but less so
+  // than the ridges behind it, which is what separates the two bands at all.
   const colour = mixRgb(
     mixRgb(biome.palette.ridge, biome.palette.scrub, 0.35),
-    light.haze,
-    biome.horizon === 'skyline' ? 0.48 : 0.62,
+    mixRgb(light.haze, light.skyBottom, 0.55),
+    biome.horizon === 'skyline' ? 0.42 : 0.52,
   );
   ctx.beginPath();
   let started = false;
@@ -498,7 +504,11 @@ function drawRidges(
   const layers = biome.horizon === 'skyline' ? 2 : 3;
   for (let layer = 0; layer < layers; layer++) {
     const base = -0.0015 - layer * 0.0008;
-    const amp = (biome.horizon === 'dunes' ? 0.022 : 0.03) - layer * 0.008;
+    // Roughly half a degree of relief: hills of a few tens of metres several
+    // kilometres out. The old amplitude was three times this, which at any
+    // useful magnification filled the entire eyepiece above the horizon and
+    // left no sky to see the skyline against.
+    const amp = (biome.horizon === 'dunes' ? 0.008 : 0.011) - layer * 0.0026;
     const step = 0.02;
     ctx.beginPath();
     let started = false;
@@ -521,11 +531,18 @@ function drawRidges(
     ctx.lineTo(close.x, close.y);
     ctx.lineTo(closeLeft.x, closeLeft.y);
     ctx.closePath();
-    const shade = 0.16 + layer * 0.1;
-    const ridge = mixRgb(biome.palette.ridge, light.haze, 0.25 + layer * 0.1);
-    ctx.fillStyle = `rgba(${Math.round(ridge[0] * (0.55 + 0.45 * light.level))},${Math.round(
-      ridge[1] * (0.55 + 0.45 * light.level),
-    )},${Math.round(ridge[2] * (0.55 + 0.45 * light.level))},${0.85 - shade})`;
+    /**
+     * Aerial perspective: distance pulls terrain toward the colour of the sky
+     * behind it, not toward the ground in front of it. Blending these into the
+     * haze — a warm grey keyed off the dirt — is what made the backdrop read as
+     * more ground, and with it the horizon stopped being a line at all.
+     */
+    const ridge = mixRgb(biome.palette.ridge, light.skyBottom, 0.5 + layer * 0.16);
+    const dim = 0.6 + 0.4 * light.level;
+    ctx.fillStyle = css(
+      [ridge[0] * dim, ridge[1] * dim, ridge[2] * dim],
+      0.92 - layer * 0.12,
+    );
     ctx.fill();
   }
 }
@@ -1463,10 +1480,20 @@ export function renderScope(ctx: CanvasRenderingContext2D, r: ScopeRender): Targ
   ctx.arc(view.cx, view.cy, view.radius, 0, Math.PI * 2);
   ctx.clip();
 
-  // Sky.
-  const gradient = ctx.createLinearGradient(0, view.cy - view.radius, 0, view.cy + view.radius);
-  gradient.addColorStop(0, light.skyTop);
-  gradient.addColorStop(1, light.skyBottom);
+  /**
+   * Sky, hung off the horizon rather than off the tube.
+   *
+   * A gradient spanning the eyepiece looked the same at 5× and at 25×, which
+   * meant the sky changed colour when you turned the magnification ring. Pin
+   * the pale end to the true horizon and the deep end a quarter-radian above
+   * it, and the band you see is the band you would actually be looking at —
+   * at high magnification that is the pale strip just over the skyline, which
+   * is exactly right.
+   */
+  const horizonY = view.project(view.aimAz, 0).y;
+  const gradient = ctx.createLinearGradient(0, horizonY - 0.12 * view.pxPerRad, 0, horizonY);
+  gradient.addColorStop(0, css(light.skyTop));
+  gradient.addColorStop(1, css(light.skyBottom));
   ctx.fillStyle = gradient;
   ctx.fillRect(view.cx - view.radius, view.cy - view.radius, view.radius * 2, view.radius * 2);
 
