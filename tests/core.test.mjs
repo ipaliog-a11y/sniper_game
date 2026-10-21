@@ -24,6 +24,7 @@ import {
 } from '../src/core/career.ts';
 import { STAGES, scoreImpact, targetInclination } from '../src/core/range.ts';
 import { gaussian, makeRng } from '../src/core/rng.ts';
+import { transonicSpread } from '../src/core/shot.ts';
 import { gradeFor, scoreTarget } from '../src/core/scoring.ts';
 import { buildDope, fieldOfView, interpolateDope, reticleScale } from '../src/core/scope.ts';
 import { createSession, fireRound, targetUnderAim, tick } from '../src/core/session.ts';
@@ -544,6 +545,39 @@ check('a longer barrel than reference is faster', msToFps(loadout.muzzleVelocity
   }
   check('the solver is repeatable to within a centimetre at 900 m', worst < 0.01, `worst ${worst.toFixed(4)} m`);
   near('a 900 m solution is a sane number of mils', radToMil(solution.elevation - zero100), 9.2, 2.5);
+}
+
+
+// --- transonic dispersion ----------------------------------------------
+
+{
+  // A bullet still comfortably supersonic is unaffected.
+  near('supersonic arrival costs nothing', transonicSpread(1.6, 1.9), 1, 1e-9);
+  near('exactly at the threshold costs nothing', transonicSpread(1.2, 1.9), 1, 1e-9);
+
+  // Below it the cone opens, and keeps opening as it slows.
+  check('just transonic already opens the group', transonicSpread(1.15, 1.9) > 1);
+  check(
+    'deeper into transonic is worse',
+    transonicSpread(0.95, 1.9) > transonicSpread(1.1, 1.9),
+  );
+
+  // The damage is done during the crossing, so it plateaus rather than
+  // growing without limit once properly subsonic.
+  near(
+    'fully subsonic plateaus',
+    transonicSpread(0.6, 1.9),
+    transonicSpread(0.85, 1.9),
+    1e-9,
+  );
+
+  // Gyroscopic margin is the lever the player has.
+  check(
+    'a marginally stable bullet suffers more',
+    transonicSpread(0.9, 1.4) > transonicSpread(0.9, 2.3),
+  );
+  check('and the penalty stays bounded', transonicSpread(0.5, 1.0) <= 3.5);
+  check('a very stable bullet still pays something', transonicSpread(0.9, 2.5) > 1.5);
 }
 
 // --- report -------------------------------------------------------------

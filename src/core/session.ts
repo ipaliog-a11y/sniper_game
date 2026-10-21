@@ -49,6 +49,11 @@ export interface Session {
   /** Ranges the player has confirmed, by target id. Ranging is a skill here. */
   known: Record<string, number>;
   /**
+   * Memoised firing solutions, keyed by target and a quantised clock. Runtime
+   * only — never saved, never part of the run.
+   */
+  solutionCache: Map<string, FiringSolution>;
+  /**
    * Practice mode: full solutions, no stage time limit, and speed does not
    * cost points. Snapshotted at session start so flipping settings mid-stage
    * does not rewrite the run.
@@ -123,6 +128,7 @@ export function createSession(
     })),
     shots: [],
     known,
+    solutionCache: new Map(),
     practice: timeless,
     freeField: isFree,
   };
@@ -277,24 +283,55 @@ export function finishSession(session: Session): StageScore {
 }
 
 /**
- * The honest answer for a target: what the rifle would have to be told, in the
- * conditions as they are this instant. The ballistic solver in the player's
- * kit gets to see this. Everyone else gets a data card and their own judgement.
+ * Solving is expensive — a two-mile shot integrates several thousand RK4 steps
+ * a dozen times over — and the panels that want a solution are render
+ * functions, so they ask sixty times a second for an answer that barely moves.
+ *
+ * The only input that changes within a stage is the wind, so the clock is
+ * quantised and the result kept. Four solves a second still reads as live, and
+ * it is the difference between the solver panel being usable at extreme range
+ * and halving the frame rate.
  */
-export function trueSolution(session: Session, target: Target): FiringSolution {
+const SOLUTION_TICK = 0.25;
+const SOLUTION_CACHE_LIMIT = 32;
+
+function solutionFor(
+  session: Session,
+  target: Target,
+  withCoriolis: boolean,
+): FiringSolution {
+  const tick = Math.round(session.clockS / SOLUTION_TICK);
+  const key = `${target.id}|${target.rangeM.toFixed(1)}|${tick}|${withCoriolis ? 'c' : '-'}`;
+  const hit = session.solutionCache.get(key);
+  if (hit) return hit;
+
   const env: Environment = {
     atmosphere: session.conditions.atmosphere,
-    wind: effectiveWind(session.conditions, target.rangeM, session.clockS),
-    latitude: session.conditions.latitude,
+    wind: effectiveWind(session.conditions, target.rangeM, tick * SOLUTION_TICK),
+    latitude: withCoriolis ? session.conditions.latitude : 0,
     azimuth: session.conditions.azimuth,
   };
-  return solve(
+  const solution = solve(
     session.loadout.projectile,
     env,
     target.rangeM,
     session.loadout.rifle.sightHeightM,
     targetInclination(target, session.stage.firingHeightM),
   );
+
+  // Keys carry the clock, so stale entries pile up rather than being replaced.
+  if (session.solutionCache.size >= SOLUTION_CACHE_LIMIT) session.solutionCache.clear();
+  session.solutionCache.set(key, solution);
+  return solution;
+}
+
+/**
+ * The honest answer for a target: what the rifle would have to be told, in the
+ * conditions as they are this instant. The ballistic solver in the player's
+ * kit gets to see this. Everyone else gets a data card and their own judgement.
+ */
+export function trueSolution(session: Session, target: Target): FiringSolution {
+  return solutionFor(session, target, true);
 }
 
 /**
@@ -302,19 +339,7 @@ export function trueSolution(session: Session, target: Target): FiringSolution {
  * show how much of the dial is Coriolis (Earth rate) rather than wind or spin.
  */
 export function trueSolutionNoCoriolis(session: Session, target: Target): FiringSolution {
-  const env: Environment = {
-    atmosphere: session.conditions.atmosphere,
-    wind: effectiveWind(session.conditions, target.rangeM, session.clockS),
-    latitude: 0,
-    azimuth: session.conditions.azimuth,
-  };
-  return solve(
-    session.loadout.projectile,
-    env,
-    target.rangeM,
-    session.loadout.rifle.sightHeightM,
-    targetInclination(target, session.stage.firingHeightM),
-  );
+  return solutionFor(session, target, false);
 }
 
 /** What the solver should be told to dial, relative to the zero, in mils. */

@@ -6,6 +6,7 @@ import {
   type Wind,
   fire,
 } from './ballistics';
+import { TRANSONIC_MACH } from './drag';
 import { t } from './i18n';
 import type { ResolvedLoadout } from './loadout';
 import { type Target, scoreImpact, targetInclination, targetOffsetAt } from './range';
@@ -101,6 +102,36 @@ export function updateBarrel(barrel: BarrelState, dtSinceLastShot: number): Barr
   };
 }
 
+/**
+ * How much wider the group gets because the bullet went transonic.
+ *
+ * Coming back down through the speed of sound, the centre of pressure moves
+ * and the airflow over the boat tail stops being symmetrical. A bullet that
+ * was asleep wakes up, and where it points is no longer exactly where it is
+ * going. No point-mass solver predicts which way — the honest thing a model
+ * can say is that the cone opens, and by roughly how much.
+ *
+ * A bullet with margin in its gyroscopic stability rides the transition far
+ * better than a marginal one, which is the lever the player actually has:
+ * faster twist, or a bullet that stays supersonic all the way to the plate.
+ *
+ * Returns a multiplier on the cone of fire, 1 above the transonic threshold.
+ */
+export function transonicSpread(arrivalMach: number, stability: number): number {
+  if (arrivalMach >= TRANSONIC_MACH) return 1;
+  // Full effect by the time it is properly subsonic; the damage is done during
+  // the crossing, so it plateaus rather than growing without limit.
+  const severity = clamp((TRANSONIC_MACH - arrivalMach) / 0.3, 0, 1);
+  // SG 1.4 is marginal, 2.2 and up is comfortable.
+  const resilience = clamp((stability - 1.4) / 0.8, 0, 1);
+  // Calibrated against the extreme-range stages: enough that dialling alone no
+  // longer gets you a hit, not so much that a plate becomes a lottery. See the
+  // round budgets in range.ts, which were raised to match.
+  const peak = 2.6 - 1.0 * resilience;
+  // Eased so the first tenth of a Mach below the threshold is not a cliff.
+  return 1 + (peak - 1) * Math.pow(severity, 1.4);
+}
+
 export function resolveShot(input: ShotInput): ShotResult {
   const { loadout, conditions, scope, target, rng, barrel } = input;
   const optic = loadout.optic;
@@ -138,10 +169,12 @@ export function resolveShot(input: ShotInput): ShotResult {
     { dt: 0.0008, sampleEvery: 24, massKg: loadout.massKg, maxTof: 22 },
   );
 
-  // Everything the shooter cannot see or correct: the rifle's own group, plus
-  // a hot barrel walking the shots.
+  // Everything the shooter cannot see or correct: the rifle's own group, a hot
+  // barrel walking the shots, and what the air does to a bullet that has
+  // dropped back through the speed of sound on the way.
   const heatFactor = 1 + barrel.heat * 0.9;
-  const coneRad = loadout.dispersionMoa * MOA * heatFactor;
+  const transonic = transonicSpread(impact.mach, loadout.stability);
+  const coneRad = loadout.dispersionMoa * MOA * heatFactor * transonic;
   const jitterRight = gaussian(rng) * coneRad * rangeM;
   const jitterUp = gaussian(rng) * coneRad * rangeM * (1 + barrel.heat * 0.4);
 
@@ -177,7 +210,7 @@ export function resolveShot(input: ShotInput): ShotResult {
     wind,
     muzzleVelocity,
     path: impact.path,
-    transonic: impact.mach < 1.2,
+    transonic: impact.mach < TRANSONIC_MACH,
     short: impact.short,
   };
 }

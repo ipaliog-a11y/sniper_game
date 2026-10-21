@@ -155,6 +155,27 @@ On a mover, the impact is scored against where the target *is when the bullet
 arrives*, not where it was at the break. At 700 m that difference is most of a
 metre of lead.
 
+### Going transonic
+
+Coming back down through the speed of sound, a bullet's centre of pressure
+moves and the flow over its boat tail stops being symmetrical. One that was
+asleep wakes up, and where it points stops being exactly where it is going. No
+point-mass solver predicts which way it goes — but it can say honestly that the
+cone opens, and roughly how much.
+
+`transonicSpread` multiplies the cone of fire once arrival Mach drops below
+1.2, reaching full effect by Mach 0.9 and then plateauing: the damage is done
+during the crossing, not accumulated forever afterwards. Gyroscopic stability
+is the lever — a bullet with margin rides the transition far better than a
+marginal one, so a faster twist or a load that stays supersonic to the plate is
+a real decision rather than a stat on a card.
+
+This matters most at the far end of the course. Nothing in the game stays
+supersonic past about 1800 m, so the three extreme-range stages are all shot
+through the transonic region — which is exactly what a real two-mile attempt
+is. Their round budgets were raised to match: you are not expected to dial once
+and hit, you are expected to send several and correct off the splash.
+
 ## The hold
 
 Sway is three sine components — two slow ones for the wander and a fast small
@@ -188,10 +209,9 @@ that admits its limits:
 - **Wind that changes during the flight.** The effective wind is frozen at the
   trigger break, which is a very good approximation at a two-second time of
   flight and a poor one at five.
-- **Transonic instability.** The model tells you when a bullet has dropped
-  through Mach 1.2 and the game warns you, but the point-mass solver keeps
-  flying it as though nothing happened. In reality that is where groups open up
-  unpredictably, and no point-mass model predicts it.
+- **Transonic *trajectory*.** The cone of fire now widens below Mach 1.2 (see
+  below), but the flight path itself is still integrated as though nothing
+  happened. A point-mass model cannot do otherwise: it has no yaw to perturb.
 - **Powder temperature history**, barrel fouling, and bullet-to-bullet BC
   variation.
 - **Mirage-induced apparent target displacement.** The mirage is drawn and reads
@@ -208,6 +228,18 @@ everything else is content-hashed and comes from the cache.
 Hand-rolling that rather than pulling in Workbox keeps the project at three dev
 dependencies and no runtime ones, which is the same reason the audio is
 synthesised and there are no image assets outside the app icons.
+
+English is bundled; other language tables are fetched on demand and precached
+by the worker, so an English player never downloads the Greek one.
+
+### Solving is not free
+
+A two-mile solution integrates several thousand RK4 steps a dozen times over —
+about 13 ms of pure arithmetic. The panels that want one are render functions,
+so they used to ask sixty times a second and halve the frame rate on exactly
+the stages where the solver matters most. `session.solutionFor` memoises
+against a quantised clock: the only input that moves within a stage is the
+wind, and four solves a second still reads as live.
 
 ## Layout
 

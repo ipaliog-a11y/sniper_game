@@ -2,6 +2,7 @@
 // the module graph evaluates, so a module that throws on load is still
 // reported rather than silently leaving the loading card up.
 import { hardReset, installFailureHandlers, showFailure } from './boot/failure';
+import { ensureLanguage } from './core/i18n';
 import { MenuScene } from './scenes/MenuScene';
 import { App } from './ui/app';
 import { audio } from './ui/audio';
@@ -18,10 +19,10 @@ if (new URLSearchParams(window.location.search).has('reset')) {
     window.location.replace(window.location.pathname);
   });
 } else {
-  start();
+  void start();
 }
 
-function start(): void {
+async function start(): Promise<void> {
   try {
     const canvas = document.getElementById('stage') as HTMLCanvasElement | null;
     if (!canvas) throw new Error('The page has no canvas to draw on.');
@@ -38,6 +39,11 @@ function start(): void {
       window.removeEventListener('pointerdown', unlock);
     };
     window.addEventListener('pointerdown', unlock);
+
+    // Non-English tables are fetched on demand. Waiting for it here is the
+    // difference between opening in Greek and opening in English and then
+    // flipping. A failure to fetch resolves anyway, leaving English.
+    await ensureLanguage(app.profile.settings.language);
 
     app.set(new MenuScene());
     app.start();
