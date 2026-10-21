@@ -61,6 +61,64 @@
   <body>
     <canvas id="stage"></canvas>
     <div id="boot">COLD BORE</div>
+    <script>
+      /*
+       * Last-resort boot watchdog. Runs before the module bundle, so it is the
+       * only thing still standing if the bundle 404s, fails to parse, or throws
+       * while a module is still evaluating — in which case main.ts never runs
+       * and the proper failure screen never gets a chance to install itself.
+       * That case is precisely the one that looks like a splash screen hanging
+       * forever, so it is the one that most needs a voice.
+       */
+      (function () {
+        function keep(err) {
+          if (window.__coldBoreEarlyError === undefined) window.__coldBoreEarlyError = err;
+        }
+        window.addEventListener('error', function (e) {
+          keep(e.error || e.message);
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          keep(e.reason);
+        });
+
+        // Generous: a cold load over bad mobile data is slow, and a false
+        // alarm on a page that was about to work is worse than none.
+        setTimeout(function () {
+          if (!document.getElementById('boot')) return;
+          if (document.querySelector('[role="alert"]')) return;
+          var err = window.__coldBoreEarlyError;
+          var detail = err && err.stack ? err.stack : err ? String(err) : 'The game code never ran.';
+          var box = document.createElement('div');
+          box.setAttribute('role', 'alert');
+          box.style.cssText =
+            'position:fixed;inset:0;z-index:2147483647;overflow:auto;padding:24px;background:#0d1210;' +
+            'color:#dbe5de;font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;-webkit-user-select:text;user-select:text';
+          var head = document.createElement('h1');
+          head.textContent = 'It did not start.';
+          head.style.cssText = 'font:600 20px/1.3 inherit;margin:0 0 12px';
+          var pre = document.createElement('pre');
+          pre.textContent = detail + '\n\n---\n' + location.href + '\n' + navigator.userAgent;
+          pre.style.cssText =
+            'white-space:pre-wrap;word-break:break-word;background:#151d19;border:1px solid #2b3a33;' +
+            'border-radius:6px;padding:12px;margin:0 0 14px;color:#e0705f';
+          var link = document.createElement('a');
+          link.href = '?reset';
+          link.textContent = 'Clear everything and reload';
+          link.style.cssText =
+            'display:inline-block;font:600 13px/1 inherit;color:#0d1210;background:#e8a33d;' +
+            'border-radius:6px;padding:13px 18px;text-decoration:none';
+          var wrap = document.createElement('div');
+          wrap.style.cssText = 'max-width:640px;margin:0 auto';
+          wrap.appendChild(head);
+          wrap.appendChild(pre);
+          wrap.appendChild(link);
+          box.appendChild(wrap);
+          (document.body || document.documentElement).appendChild(box);
+          var boot = document.getElementById('boot');
+          if (boot) boot.remove();
+        }, 10000);
+      })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

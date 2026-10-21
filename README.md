@@ -196,6 +196,26 @@ Any static host works — Netlify, Cloudflare Pages, an S3 bucket. The build use
 relative paths, so it runs at a domain root or under a project path without
 being reconfigured.
 
+## When it will not start
+
+If the game ever hangs on the loading card, it now says why instead of sitting
+there. Three layers cover it:
+
+- A crash while playing stops the frame loop and shows the error, rather than
+  freezing the last frame.
+- A crash during start-up shows the same screen.
+- If the code never ran at all — the bundle 404'd, failed to parse, or threw
+  while loading — an inline watchdog in `index.html` paints a minimal version
+  after ten seconds. That one matters most, because it is the only layer still
+  standing when the bundle itself is the problem.
+
+Every version offers **Clear everything and reload**, which unregisters the
+service worker, deletes the offline caches and removes the saved profile. That
+is what rescues an installed copy that cached a bad build.
+
+You can also reach it directly: add **`?reset`** to the URL. It wipes the same
+three things and then loads clean.
+
 ## Tests
 
 The load-bearing tests check retained velocity against published trajectory

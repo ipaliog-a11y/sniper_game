@@ -25,6 +25,12 @@ export interface Toast {
 }
 
 export class App {
+  /**
+   * Where a crash inside the frame loop goes. Set by the entry point so the
+   * loop does not have to know what a failure screen is.
+   */
+  onCrash: ((error: unknown) => void) | null = null;
+
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
   readonly input: Input;
@@ -203,11 +209,21 @@ export class App {
     const { ctx } = this;
     drawShellBackground(ctx, this.width, this.height, this.safe);
 
-    if (this.scene) {
-      this.scene.update(dt, this);
-      this.scene.render(ctx, this);
+    // A throw in here used to leave the last frame frozen on screen with no
+    // indication of why. Stop cleanly and hand it to whoever can show it.
+    try {
+      if (this.scene) {
+        this.scene.update(dt, this);
+        this.scene.render(ctx, this);
+      }
+      this.drawToasts(ctx);
+    } catch (error) {
+      this.running = false;
+      this.input.endFrame();
+      if (this.onCrash) this.onCrash(error);
+      else throw error;
+      return;
     }
-    this.drawToasts(ctx);
     this.input.endFrame();
     if (this.running) requestAnimationFrame(this.frame);
   };
